@@ -44,7 +44,7 @@ Capsule::schema()->create('pages', function (Blueprint $table) {
     $table->string('meta_title')->nullable();
     $table->text('meta_description')->nullable();
     $table->boolean('is_published')->default(false);
-    $table->json('styles')->nullable(); // stili globali della pagina (backgroundColor, etc)
+    $table->text('styles')->nullable(); // Usato TEXT invece di JSON per compatibilità con MySQL < 5.7.8
     $table->timestamps();
 });
 
@@ -55,9 +55,9 @@ Capsule::schema()->create('blocks', function (Blueprint $table) {
     $table->id();
     $table->foreignId('page_id')->constrained('pages')->onDelete('cascade');
     $table->string('type'); // hero, text, image, form, cta, video, testimonial, footer
-    $table->json('content')->nullable(); // contenuto del blocco (testi, url immagini, etc)
-    $table->json('styles')->nullable(); // stili custom (colori, font, padding, margin, etc)
-    $table->json('position')->nullable(); // posizione e dimensioni (x, y, width, height)
+    $table->text('content')->nullable(); // Usato TEXT invece di JSON per compatibilità
+    $table->text('styles')->nullable(); // Usato TEXT invece di JSON per compatibilità
+    $table->text('position')->nullable(); // Usato TEXT invece di JSON per compatibilità
     $table->integer('order')->default(0); // ordine di visualizzazione
     $table->timestamps();
 });
@@ -72,7 +72,7 @@ Capsule::schema()->create('leads', function (Blueprint $table) {
     $table->string('email');
     $table->string('phone')->nullable();
     $table->text('message')->nullable();
-    $table->json('metadata')->nullable(); // dati extra dal form
+    $table->text('metadata')->nullable(); // Usato TEXT invece di JSON per compatibilità
     $table->timestamps();
 });
 

@@ -13,11 +13,13 @@ class Page extends Model
         'slug',
         'meta_title',
         'meta_description',
-        'is_published'
+        'is_published',
+        'styles'
     ];
 
     protected $casts = [
         'is_published' => 'boolean',
+        'styles' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];

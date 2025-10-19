@@ -1,6 +1,6 @@
 <template>
   <div class="form-block">
-    <div class="max-w-2xl mx-auto px-4">
+    <div class="max-w-7xl mx-auto px-6 py-16 rounded-lg" :style="blockStyles">
       <h2 class="text-3xl font-bold mb-8 text-center">
         {{ block.content.title }}
       </h2>
@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { usePageStore } from '../../stores/pageStore'
 
 const props = defineProps({
@@ -71,6 +71,15 @@ const props = defineProps({
 })
 
 const pageStore = usePageStore()
+
+const blockStyles = computed(() => {
+  const styles = props.block.styles || {}
+  return {
+    backgroundColor: styles.backgroundColor || 'transparent',
+    color: styles.textColor || 'inherit',
+    padding: styles.padding || undefined
+  }
+})
 const formData = reactive({})
 const submitting = ref(false)
 const successMessage = ref('')

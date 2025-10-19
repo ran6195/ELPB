@@ -1,6 +1,6 @@
 <template>
-  <div class="hero-block text-center" :style="heroStyles">
-    <div class="max-w-4xl mx-auto px-4">
+  <div class="hero-block">
+    <div class="max-w-7xl mx-auto px-6 py-20 text-center rounded-lg" :style="combinedStyles">
       <h1
         v-if="editable"
         contenteditable="true"
@@ -51,14 +51,24 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
-const heroStyles = computed(() => {
+const combinedStyles = computed(() => {
+  const blockStyles = props.block.styles || {}
   const styles = {
-    minHeight: '400px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
+    minHeight: '400px'
   }
 
+  // Aggiungi stili del blocco
+  if (blockStyles.backgroundColor) {
+    styles.backgroundColor = blockStyles.backgroundColor
+  }
+  if (blockStyles.textColor) {
+    styles.color = blockStyles.textColor
+  }
+  if (blockStyles.padding) {
+    styles.padding = blockStyles.padding
+  }
+
+  // Aggiungi background image se presente
   if (props.block.content.backgroundImage) {
     styles.backgroundImage = `url(${props.block.content.backgroundImage})`
     styles.backgroundSize = 'cover'

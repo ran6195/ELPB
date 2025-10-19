@@ -53,7 +53,8 @@ class PageController
             'slug' => $slug,
             'meta_title' => $data['meta_title'] ?? null,
             'meta_description' => $data['meta_description'] ?? null,
-            'is_published' => $data['is_published'] ?? false
+            'is_published' => $data['is_published'] ?? false,
+            'styles' => $data['styles'] ?? null
         ]);
 
         // Create blocks if provided
@@ -92,7 +93,8 @@ class PageController
             'slug' => $data['slug'] ?? $page->slug,
             'meta_title' => $data['meta_title'] ?? $page->meta_title,
             'meta_description' => $data['meta_description'] ?? $page->meta_description,
-            'is_published' => $data['is_published'] ?? $page->is_published
+            'is_published' => $data['is_published'] ?? $page->is_published,
+            'styles' => $data['styles'] ?? $page->styles
         ]);
 
         // Update blocks if provided

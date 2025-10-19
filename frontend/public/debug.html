@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Landing Page Builder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .check {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #999;
+        }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        code { color: #e83e8c; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnostica Landing Page Builder</h1>
+
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addCheck(title, status, details = '') {
+            const div = document.createElement('div');
+            div.className = `check ${status}`;
+            div.innerHTML = `
+                <h3>${status === 'success' ? '✅' : '❌'} ${title}</h3>
+                ${details ? `<pre>${details}</pre>` : ''}
+            `;
+            results.appendChild(div);
+        }
+
+        // 1. Check URL
+        addCheck('URL Corrente', 'success', `${window.location.href}`);
+
+        // 2. Check Base Path
+        const basePath = window.location.pathname.includes('/ELPB/') ? '/ELPB/' : '/';
+        addCheck('Base Path Rilevato', 'success', basePath);
+
+        // 3. Check API URL
+        const apiUrl = 'https://edysma.net/ELPB/backend/public/api';
+        fetch(`${apiUrl}/pages`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error(`Status: ${response.status}`);
+            })
+            .then(data => {
+                addCheck('API Backend Funzionante', 'success', `Trovate ${data.length || 0} pagine`);
+            })
+            .catch(error => {
+                addCheck('API Backend', 'error', `Errore: ${error.message}`);
+            });
+
+        // 4. Check se index.html esiste
+        fetch('./index.html')
+            .then(response => {
+                if (response.ok) {
+                    addCheck('index.html Trovato', 'success', 'File caricato correttamente');
+                } else {
+                    addCheck('index.html', 'error', `Status: ${response.status}`);
+                }
+            })
+            .catch(error => {
+                addCheck('index.html', 'error', error.message);
+            });
+
+        // 5. Check assets
+        fetch('./assets/')
+            .then(response => {
+                if (response.ok || response.status === 403) {
+                    addCheck('Cartella Assets', 'success', 'Cartella presente');
+                } else {
+                    addCheck('Cartella Assets', 'error', `Status: ${response.status}`);
+                }
+            })
+            .catch(error => {
+                addCheck('Cartella Assets', 'error', error.message);
+            });
+
+        // 6. Check .htaccess
+        addCheck('Informazioni .htaccess', 'success',
+            'Verifica che .htaccess sia caricato nella stessa cartella di index.html\n' +
+            'Contenuto atteso:\n' +
+            'RewriteBase /ELPB/\n' +
+            'RewriteRule . /ELPB/index.html [L]'
+        );
+
+        // 7. Check console errors
+        window.addEventListener('error', (e) => {
+            addCheck('Errore JavaScript', 'error',
+                `Messaggio: ${e.message}\n` +
+                `File: ${e.filename}\n` +
+                `Linea: ${e.lineno}`
+            );
+        });
+
+        // 8. Info ambiente
+        addCheck('Info Browser', 'success',
+            `User Agent: ${navigator.userAgent}\n` +
+            `Lingua: ${navigator.language}\n` +
+            `Online: ${navigator.onLine}`
+        );
+
+        // 9. Storage disponibile
+        try {
+            localStorage.setItem('test', 'test');
+            localStorage.removeItem('test');
+            addCheck('LocalStorage', 'success', 'Disponibile');
+        } catch(e) {
+            addCheck('LocalStorage', 'error', e.message);
+        }
+
+    </script>
+</body>
+</html>

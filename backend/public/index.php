@@ -67,4 +67,8 @@ $app->post('/api/leads', '\App\Controllers\LeadController:store');
 // Upload routes
 $app->post('/api/upload/image', '\App\Controllers\UploadController:uploadImage');
 
+// Debug routes (rimuovere in produzione dopo il debug)
+$app->get('/api/debug/database', '\App\Controllers\DebugController:checkDatabase');
+$app->post('/api/debug/test-update', '\App\Controllers\DebugController:testUpdate');
+
 $app->run();

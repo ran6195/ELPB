@@ -1,5 +1,6 @@
 <template>
-  <div class="container mx-auto px-6 py-12">
+  <div>
+    <div class="max-w-7xl mx-auto px-6 py-12 rounded-lg" :style="blockStyles">
     <div class="grid md:grid-cols-2 gap-8 items-center">
       <!-- Colonna immagine (sinistra) -->
       <div class="relative">
@@ -35,10 +36,13 @@
         </p>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   block: {
     type: Object,
@@ -51,6 +55,15 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+const blockStyles = computed(() => {
+  const styles = props.block.styles || {}
+  return {
+    backgroundColor: styles.backgroundColor || 'transparent',
+    color: styles.textColor || 'inherit',
+    padding: styles.padding || undefined
+  }
+})
 
 const updateContent = (field, value) => {
   const updatedBlock = {

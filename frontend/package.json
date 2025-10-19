@@ -13,6 +13,11 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@tiptap/extension-link": "^3.7.2",
+    "@tiptap/extension-text-align": "^3.7.2",
+    "@tiptap/extension-underline": "^3.7.2",
+    "@tiptap/starter-kit": "^3.7.2",
+    "@tiptap/vue-3": "^3.7.2",
     "axios": "^1.12.2",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",

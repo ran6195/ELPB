@@ -1,9 +1,19 @@
 <template>
-  <footer class="bg-gray-900 text-white py-12">
-    <div class="container mx-auto px-6">
+  <footer>
+    <div class="max-w-7xl mx-auto px-6 py-12 rounded-lg" :style="blockStyles">
       <div class="grid md:grid-cols-3 gap-8">
         <!-- Colonna 1: Info azienda -->
         <div>
+          <!-- Titolo sezione (opzionale) -->
+          <h4
+            v-if="block.content.companyTitle"
+            :contenteditable="editable"
+            @blur="updateContent('companyTitle', $event.target.innerText)"
+            class="text-lg font-semibold mb-4 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+          >
+            {{ block.content.companyTitle }}
+          </h4>
+          <!-- Nome azienda -->
           <h3
             :contenteditable="editable"
             @blur="updateContent('companyName', $event.target.innerText)"
@@ -11,6 +21,7 @@
           >
             {{ block.content.companyName }}
           </h3>
+          <!-- Descrizione -->
           <p
             :contenteditable="editable"
             @blur="updateContent('companyDescription', $event.target.innerText)"
@@ -55,29 +66,11 @@
           >
             {{ block.content.contactTitle }}
           </h4>
-          <div class="space-y-2 text-gray-400">
-            <p
-              :contenteditable="editable"
-              @blur="updateContent('email', $event.target.innerText)"
-              class="outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
-            >
-              {{ block.content.email }}
-            </p>
-            <p
-              :contenteditable="editable"
-              @blur="updateContent('phone', $event.target.innerText)"
-              class="outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
-            >
-              {{ block.content.phone }}
-            </p>
-            <p
-              :contenteditable="editable"
-              @blur="updateContent('address', $event.target.innerText)"
-              class="outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
-            >
-              {{ block.content.address }}
-            </p>
-          </div>
+          <!-- Rich text per contatti -->
+          <div
+            class="text-gray-400 prose prose-sm prose-invert max-w-none"
+            v-html="contactContent"
+          ></div>
         </div>
       </div>
 
@@ -96,6 +89,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   block: {
     type: Object,
@@ -108,6 +103,36 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+const blockStyles = computed(() => {
+  const styles = props.block.styles || {}
+  return {
+    backgroundColor: styles.backgroundColor || '#1F2937', // gray-900 di default
+    color: styles.textColor || '#FFFFFF', // bianco di default
+    padding: styles.padding || undefined
+  }
+})
+
+// Computed per gestire retrocompatibilità
+const contactContent = computed(() => {
+  // Se esiste contactText, usalo
+  if (props.block.content.contactText) {
+    return props.block.content.contactText
+  }
+
+  // Altrimenti genera HTML dai vecchi campi email/phone/address
+  let parts = []
+  if (props.block.content.email) {
+    parts.push(`<p><strong>Email:</strong> <a href="mailto:${props.block.content.email}">${props.block.content.email}</a></p>`)
+  }
+  if (props.block.content.phone) {
+    parts.push(`<p><strong>Telefono:</strong> <a href="tel:${props.block.content.phone.replace(/\s/g, '')}">${props.block.content.phone}</a></p>`)
+  }
+  if (props.block.content.address) {
+    parts.push(`<p><strong>Indirizzo:</strong> ${props.block.content.address}</p>`)
+  }
+  return parts.join('')
+})
 
 const updateContent = (field, value) => {
   const updatedBlock = {
