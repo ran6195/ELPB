@@ -1,6 +1,6 @@
 <template>
   <div class="services-grid-block">
-    <div class="max-w-7xl mx-auto px-6 py-16 rounded-lg" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <!-- Titolo sezione -->
       <h2
         v-if="block.content.title"
@@ -16,7 +16,7 @@
         <div
           v-for="(service, index) in block.content.services"
           :key="index"
-          class="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:scale-105 border-2 border-transparent hover:border-primary-500"
+          :class="['bg-white shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:scale-105 border-2 border-transparent hover:border-primary-500', roundedCorners ? 'rounded-lg' : '']"
         >
           <!-- Immagine -->
           <div class="relative h-48 bg-gray-200 overflow-hidden">
@@ -78,6 +78,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

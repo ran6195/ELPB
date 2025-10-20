@@ -8,13 +8,58 @@
             <h1 class="text-2xl font-semibold text-gray-900 mb-1">Le Mie Landing Pages</h1>
             <p class="text-gray-500 text-sm">Crea e gestisci le tue landing pages</p>
           </div>
-          <button
-            @click="createNewPage"
-            class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-          >
-            <span class="text-lg">+</span>
-            <span>Nuova Pagina</span>
-          </button>
+          <div class="flex items-center gap-4">
+            <!-- User info -->
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <p class="text-sm font-medium text-gray-900">{{ authStore.user?.name }}</p>
+                <div class="flex items-center gap-2 justify-end">
+                  <span
+                    :class="{
+                      'bg-purple-100 text-purple-700': authStore.isAdmin,
+                      'bg-blue-100 text-blue-700': authStore.isCompany,
+                      'bg-gray-100 text-gray-700': authStore.isUser
+                    }"
+                    class="text-xs px-2 py-0.5 rounded-md font-medium"
+                  >
+                    {{ authStore.user?.role }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- Buttons -->
+            <div class="flex gap-2">
+              <router-link
+                v-if="authStore.isAdmin"
+                to="/admin"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
+              >
+                <span>⚙️</span>
+                <span>Admin</span>
+              </router-link>
+              <router-link
+                v-if="authStore.isCompany"
+                to="/company"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
+              >
+                <span>👥</span>
+                <span>Gestione</span>
+              </router-link>
+              <button
+                @click="createNewPage"
+                class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
+              >
+                <span class="text-lg">+</span>
+                <span>Nuova Pagina</span>
+              </button>
+              <button
+                @click="handleLogout"
+                class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg font-medium border border-gray-300 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -61,6 +106,15 @@
               <p class="text-gray-400 text-xs">
                 {{ page.blocks?.length || 0 }} blocchi
               </p>
+              <!-- Creata da -->
+              <div class="pt-2 border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                  <span class="font-medium">Creata da:</span> {{ page.user?.name || 'Sconosciuto' }}
+                </p>
+                <p v-if="page.company || authStore.isAdmin" class="text-xs text-gray-500">
+                  <span class="font-medium">Società:</span> {{ page.company?.name || 'Nessuna' }}
+                </p>
+              </div>
             </div>
 
             <!-- BOTTONI RIORGANIZZATI -->
@@ -120,9 +174,11 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePageStore } from '../stores/pageStore'
+import { useAuthStore } from '../stores/authStore'
 
 const router = useRouter()
 const pageStore = usePageStore()
+const authStore = useAuthStore()
 
 onMounted(() => {
   pageStore.fetchPages()
@@ -152,5 +208,12 @@ const deletePage = async (id) => {
 
 const viewPublicPage = (slug) => {
   router.push(`/p/${slug}`)
+}
+
+const handleLogout = () => {
+  if (confirm('Sei sicuro di voler uscire?')) {
+    authStore.logout()
+    router.push('/login')
+  }
 }
 </script>

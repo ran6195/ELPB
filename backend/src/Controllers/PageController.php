@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\Page;
+use App\Models\User;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -10,7 +11,30 @@ class PageController
 {
     public function index(Request $request, Response $response)
     {
-        $pages = Page::with('blocks')->orderBy('created_at', 'desc')->get();
+        $user = $request->getAttribute('user');
+
+        if (!$user) {
+            $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+
+        // Filtra le pagine in base al ruolo
+        $query = Page::with(['blocks', 'company', 'user']);
+
+        if ($user->isAdmin()) {
+            // Admin vede tutte le pagine
+            $pages = $query->orderBy('created_at', 'desc')->get();
+        } elseif ($user->isCompany()) {
+            // Company vede solo le pagine della sua azienda
+            $pages = $query->where('company_id', $user->company_id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } else {
+            // User vede solo le sue pagine
+            $pages = $query->where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
 
         $response->getBody()->write(json_encode($pages));
         return $response->withHeader('Content-Type', 'application/json');
@@ -18,11 +42,18 @@ class PageController
 
     public function show(Request $request, Response $response, array $args)
     {
-        $page = Page::with('blocks')->find($args['id']);
+        $user = $request->getAttribute('user');
+        $page = Page::with(['blocks', 'company', 'user'])->find($args['id']);
 
         if (!$page) {
             $response->getBody()->write(json_encode(['error' => 'Page not found']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Controlla i permessi
+        if ($user && !$user->canViewPage($page)) {
+            $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
         }
 
         $response->getBody()->write(json_encode($page));
@@ -31,6 +62,13 @@ class PageController
 
     public function store(Request $request, Response $response)
     {
+        $user = $request->getAttribute('user');
+
+        if (!$user) {
+            $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+
         $data = json_decode($request->getBody()->getContents(), true);
 
         // Validate required fields
@@ -47,14 +85,16 @@ class PageController
             $counter++;
         }
 
-        // Create page
+        // Create page con company_id e user_id
         $page = Page::create([
             'title' => $data['title'],
             'slug' => $slug,
             'meta_title' => $data['meta_title'] ?? null,
             'meta_description' => $data['meta_description'] ?? null,
             'is_published' => $data['is_published'] ?? false,
-            'styles' => $data['styles'] ?? null
+            'styles' => $data['styles'] ?? null,
+            'company_id' => $user->company_id,
+            'user_id' => $user->id
         ]);
 
         // Create blocks if provided
@@ -78,11 +118,18 @@ class PageController
 
     public function update(Request $request, Response $response, array $args)
     {
+        $user = $request->getAttribute('user');
         $page = Page::find($args['id']);
 
         if (!$page) {
             $response->getBody()->write(json_encode(['error' => 'Page not found']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Controlla i permessi
+        if (!$user || !$user->canEditPage($page)) {
+            $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
         }
 
         $data = json_decode($request->getBody()->getContents(), true);
@@ -122,11 +169,18 @@ class PageController
 
     public function delete(Request $request, Response $response, array $args)
     {
+        $user = $request->getAttribute('user');
         $page = Page::find($args['id']);
 
         if (!$page) {
             $response->getBody()->write(json_encode(['error' => 'Page not found']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Controlla i permessi
+        if (!$user || !$user->canEditPage($page)) {
+            $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
         }
 
         $page->delete();
@@ -148,6 +202,65 @@ class PageController
         }
 
         $response->getBody()->write(json_encode($page));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Reassign page to another user (company manager)
+     */
+    public function reassignPage(Request $request, Response $response, array $args)
+    {
+        $currentUser = $request->getAttribute('user');
+        $pageId = $args['id'];
+        $page = Page::find($pageId);
+
+        if (!$page) {
+            $response->getBody()->write(json_encode(['error' => 'Page not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Solo company manager può riassegnare pagine della sua company
+        if (!$currentUser || (!$currentUser->isCompany() && !$currentUser->isAdmin())) {
+            $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        // Verifica che la pagina appartenga alla company del manager
+        if ($currentUser->isCompany() && $page->company_id !== $currentUser->company_id) {
+            $response->getBody()->write(json_encode(['error' => 'Page does not belong to your company']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        $data = json_decode($request->getBody()->getContents(), true);
+
+        if (!isset($data['user_id']) || $data['user_id'] === null) {
+            $response->getBody()->write(json_encode(['error' => 'user_id is required and cannot be null']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        $newUserId = $data['user_id'];
+        $newUser = User::find($newUserId);
+
+        if (!$newUser) {
+            $response->getBody()->write(json_encode(['error' => 'Target user not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Verifica che il nuovo utente appartenga alla stessa company
+        if ($currentUser->isCompany() && $newUser->company_id !== $currentUser->company_id) {
+            $response->getBody()->write(json_encode(['error' => 'Target user does not belong to your company']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        $page->user_id = $newUserId;
+        $page->save();
+
+        $page->load(['blocks', 'company', 'user']);
+
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'page' => $page
+        ]));
         return $response->withHeader('Content-Type', 'application/json');
     }
 }

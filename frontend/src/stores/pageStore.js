@@ -102,6 +102,23 @@ export const usePageStore = defineStore('page', {
         console.error('Error submitting lead:', error)
         throw error
       }
+    },
+
+    async reassignPage(pageId, userId) {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await axios.put(`${API_URL}/company/pages/${pageId}/reassign`, {
+          user_id: userId
+        })
+        return response.data
+      } catch (error) {
+        this.error = error.message
+        console.error('Error reassigning page:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
     }
   }
 })

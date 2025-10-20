@@ -1,6 +1,6 @@
 <template>
   <div class="hero-block">
-    <div class="max-w-7xl mx-auto px-6 py-20 text-center rounded-lg" :style="combinedStyles">
+    <div :class="['max-w-7xl mx-auto px-6 py-20 text-center', roundedCorners ? 'rounded-lg' : '']" :style="combinedStyles">
       <h1
         v-if="editable"
         contenteditable="true"
@@ -27,7 +27,7 @@
 
       <a
         :href="block.content.buttonLink"
-        class="inline-block bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+        :class="['inline-block bg-white text-indigo-600 px-8 py-3 font-semibold hover:bg-gray-100 transition', roundedCorners ? 'rounded-lg' : '']"
       >
         {{ block.content.buttonText }}
       </a>
@@ -46,6 +46,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

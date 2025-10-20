@@ -1,6 +1,6 @@
 <template>
   <div class="features-block">
-    <div class="max-w-7xl mx-auto px-6 py-16 rounded-lg" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <!-- Titolo opzionale -->
       <h2
         v-if="block.content.title"
@@ -71,6 +71,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

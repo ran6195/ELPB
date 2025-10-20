@@ -14,7 +14,9 @@ class Page extends Model
         'meta_title',
         'meta_description',
         'is_published',
-        'styles'
+        'styles',
+        'company_id',
+        'user_id'
     ];
 
     protected $casts = [
@@ -27,5 +29,15 @@ class Page extends Model
     public function blocks()
     {
         return $this->hasMany(Block::class)->orderBy('order');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

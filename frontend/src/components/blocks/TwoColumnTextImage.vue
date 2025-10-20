@@ -1,6 +1,12 @@
 <template>
   <div>
-    <div class="max-w-7xl mx-auto px-6 py-12 rounded-lg" :style="blockStyles">
+    <div
+      :class="[
+        'max-w-7xl mx-auto px-6 py-12',
+        roundedCorners ? 'rounded-lg' : ''
+      ]"
+      :style="blockStyles"
+    >
     <div class="grid md:grid-cols-2 gap-8 items-center">
       <!-- Colonna testo (sinistra) -->
       <div>
@@ -26,11 +32,17 @@
           v-if="block.content.image"
           :src="block.content.image"
           alt="Immagine sezione"
-          class="w-full h-auto rounded-lg shadow-lg"
+          :class="[
+            'w-full h-auto shadow-lg',
+            roundedCorners ? 'rounded-lg' : ''
+          ]"
         />
         <div
           v-else
-          class="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center"
+          :class="[
+            'w-full h-64 bg-gray-200 flex items-center justify-center',
+            roundedCorners ? 'rounded-lg' : ''
+          ]"
         >
           <p class="text-gray-400">Carica un'immagine</p>
         </div>
@@ -51,6 +63,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

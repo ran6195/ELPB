@@ -3,6 +3,7 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
+use App\Middleware\AuthMiddleware;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -47,25 +48,48 @@ $app->options('/{routes:.+}', function (Request $request, Response $response) {
 
 // Routes
 $app->get('/', function (Request $request, Response $response) {
-    $response->getBody()->write(json_encode(['message' => 'Landing Page Builder API']));
+    $response->getBody()->write(json_encode(['message' => 'Landing Page Builder API - Authentication Enabled']));
     return $response->withHeader('Content-Type', 'application/json');
 });
 
-// Pages routes
-$app->get('/api/pages', '\App\Controllers\PageController:index');
-$app->get('/api/pages/{id}', '\App\Controllers\PageController:show');
-$app->post('/api/pages', '\App\Controllers\PageController:store');
-$app->put('/api/pages/{id}', '\App\Controllers\PageController:update');
-$app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete');
+// ===== AUTH ROUTES (pubbliche) =====
+$app->post('/api/auth/login', '\App\Controllers\AuthController:login');
+$app->post('/api/auth/register', '\App\Controllers\AuthController:register');
 
-// Public page route (by slug)
+// ===== PROTECTED ROUTES (richiedono autenticazione) =====
+// Auth routes protette
+$app->get('/api/auth/me', '\App\Controllers\AuthController:me')->add(AuthMiddleware::class);
+$app->get('/api/auth/companies', '\App\Controllers\AuthController:getCompanies')->add(AuthMiddleware::class);
+$app->get('/api/auth/users', '\App\Controllers\AuthController:getUsers')->add(AuthMiddleware::class);
+
+// Admin routes (solo admin)
+$app->post('/api/admin/companies', '\App\Controllers\AuthController:createCompany')->add(AuthMiddleware::class);
+$app->delete('/api/admin/companies/{id}', '\App\Controllers\AuthController:deleteCompany')->add(AuthMiddleware::class);
+$app->put('/api/admin/users/{id}', '\App\Controllers\AuthController:updateUser')->add(AuthMiddleware::class);
+$app->delete('/api/admin/users/{id}', '\App\Controllers\AuthController:deleteUser')->add(AuthMiddleware::class);
+
+// Company routes (solo company manager)
+$app->post('/api/company/users', '\App\Controllers\AuthController:createUserInCompany')->add(AuthMiddleware::class);
+$app->delete('/api/company/users/{id}', '\App\Controllers\AuthController:deleteUserFromCompany')->add(AuthMiddleware::class);
+$app->get('/api/company/users-with-pages', '\App\Controllers\AuthController:getUsersWithPagesCount')->add(AuthMiddleware::class);
+$app->put('/api/company/pages/{id}/reassign', '\App\Controllers\PageController:reassignPage')->add(AuthMiddleware::class);
+
+// Pages routes (tutte protette)
+$app->get('/api/pages', '\App\Controllers\PageController:index')->add(AuthMiddleware::class);
+$app->get('/api/pages/{id}', '\App\Controllers\PageController:show')->add(AuthMiddleware::class);
+$app->post('/api/pages', '\App\Controllers\PageController:store')->add(AuthMiddleware::class);
+$app->put('/api/pages/{id}', '\App\Controllers\PageController:update')->add(AuthMiddleware::class);
+$app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(AuthMiddleware::class);
+
+// Upload routes (protette)
+$app->post('/api/upload/image', '\App\Controllers\UploadController:uploadImage')->add(AuthMiddleware::class);
+
+// ===== PUBLIC ROUTES (accessibili senza auth) =====
+// Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti
 $app->get('/api/page/{slug}', '\App\Controllers\PageController:showBySlug');
 
-// Leads routes
+// Leads routes - Form submission pubblica
 $app->post('/api/leads', '\App\Controllers\LeadController:store');
-
-// Upload routes
-$app->post('/api/upload/image', '\App\Controllers\UploadController:uploadImage');
 
 // Debug routes (rimuovere in produzione dopo il debug)
 $app->get('/api/debug/database', '\App\Controllers\DebugController:checkDatabase');

@@ -1,6 +1,6 @@
 <template>
   <div class="cta-block">
-    <div class="max-w-7xl mx-auto px-6 py-16 text-center rounded-lg" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-6 py-16 text-center', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <!-- Titolo -->
       <h2
         :contenteditable="editable"
@@ -23,7 +23,7 @@
       <!-- Pulsante CTA -->
       <a
         :href="block.content.buttonLink || '#'"
-        class="inline-block bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg hover:shadow-xl"
+        :class="['inline-block bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 text-lg font-semibold transition-colors shadow-lg hover:shadow-xl', roundedCorners ? 'rounded-lg' : '']"
       >
         <span
           :contenteditable="editable"
@@ -58,6 +58,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

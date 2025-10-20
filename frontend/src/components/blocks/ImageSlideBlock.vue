@@ -1,9 +1,12 @@
 <template>
   <div class="image-slide-block">
     <!-- Wrapper condizionale per larghezza limitata -->
-    <div :class="block.content.fullWidth === false ? 'max-w-7xl mx-auto px-6' : ''">
+    <div :class="block.content.fullWidth === false ? 'max-w-7xl mx-auto' : ''">
       <div
-        class="relative w-full overflow-hidden rounded-lg"
+        :class="[
+          'relative w-full overflow-hidden',
+          roundedCorners ? 'rounded-lg' : ''
+        ]"
         :style="slideStyles"
       >
         <!-- Immagine -->
@@ -73,6 +76,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

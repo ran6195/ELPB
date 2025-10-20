@@ -1,6 +1,6 @@
 <template>
   <nav :style="{ marginTop: block.content.marginTop || '0px' }">
-    <div class="max-w-7xl mx-auto px-6 py-4 rounded-lg" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-6 py-4', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <div class="flex items-center justify-between">
         <!-- Logo -->
         <a
@@ -49,6 +49,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

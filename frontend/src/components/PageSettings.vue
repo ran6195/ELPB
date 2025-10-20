@@ -68,7 +68,7 @@
       </div>
 
       <!-- Font Family -->
-      <div>
+      <div class="mb-5">
         <label class="block text-xs font-medium text-gray-700 mb-2">Font della Pagina</label>
         <select
           v-model="fontFamily"
@@ -91,6 +91,30 @@
           <option value="Ubuntu">Ubuntu</option>
         </select>
         <p class="text-xs text-gray-500 mt-1">Font da Google Fonts applicato a tutta la pagina</p>
+      </div>
+
+      <!-- Rounded Corners -->
+      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-gray-900">Angoli Arrotondati</p>
+          <p class="text-xs text-gray-500 mt-0.5">
+            {{ roundedCorners ? 'Blocchi con angoli arrotondati' : 'Blocchi con angoli quadrati' }}
+          </p>
+        </div>
+        <button
+          @click="roundedCorners = !roundedCorners"
+          :class="[
+            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            roundedCorners ? 'bg-primary-600' : 'bg-gray-200'
+          ]"
+        >
+          <span
+            :class="[
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              roundedCorners ? 'translate-x-6' : 'translate-x-1'
+            ]"
+          />
+        </button>
       </div>
     </div>
 
@@ -228,6 +252,18 @@ const fontFamily = computed({
       localPage.value.styles = {}
     }
     localPage.value.styles.fontFamily = value
+  }
+})
+
+const roundedCorners = computed({
+  get() {
+    return localPage.value.styles?.roundedCorners ?? true
+  },
+  set(value) {
+    if (!localPage.value.styles) {
+      localPage.value.styles = {}
+    }
+    localPage.value.styles.roundedCorners = value
   }
 })
 

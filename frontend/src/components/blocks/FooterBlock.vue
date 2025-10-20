@@ -1,6 +1,6 @@
 <template>
   <footer>
-    <div class="max-w-7xl mx-auto px-6 py-12 rounded-lg" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-6 py-12', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <div class="grid md:grid-cols-3 gap-8">
         <!-- Colonna 1: Info azienda -->
         <div>
@@ -99,6 +99,10 @@ const props = defineProps({
   editable: {
     type: Boolean,
     default: false
+  },
+  roundedCorners: {
+    type: Boolean,
+    default: true
   }
 })
 

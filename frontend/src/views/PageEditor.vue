@@ -122,6 +122,7 @@
                 :is="getBlockComponent(element.type)"
                 :block="element"
                 :editable="true"
+                :rounded-corners="page.styles?.roundedCorners ?? true"
                 @update="(updatedBlock) => updateBlockInline(index, updatedBlock)"
               />
             </div>
@@ -209,7 +210,7 @@ const page = ref({
   meta_title: '',
   meta_description: '',
   is_published: false,
-  styles: { backgroundColor: '#FFFFFF', blockGap: 15, fontFamily: '' },
+  styles: { backgroundColor: '#FFFFFF', blockGap: 15, fontFamily: '', roundedCorners: true },
   blocks: []
 })
 
@@ -242,7 +243,8 @@ onMounted(async () => {
         styles: {
           backgroundColor: data.styles?.backgroundColor || '#FFFFFF',
           blockGap: data.styles?.blockGap ?? 15,
-          fontFamily: data.styles?.fontFamily || ''
+          fontFamily: data.styles?.fontFamily || '',
+          roundedCorners: data.styles?.roundedCorners ?? true
         }
       }
       // Carica il font se specificato

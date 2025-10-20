@@ -20,6 +20,7 @@
           :is="getBlockComponent(block.type)"
           :block="block"
           :editable="false"
+          :rounded-corners="page.styles?.roundedCorners ?? true"
         />
       </div>
     </div>
