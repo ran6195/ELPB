@@ -49,7 +49,8 @@ const blockStyles = computed(() => {
   return {
     backgroundColor: styles.backgroundColor || 'transparent',
     color: styles.textColor || 'inherit',
-    padding: styles.padding || undefined // usa il padding di Tailwind (py-12 px-6) se non specificato
+    padding: styles.padding || undefined, // usa il padding di Tailwind (py-12 px-6) se non specificato
+    fontFamily: styles.fontFamily || undefined
   }
 })
 

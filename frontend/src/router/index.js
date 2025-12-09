@@ -4,6 +4,7 @@ import PageList from '../views/PageList.vue'
 import PageEditor from '../views/PageEditor.vue'
 import PagePreview from '../views/PagePreview.vue'
 import PublicPage from '../views/PublicPage.vue'
+import ThankYouPage from '../views/ThankYouPage.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import AdminPanel from '../views/AdminPanel.vue'
@@ -51,6 +52,11 @@ const routes = [
     name: 'PagePreview',
     component: PagePreview,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/thank-you',
+    name: 'ThankYou',
+    component: ThankYouPage
   },
   {
     path: '/p/:slug',

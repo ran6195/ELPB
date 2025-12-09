@@ -13,7 +13,19 @@ class AuthMiddleware
 {
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
+        // Prova a leggere l'header Authorization in diversi modi
+        // (necessario per compatibilità con Apache + FastCGI/mod_php)
         $authHeader = $request->getHeaderLine('Authorization');
+
+        // Fallback 1: Controlla $_SERVER['HTTP_AUTHORIZATION']
+        if (empty($authHeader) && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+        }
+
+        // Fallback 2: Controlla REDIRECT_HTTP_AUTHORIZATION (mod_rewrite)
+        if (empty($authHeader) && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
 
         if (empty($authHeader)) {
             $response = new SlimResponse();

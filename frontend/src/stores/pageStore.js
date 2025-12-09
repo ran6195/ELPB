@@ -1,9 +1,7 @@
 import {
   defineStore
 } from 'pinia'
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+import apiClient from '../api/axios'
 
 export const usePageStore = defineStore('page', {
   state: () => ({
@@ -18,7 +16,7 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.get(`${API_URL}/pages`)
+        const response = await apiClient.get('/pages')
         this.pages = response.data
       } catch (error) {
         this.error = error.message
@@ -32,7 +30,7 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.get(`${API_URL}/pages/${id}`)
+        const response = await apiClient.get(`/pages/${id}`)
         this.currentPage = response.data
         return response.data
       } catch (error) {
@@ -47,7 +45,7 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.post(`${API_URL}/pages`, pageData)
+        const response = await apiClient.post('/pages', pageData)
         this.pages.unshift(response.data)
         return response.data
       } catch (error) {
@@ -63,7 +61,7 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.put(`${API_URL}/pages/${id}`, pageData)
+        const response = await apiClient.put(`/pages/${id}`, pageData)
         const index = this.pages.findIndex(p => p.id === id)
         if (index !== -1) {
           this.pages[index] = response.data
@@ -83,7 +81,7 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
-        await axios.delete(`${API_URL}/pages/${id}`)
+        await apiClient.delete(`/pages/${id}`)
         this.pages = this.pages.filter(p => p.id !== id)
       } catch (error) {
         this.error = error.message
@@ -96,7 +94,7 @@ export const usePageStore = defineStore('page', {
 
     async submitLead(leadData) {
       try {
-        const response = await axios.post(`${API_URL}/leads`, leadData)
+        const response = await apiClient.post('/leads', leadData)
         return response.data
       } catch (error) {
         console.error('Error submitting lead:', error)
@@ -108,13 +106,42 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.put(`${API_URL}/company/pages/${pageId}/reassign`, {
+        const response = await apiClient.put(`/company/pages/${pageId}/reassign`, {
           user_id: userId
         })
         return response.data
       } catch (error) {
         this.error = error.message
         console.error('Error reassigning page:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchLeads() {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await apiClient.get('/leads')
+        return response.data
+      } catch (error) {
+        this.error = error.message
+        console.error('Error fetching leads:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteLead(leadId) {
+      this.loading = true
+      this.error = null
+      try {
+        await apiClient.delete(`/leads/${leadId}`)
+      } catch (error) {
+        this.error = error.message
+        console.error('Error deleting lead:', error)
         throw error
       } finally {
         this.loading = false

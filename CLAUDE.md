@@ -218,3 +218,4 @@ Upload endpoint exists at `POST /api/upload/image` but implementation details in
 - **Optimistic Updates**: Frontend updates local state before API confirmation for better UX
 - **Component Reuse**: Same block components used in editor, preview, and public views with different props
 - **Eloquent Relationships**: Always eager load blocks with `->with('blocks')` to avoid N+1 queries
+- ricorda che in esercizio siamo nella sottocartella ELPB

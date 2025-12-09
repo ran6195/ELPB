@@ -1,4 +1,31 @@
 /**
+ * Lista di Google Fonts popolari da offrire come opzioni
+ */
+export const popularGoogleFonts = [
+  { name: 'Default (Ereditato)', value: '' },
+  { name: 'Inter', value: 'Inter' },
+  { name: 'Roboto', value: 'Roboto' },
+  { name: 'Open Sans', value: 'Open Sans' },
+  { name: 'Lato', value: 'Lato' },
+  { name: 'Montserrat', value: 'Montserrat' },
+  { name: 'Poppins', value: 'Poppins' },
+  { name: 'Raleway', value: 'Raleway' },
+  { name: 'Nunito', value: 'Nunito' },
+  { name: 'Playfair Display', value: 'Playfair Display' },
+  { name: 'Merriweather', value: 'Merriweather' },
+  { name: 'PT Sans', value: 'PT Sans' },
+  { name: 'Oswald', value: 'Oswald' },
+  { name: 'Source Sans Pro', value: 'Source Sans Pro' },
+  { name: 'Rubik', value: 'Rubik' },
+  { name: 'Work Sans', value: 'Work Sans' },
+  { name: 'Ubuntu', value: 'Ubuntu' },
+  { name: 'Quicksand', value: 'Quicksand' },
+  { name: 'Bebas Neue', value: 'Bebas Neue' },
+  { name: 'Dancing Script', value: 'Dancing Script' },
+  { name: 'Caveat', value: 'Caveat' }
+]
+
+/**
  * Carica dinamicamente un font da Google Fonts
  * @param {string} fontFamily - Nome del font da caricare
  */

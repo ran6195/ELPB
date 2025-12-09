@@ -113,7 +113,8 @@ const blockStyles = computed(() => {
   return {
     backgroundColor: styles.backgroundColor || '#1F2937', // gray-900 di default
     color: styles.textColor || '#FFFFFF', // bianco di default
-    padding: styles.padding || undefined
+    padding: styles.padding || undefined,
+    fontFamily: styles.fontFamily || undefined
   }
 })
 

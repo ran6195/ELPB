@@ -27,7 +27,8 @@
 
       <a
         :href="block.content.buttonLink"
-        :class="['inline-block bg-white text-indigo-600 px-8 py-3 font-semibold hover:bg-gray-100 transition', roundedCorners ? 'rounded-lg' : '']"
+        class="inline-block font-semibold transition-all hover:opacity-90"
+        :style="buttonStyles"
       >
         {{ block.content.buttonText }}
       </a>
@@ -71,6 +72,9 @@ const combinedStyles = computed(() => {
   if (blockStyles.padding) {
     styles.padding = blockStyles.padding
   }
+  if (blockStyles.fontFamily) {
+    styles.fontFamily = blockStyles.fontFamily
+  }
 
   // Aggiungi background image se presente
   if (props.block.content.backgroundImage) {
@@ -80,6 +84,40 @@ const combinedStyles = computed(() => {
   }
 
   return styles
+})
+
+const buttonStyles = computed(() => {
+  const btnStyle = props.block.content.buttonStyle || {
+    backgroundColor: '#4F46E5',
+    textColor: '#FFFFFF',
+    fontSize: '16px',
+    padding: '12px 32px',
+    borderRadius: '8px',
+    borderWidth: '0px',
+    borderColor: 'transparent',
+    borderStyle: 'solid',
+    shadow: 'md'
+  }
+
+  const shadowMap = {
+    none: 'none',
+    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+  }
+
+  return {
+    backgroundColor: btnStyle.backgroundColor,
+    color: btnStyle.textColor,
+    fontSize: btnStyle.fontSize,
+    padding: btnStyle.padding,
+    borderRadius: btnStyle.borderRadius,
+    borderWidth: btnStyle.borderWidth,
+    borderColor: btnStyle.borderColor,
+    borderStyle: btnStyle.borderStyle,
+    boxShadow: shadowMap[btnStyle.shadow] || shadowMap.md
+  }
 })
 
 const updateContent = (field, value) => {

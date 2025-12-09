@@ -51,15 +51,99 @@
       </div>
     </div>
 
-    <div class="flex h-[calc(100vh-73px)]">
+    <!-- Toolbar preview device -->
+    <div class="bg-white border-b border-gray-200 px-8 py-3">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <!-- Device selector -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-gray-600 mr-2">Anteprima:</span>
+          <button
+            @click="viewMode = 'desktop'"
+            :class="[
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+              viewMode === 'desktop'
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            Desktop
+          </button>
+          <button
+            @click="viewMode = 'tablet'"
+            :class="[
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+              viewMode === 'tablet'
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            Tablet
+          </button>
+          <button
+            @click="viewMode = 'mobile'"
+            :class="[
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+              viewMode === 'mobile'
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            Mobile
+          </button>
+        </div>
+
+        <!-- Clean view toggle -->
+        <button
+          @click="cleanView = !cleanView"
+          :class="[
+            'px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            cleanView
+              ? 'bg-primary-600 text-white shadow-sm'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          ]"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+          {{ cleanView ? 'Mostra Pannelli' : 'Vista Pulita' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="flex h-[calc(100vh-126px)]">
       <!-- Sidebar blocchi -->
-      <div class="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto">
-        <h3 class="font-semibold text-gray-900 mb-6 text-sm uppercase tracking-wide">
+      <div v-if="!cleanView" class="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+        <h3 class="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wide">
           Blocchi Disponibili
         </h3>
+
+        <!-- Campo di ricerca -->
+        <div class="mb-4">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cerca blocchi..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+          />
+        </div>
+
+        <!-- Lista blocchi filtrata -->
         <div class="space-y-3">
+          <div v-if="filteredBlockTypes.length === 0" class="text-center py-8 text-gray-400 text-sm">
+            Nessun blocco trovato
+          </div>
           <button
-            v-for="blockType in blockTypes"
+            v-for="blockType in filteredBlockTypes"
             :key="blockType.type"
             @click="addBlock(blockType.type)"
             class="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
@@ -71,19 +155,27 @@
       </div>
 
       <!-- Canvas editor -->
-      <div
-        class="flex-1 overflow-y-auto"
-        :style="{
-          backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
-          fontFamily: page.styles?.fontFamily || 'inherit'
-        }"
-      >
+      <div class="flex-1 overflow-y-auto bg-gray-100">
+        <!-- Wrapper per simulare device -->
         <div
-          v-if="page.blocks.length === 0"
-          class="flex items-center justify-center h-96 text-gray-400"
+          :class="[
+            'mx-auto transition-all duration-300',
+            viewMode === 'desktop' ? 'w-full' : '',
+            viewMode === 'tablet' ? 'max-w-3xl shadow-xl my-8' : '',
+            viewMode === 'mobile' ? 'max-w-sm shadow-xl my-8' : ''
+          ]"
+          :style="{
+            backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
+            fontFamily: page.styles?.fontFamily || 'inherit',
+            minHeight: viewMode === 'desktop' ? '100%' : 'auto'
+          }"
         >
-          <p class="text-base">Clicca su un blocco nella sidebar per iniziare</p>
-        </div>
+          <div
+            v-if="page.blocks.length === 0"
+            class="flex items-center justify-center h-96 text-gray-400"
+          >
+            <p class="text-base">Clicca su un blocco nella sidebar per iniziare</p>
+          </div>
 
         <!-- Blocchi -->
         <draggable
@@ -91,18 +183,20 @@
           item-key="id"
           @end="updateBlockOrder"
           @move="onBlockMove"
+          :disabled="cleanView"
           class="min-h-screen flex flex-col"
           :style="{ gap: `${page.styles?.blockGap ?? 15}px` }"
         >
           <template #item="{ element, index }">
             <div
               :class="[
-                'relative group border-2 border-transparent hover:border-primary-300 transition-colors',
-                element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move'
+                'relative',
+                !cleanView && 'group border-2 border-transparent hover:border-primary-300 transition-colors',
+                !cleanView && (element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move')
               ]"
             >
               <!-- Controlli blocco -->
-              <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-3 z-10">
+              <div v-if="!cleanView" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-3 z-10">
                 <button
                   @click="editBlock(index)"
                   class="bg-white text-gray-700 px-4 py-2 rounded-lg shadow-md text-sm font-medium hover:bg-gray-50 border border-gray-300 transition-colors"
@@ -123,16 +217,18 @@
                 :block="element"
                 :editable="true"
                 :rounded-corners="page.styles?.roundedCorners ?? true"
+                :page="page"
                 @update="(updatedBlock) => updateBlockInline(index, updatedBlock)"
               />
             </div>
           </template>
         </draggable>
+        </div>
       </div>
 
       <!-- Pannello proprietà blocco -->
       <div
-        v-if="selectedBlockIndex !== null"
+        v-if="selectedBlockIndex !== null && !cleanView"
         class="w-96 bg-white border-l border-gray-200 p-6 overflow-y-auto"
       >
         <div class="flex justify-between items-center mb-6">
@@ -156,7 +252,7 @@
 
       <!-- Pannello impostazioni pagina -->
       <div
-        v-else-if="showSettings"
+        v-else-if="showSettings && !cleanView"
         class="w-96 bg-white border-l border-gray-200 p-6 overflow-y-auto"
       >
         <div class="flex justify-between items-center mb-6">
@@ -192,10 +288,14 @@ import TextBlock from '../components/blocks/TextBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
 import TwoColumnImageText from '../components/blocks/TwoColumnImageText.vue'
+import VideoBlock from '../components/blocks/VideoBlock.vue'
+import VideoInfoBlock from '../components/blocks/VideoInfoBlock.vue'
 import FooterBlock from '../components/blocks/FooterBlock.vue'
 import FeaturesBlock from '../components/blocks/FeaturesBlock.vue'
 import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
+import SliderBlock from '../components/blocks/SliderBlock.vue'
+import MapBlock from '../components/blocks/MapBlock.vue'
 import BlockEditor from '../components/BlockEditor.vue'
 import PageSettings from '../components/PageSettings.vue'
 import { loadGoogleFont } from '../utils/googleFonts'
@@ -217,6 +317,9 @@ const page = ref({
 const selectedBlockIndex = ref(null)
 const saveStatus = ref('saved') // 'saved', 'saving', 'error'
 const showSettings = ref(false)
+const searchQuery = ref('')
+const viewMode = ref('desktop') // 'desktop', 'tablet', 'mobile'
+const cleanView = ref(false) // modalità vista pulita
 let saveTimeout = null
 let isInitialLoad = ref(true)
 
@@ -224,15 +327,32 @@ const blockTypes = [
   { type: 'header', name: 'Intestazione', description: 'Header/Navbar con logo' },
   { type: 'hero', name: 'Hero', description: 'Sezione principale con titolo e CTA' },
   { type: 'image-slide', name: 'Diapositiva Immagine', description: 'Immagine a schermo intero con overlay opzionale' },
+  { type: 'video', name: 'Video', description: 'Video a schermo intero senza testo' },
   { type: 'text', name: 'Testo', description: 'Blocco di testo semplice' },
   { type: 'features', name: 'Vantaggi', description: 'Griglia 3 colonne con icone e testo' },
   { type: 'services-grid', name: 'Servizi Grid', description: 'Griglia servizi con immagini' },
   { type: 'cta', name: 'Call to Action', description: 'Sezione con pulsante CTA centrato' },
   { type: 'two-column-text-image', name: 'Testo + Immagine', description: 'Testo a sinistra, immagine a destra' },
   { type: 'two-column-image-text', name: 'Immagine + Testo', description: 'Immagine a sinistra, testo a destra' },
+  { type: 'video-info', name: 'Video + Info', description: 'Video a sinistra, informazioni a destra' },
+  { type: 'slider', name: 'Slider', description: 'Slider di immagini configurabile con autoplay' },
+  { type: 'map', name: 'Mappa Google', description: 'Mappa di Google Maps con info contatto' },
   { type: 'form', name: 'Form', description: 'Form di contatto per lead' },
   { type: 'footer', name: 'Footer', description: 'Footer con info azienda e contatti' }
 ]
+
+// Computed property per filtrare i blocchi in base alla ricerca
+const filteredBlockTypes = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return blockTypes
+  }
+
+  const query = searchQuery.value.toLowerCase()
+  return blockTypes.filter(block =>
+    block.name.toLowerCase().includes(query) ||
+    block.description.toLowerCase().includes(query)
+  )
+})
 
 onMounted(async () => {
   if (route.params.id) {
@@ -263,6 +383,14 @@ onMounted(async () => {
 watch(() => page.value.styles?.fontFamily, (newFont) => {
   if (newFont) {
     loadGoogleFont(newFont)
+  }
+})
+
+// Chiudi pannelli quando attivo vista pulita
+watch(cleanView, (isClean) => {
+  if (isClean) {
+    selectedBlockIndex.value = null
+    showSettings.value = false
   }
 })
 
@@ -308,6 +436,15 @@ const addBlock = (type) => {
     }
   }
 
+  // Verifica se è un form e se ne esiste già uno
+  if (type === 'form') {
+    const hasForm = page.value.blocks.some(block => block.type === 'form')
+    if (hasForm) {
+      alert('Puoi aggiungere solo un form per pagina')
+      return
+    }
+  }
+
   const newBlock = {
     id: Date.now(),
     type,
@@ -315,7 +452,8 @@ const addBlock = (type) => {
     styles: {
       backgroundColor: 'transparent',
       textColor: 'inherit',
-      padding: '40px 20px'
+      padding: '40px 20px',
+      fontFamily: ''
     },
     position: {},
     order: page.value.blocks.length
@@ -366,7 +504,18 @@ const getDefaultContent = (type) => {
       subtitle: 'Sottotitolo',
       buttonText: 'Call to Action',
       buttonLink: '#',
-      backgroundImage: ''
+      backgroundImage: '',
+      buttonStyle: {
+        backgroundColor: '#4F46E5',
+        textColor: '#FFFFFF',
+        fontSize: '16px',
+        padding: '12px 32px',
+        borderRadius: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderStyle: 'solid',
+        shadow: 'md'
+      }
     },
     text: {
       title: 'Titolo Sezione',
@@ -383,6 +532,16 @@ const getDefaultContent = (type) => {
       overlayColor: '#000000',
       overlayOpacity: 0.5,
       overlayTextColor: '#FFFFFF'
+    },
+    video: {
+      videoUrl: '',
+      height: '600px',
+      fullWidth: true,
+      autoplay: false,
+      loop: false,
+      muted: false,
+      showControls: true,
+      playOnScroll: false
     },
     features: {
       title: 'I Nostri Vantaggi',
@@ -445,9 +604,69 @@ const getDefaultContent = (type) => {
       title: 'Contattaci',
       fields: [
         { name: 'name', label: 'Nome', type: 'text', required: true },
-        { name: 'email', label: 'Email', type: 'email', required: true }
+        { name: 'email', label: 'Email', type: 'email', required: true },
+        { name: 'phone', label: 'Telefono', type: 'tel', required: true },
+        { name: 'city', label: 'Città', type: 'text', required: true },
+        { name: 'notes', label: 'Note', type: 'textarea', required: false }
       ],
-      buttonText: 'Invia'
+      buttonText: 'Invia',
+      showPrivacy: true,
+      privacyLink: '/privacy-policy',
+      privacyTextColor: '#374151',
+      thankYouUrl: '',
+      enableAppointment: false,
+      appointmentLabel: 'Richiedi un appuntamento'
+    },
+    'video-info': {
+      videoUrl: '',
+      title: 'Visita il nostro Showroom',
+      subtitle: 'Viale Lazio 124/126',
+      mapImage: '',
+      mapLink: 'https://maps.google.com',
+      scheduleText: '<p><strong>Orari di apertura</strong><br>Tutti i giorni dalle 09.30 alle 13.00 e dalle 16.00 alle 20.00.<br>Sabato dalle 9.30 alle 13.00 Pomeriggio chiusi.<br>Domenica chiuso.</p>'
+    },
+    slider: {
+      title: 'La Nostra Gallery',
+      slides: [
+        {
+          image: 'https://placehold.co/800x800',
+          alt: 'Slide 1',
+          title: 'Primo Progetto',
+          description: 'Descrizione del primo progetto realizzato'
+        },
+        {
+          image: 'https://placehold.co/800x800',
+          alt: 'Slide 2',
+          title: 'Secondo Progetto',
+          description: 'Descrizione del secondo progetto realizzato'
+        },
+        {
+          image: 'https://placehold.co/800x800',
+          alt: 'Slide 3',
+          title: 'Terzo Progetto',
+          description: 'Descrizione del terzo progetto realizzato'
+        }
+      ],
+      autoplay: true,
+      autoplayDelay: 3000,
+      loop: true,
+      slidesPerViewDesktop: 3,
+      slideGap: 20,
+      slideHeight: '',
+      slideAspectRatio: 'square',
+      showNavigation: true,
+      showPagination: true
+    },
+    map: {
+      title: 'Dove Siamo',
+      description: 'Vieni a trovarci nel nostro showroom',
+      mapUrl: '',
+      height: '450px',
+      zoom: 15,
+      showContactInfo: true,
+      address: 'Via Example, 123 - 00100 Roma',
+      phone: '+39 123 456 7890',
+      email: 'info@example.com'
     },
     footer: {
       companyTitle: 'La Nostra Azienda',
@@ -473,12 +692,16 @@ const getBlockComponent = (type) => {
     header: HeaderBlock,
     hero: HeroBlock,
     'image-slide': ImageSlideBlock,
+    video: VideoBlock,
     text: TextBlock,
     features: FeaturesBlock,
     'services-grid': ServicesGridBlock,
     cta: CtaBlock,
     'two-column-text-image': TwoColumnTextImage,
     'two-column-image-text': TwoColumnImageText,
+    'video-info': VideoInfoBlock,
+    slider: SliderBlock,
+    map: MapBlock,
     form: FormBlock,
     footer: FooterBlock
   }

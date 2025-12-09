@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+import apiClient from '../api/axios'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -28,8 +26,7 @@ export const useAuthStore = defineStore('auth', {
       if (token && user) {
         this.token = token
         this.user = JSON.parse(user)
-        // Imposta l'header di default per axios
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        // Il token viene gestito automaticamente dall'interceptor di axios
       }
     },
 
@@ -39,10 +36,13 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const response = await axios.post(`${API_URL}/auth/login`, {
+        console.log('[AuthStore] Tentativo di login per:', email)
+        const response = await apiClient.post('/auth/login', {
           email,
           password
         })
+
+        console.log('[AuthStore] Risposta login:', response.data)
 
         if (response.data.success) {
           this.token = response.data.token
@@ -52,17 +52,20 @@ export const useAuthStore = defineStore('auth', {
           localStorage.setItem('token', this.token)
           localStorage.setItem('user', JSON.stringify(this.user))
 
-          // Imposta l'header di default per axios
-          axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+          console.log('[AuthStore] Login riuscito, token salvato:', this.token.substring(0, 20) + '...')
+          console.log('[AuthStore] User salvato:', this.user)
+
+          // Il token viene gestito automaticamente dall'interceptor di axios
 
           return true
         } else {
           this.error = response.data.message || 'Login fallito'
+          console.error('[AuthStore] Login fallito:', this.error)
           return false
         }
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante il login'
-        console.error('Login error:', error)
+        console.error('[AuthStore] Errore login:', error)
         return false
       } finally {
         this.loading = false
@@ -75,11 +78,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const response = await axios.post(`${API_URL}/auth/register`, userData, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.post('/auth/register', userData)
 
         if (response.data.success) {
           return response.data.user
@@ -102,11 +101,7 @@ export const useAuthStore = defineStore('auth', {
 
       this.loading = true
       try {
-        const response = await axios.get(`${API_URL}/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.get('/auth/me')
 
         if (response.data.success) {
           this.user = response.data.user
@@ -135,17 +130,13 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
 
-      delete axios.defaults.headers.common['Authorization']
+      // Il token viene gestito automaticamente dall'interceptor di axios
     },
 
     // Get companies (solo admin)
     async fetchCompanies() {
       try {
-        const response = await axios.get(`${API_URL}/auth/companies`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.get('/auth/companies')
         return response.data
       } catch (error) {
         console.error('Fetch companies error:', error)
@@ -156,11 +147,7 @@ export const useAuthStore = defineStore('auth', {
     // Get users (admin o company manager)
     async fetchUsers() {
       try {
-        const response = await axios.get(`${API_URL}/auth/users`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.get('/auth/users')
         return response.data
       } catch (error) {
         console.error('Fetch users error:', error)
@@ -173,11 +160,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.post(`${API_URL}/admin/companies`, companyData, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.post('/admin/companies', companyData)
         return response.data
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante la creazione dell\'azienda'
@@ -193,11 +176,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.delete(`${API_URL}/admin/companies/${companyId}`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.delete(`/admin/companies/${companyId}`)
         return response.data
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante l\'eliminazione dell\'azienda'
@@ -213,11 +192,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.put(`${API_URL}/admin/users/${userId}`, userData, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.put(`/admin/users/${userId}`, userData)
         return response.data
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante l\'aggiornamento dell\'utente'
@@ -233,11 +208,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.delete(`${API_URL}/admin/users/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.delete(`/admin/users/${userId}`)
         return response.data
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante l\'eliminazione dell\'utente'
@@ -253,11 +224,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.post(`${API_URL}/company/users`, userData, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.post('/company/users', userData)
         return response.data
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante la creazione dell\'utente'
@@ -273,11 +240,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const response = await axios.delete(`${API_URL}/company/users/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.delete(`/company/users/${userId}`)
         return response.data
       } catch (error) {
         this.error = error.response?.data?.message || 'Errore durante l\'eliminazione dell\'utente'
@@ -291,11 +254,7 @@ export const useAuthStore = defineStore('auth', {
     // Company: Get users with pages count
     async getUsersWithPagesCount() {
       try {
-        const response = await axios.get(`${API_URL}/company/users-with-pages`, {
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          }
-        })
+        const response = await apiClient.get('/company/users-with-pages')
         return response.data
       } catch (error) {
         console.error('Get users with pages count error:', error)

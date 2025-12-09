@@ -21,6 +21,7 @@
           :block="block"
           :editable="false"
           :rounded-corners="page.styles?.roundedCorners ?? true"
+          :page="page"
         />
       </div>
     </div>
@@ -43,10 +44,14 @@ import TextBlock from '../components/blocks/TextBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
 import TwoColumnImageText from '../components/blocks/TwoColumnImageText.vue'
+import VideoBlock from '../components/blocks/VideoBlock.vue'
+import VideoInfoBlock from '../components/blocks/VideoInfoBlock.vue'
 import FooterBlock from '../components/blocks/FooterBlock.vue'
 import FeaturesBlock from '../components/blocks/FeaturesBlock.vue'
 import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
+import SliderBlock from '../components/blocks/SliderBlock.vue'
+import MapBlock from '../components/blocks/MapBlock.vue'
 
 const route = useRoute()
 const pageStore = usePageStore()
@@ -81,12 +86,16 @@ const getBlockComponent = (type) => {
     header: HeaderBlock,
     hero: HeroBlock,
     'image-slide': ImageSlideBlock,
+    video: VideoBlock,
     text: TextBlock,
     features: FeaturesBlock,
     'services-grid': ServicesGridBlock,
     cta: CtaBlock,
     'two-column-text-image': TwoColumnTextImage,
     'two-column-image-text': TwoColumnImageText,
+    'video-info': VideoInfoBlock,
+    slider: SliderBlock,
+    map: MapBlock,
     form: FormBlock,
     footer: FooterBlock
   }

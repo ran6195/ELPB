@@ -84,6 +84,10 @@ $app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(A
 // Upload routes (protette)
 $app->post('/api/upload/image', '\App\Controllers\UploadController:uploadImage')->add(AuthMiddleware::class);
 
+// Leads routes (protette - solo per admin)
+$app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);
+$app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(AuthMiddleware::class);
+
 // ===== PUBLIC ROUTES (accessibili senza auth) =====
 // Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti
 $app->get('/api/page/{slug}', '\App\Controllers\PageController:showBySlug');

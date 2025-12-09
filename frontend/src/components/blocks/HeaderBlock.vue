@@ -63,7 +63,8 @@ const blockStyles = computed(() => {
   return {
     backgroundColor: styles.backgroundColor || '#343a40', // bg-dark di Bootstrap
     color: styles.textColor || '#FFFFFF',
-    padding: styles.padding || undefined
+    padding: styles.padding || undefined,
+    fontFamily: styles.fontFamily || undefined
   }
 })
 

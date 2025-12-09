@@ -77,7 +77,8 @@ const blockStyles = computed(() => {
   return {
     backgroundColor: styles.backgroundColor || 'transparent',
     color: styles.textColor || 'inherit',
-    padding: styles.padding || undefined
+    padding: styles.padding || undefined,
+    fontFamily: styles.fontFamily || undefined
   }
 })
 

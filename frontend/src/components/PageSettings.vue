@@ -151,6 +151,28 @@
       </div>
     </div>
 
+    <!-- Integrazioni -->
+    <div class="border-t border-gray-200 pt-6">
+      <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+        Integrazioni
+      </h4>
+
+      <!-- Google reCAPTCHA -->
+      <div class="mb-5">
+        <label class="block text-xs font-medium text-gray-700 mb-2">Google reCAPTCHA Site Key</label>
+        <input
+          v-model="recaptchaSiteKey"
+          type="text"
+          placeholder="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI (chiave di test)"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+        />
+        <p class="text-xs text-gray-500 mt-1">
+          Chiave pubblica per Google reCAPTCHA v2. Verrà applicata a tutti i form della pagina.
+          <a href="https://www.google.com/recaptcha/admin" target="_blank" class="text-primary-600 underline">Ottieni una chiave</a>
+        </p>
+      </div>
+    </div>
+
     <!-- Pubblicazione -->
     <div class="border-t border-gray-200 pt-6">
       <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
@@ -264,6 +286,15 @@ const roundedCorners = computed({
       localPage.value.styles = {}
     }
     localPage.value.styles.roundedCorners = value
+  }
+})
+
+const recaptchaSiteKey = computed({
+  get() {
+    return localPage.value.recaptchaSiteKey || ''
+  },
+  set(value) {
+    localPage.value.recaptchaSiteKey = value
   }
 })
 

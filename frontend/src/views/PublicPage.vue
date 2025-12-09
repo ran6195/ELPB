@@ -25,6 +25,7 @@
           :block="block"
           :editable="false"
           :rounded-corners="page.styles?.roundedCorners ?? true"
+          :page="page"
         />
       </div>
     </div>
@@ -34,7 +35,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import { usePageStore } from '../stores/pageStore'
+import apiClient from '../api/axios'
 import { loadGoogleFont } from '../utils/googleFonts'
 import HeaderBlock from '../components/blocks/HeaderBlock.vue'
 import HeroBlock from '../components/blocks/HeroBlock.vue'
@@ -43,22 +45,27 @@ import TextBlock from '../components/blocks/TextBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
 import TwoColumnImageText from '../components/blocks/TwoColumnImageText.vue'
+import VideoBlock from '../components/blocks/VideoBlock.vue'
+import VideoInfoBlock from '../components/blocks/VideoInfoBlock.vue'
 import FooterBlock from '../components/blocks/FooterBlock.vue'
 import FeaturesBlock from '../components/blocks/FeaturesBlock.vue'
 import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
+import SliderBlock from '../components/blocks/SliderBlock.vue'
+import MapBlock from '../components/blocks/MapBlock.vue'
 
 const route = useRoute()
+const pageStore = usePageStore()
 const page = ref({})
 const loading = ref(true)
 const error = ref(null)
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-
 onMounted(async () => {
   try {
-    const response = await axios.get(`${API_URL}/page/${route.params.slug}`)
+    const response = await apiClient.get(`/page/${route.params.slug}`)
     page.value = response.data
+    // Imposta currentPage nello store per il form
+    pageStore.currentPage = response.data
     // Carica il font se specificato
     if (response.data.styles?.fontFamily) {
       loadGoogleFont(response.data.styles.fontFamily)
@@ -75,12 +82,16 @@ const getBlockComponent = (type) => {
     header: HeaderBlock,
     hero: HeroBlock,
     'image-slide': ImageSlideBlock,
+    video: VideoBlock,
     text: TextBlock,
     features: FeaturesBlock,
     'services-grid': ServicesGridBlock,
     cta: CtaBlock,
     'two-column-text-image': TwoColumnTextImage,
     'two-column-image-text': TwoColumnImageText,
+    'video-info': VideoInfoBlock,
+    slider: SliderBlock,
+    map: MapBlock,
     form: FormBlock,
     footer: FooterBlock
   }

@@ -40,7 +40,9 @@ class UploadController
         try {
             $uploadedFile->moveTo($uploadPath);
 
-            $imageUrl = 'http://localhost:8000/uploads/images/' . $filename;
+            // Genera l'URL dell'immagine usando APP_URL dal .env
+            $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost:8000';
+            $imageUrl = $baseUrl . '/uploads/images/' . $filename;
 
             $response->getBody()->write(json_encode([
                 'success' => true,

@@ -72,6 +72,8 @@ Capsule::schema()->create('leads', function (Blueprint $table) {
     $table->string('email');
     $table->string('phone')->nullable();
     $table->text('message')->nullable();
+    $table->boolean('privacy_accepted')->default(false); // accettazione privacy policy
+    $table->boolean('page_published')->default(false); // stato pubblicazione della pagina al momento dell'invio
     $table->json('metadata')->nullable(); // dati extra dal form
     $table->timestamps();
 });

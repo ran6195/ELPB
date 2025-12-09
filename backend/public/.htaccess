@@ -1,5 +1,10 @@
 RewriteEngine On
 
+# Passa l'header Authorization a PHP (necessario per JWT)
+# Apache di default non passa l'header Authorization a PHP quando si usa FastCGI/mod_php
+RewriteCond %{HTTP:Authorization} .+
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Rewrite all requests to index.php except for existing files
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
