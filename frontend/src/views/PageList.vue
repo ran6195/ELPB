@@ -107,7 +107,10 @@
                 {{ page.blocks?.length || 0 }} blocchi
               </p>
               <!-- Creata da -->
-              <div class="pt-2 border-t border-gray-100">
+              <div class="pt-2 border-t border-gray-100 space-y-1">
+                <p class="text-xs text-gray-500">
+                  <span class="font-medium">Creata il:</span> {{ formatDate(page.created_at) }}
+                </p>
                 <p class="text-xs text-gray-500">
                   <span class="font-medium">Creata da:</span> {{ page.user?.name || 'Sconosciuto' }}
                 </p>
@@ -228,6 +231,39 @@ const duplicatePage = async (id) => {
 
 const viewPublicPage = (slug) => {
   router.push(`/p/${slug}`)
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Data non disponibile'
+
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now - date)
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+  // Se è oggi
+  if (diffDays === 0) {
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `Oggi alle ${hours}:${minutes}`
+  }
+
+  // Se è ieri
+  if (diffDays === 1) {
+    return 'Ieri'
+  }
+
+  // Se è meno di una settimana fa
+  if (diffDays < 7) {
+    return `${diffDays} giorni fa`
+  }
+
+  // Altrimenti mostra la data completa
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const year = date.getFullYear()
+
+  return `${day}/${month}/${year}`
 }
 
 const handleLogout = () => {
