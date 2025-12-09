@@ -1,171 +1,280 @@
-# Guida al Deploy dell'Applicazione
+# Guida Deploy Produzione - Landing Page Builder
 
-## Problemi risolti
+Questa guida ti aiuterà a deployare l'applicazione sul server di produzione.
 
-### 1. Pagina bianca - URL hardcoded
-La pagina bianca iniziale era causata da URL hardcoded che puntavano a `localhost`. Ora l'applicazione usa variabili d'ambiente.
+## 📋 Pre-requisiti
 
-### 2. Pagina bianca - Vue Router base path
-Un secondo problema di pagina bianca era causato da Vue Router che non conosceva il base path `/ELPB/`.
-**Fix applicato**: `src/router/index.js` ora usa `createWebHistory(import.meta.env.BASE_URL)` invece di `createWebHistory()`.
+- Server con PHP 7.4+ e MySQL 5.7+
+- Composer installato
+- Node.js e npm installati
+- Accesso SSH al server
+- Dominio configurato: `https://edysma.net/ELPB/`
 
-### 3. Stili dei blocchi (sfondo, colori) non salvati
-I blocchi venivano creati con `styles: {}` vuoto. Se l'utente non apriva mai il pannello di modifica, gli stili rimanevano vuoti e non venivano salvati.
-**Fix applicato**: I nuovi blocchi ora vengono creati con stili di default (`backgroundColor: 'transparent'`, `textColor: 'inherit'`, `padding: '40px 20px'`).
+## 🚀 Procedura di Deploy
 
-## IMPORTANTE: Sottocartella vs Root
+### 1. Preparazione Locale
 
-### Se l'app è in una SOTTOCARTELLA (es: `/ELPB/`)
-
-**1. Configura `vite.config.js`:**
-```js
-base: process.env.NODE_ENV === 'production' ? '/ELPB/' : '/',
-```
-
-**2. Configura `.htaccess`:**
-```apache
-RewriteBase /ELPB/
-RewriteRule . /ELPB/index.html [L]
-```
-
-### Se l'app è nella ROOT del dominio
-
-**1. Configura `vite.config.js`:**
-```js
-base: '/',
-```
-
-**2. Configura `.htaccess`:**
-```apache
-RewriteBase /
-RewriteRule . /index.html [L]
-```
-
-## Passi per il deploy
-
-### 1. Configurare l'URL dell'API in produzione
-
-Modifica il file `/frontend/.env.production` e inserisci l'URL del tuo backend:
-
-```env
-# Esempio se in sottocartella
-VITE_API_URL=https://tuodominio.com/ELPB/backend/public/api
-
-# Esempio se nella root
-VITE_API_URL=https://tuodominio.com/backend/public/api
-```
-
-### 2. Build del Frontend
-
+#### a) Build del Frontend
 ```bash
 cd frontend
+npm install
 npm run build
 ```
 
-Questo creerà una cartella `dist` con i file compilati.
+Questo crea la cartella `frontend/dist/` con i file ottimizzati per produzione.
 
-### 3. Upload dei file sul server
-
-**Frontend:**
-- Carica il contenuto della cartella `frontend/dist` nella root del tuo sito (es: `public_html/` o `www/`)
-- Il file `.htaccess` è già incluso nella build per supportare Vue Router in history mode
-
-**Backend:**
-- Carica la cartella `backend` sul server (es: `public_html/backend/`)
-- Assicurati che la cartella `backend/public` sia accessibile
-
-### 4. Configurare il database in produzione
-
-Modifica il file `backend/.env` con le credenziali del database di produzione:
-
-```env
-DB_HOST=localhost
-DB_DATABASE=nome_database_produzione
-DB_USERNAME=username_produzione
-DB_PASSWORD=password_produzione
+#### b) Verifica File .env.production
+```bash
+cd ../backend
+cp .env.production .env
 ```
 
-### 5. Eseguire le migrazioni sul server
+Modifica il file `.env` con le credenziali corrette:
+```env
+DB_HOST=localhost
+DB_DATABASE=landing_page_builder
+DB_USERNAME=tuo_username
+DB_PASSWORD=tua_password_sicura
+
+APP_URL=https://edysma.net/ELPB/backend/public
+BASE_PATH=/ELPB/backend/public
+
+# IMPORTANTE: Genera una chiave JWT sicura
+# openssl rand -base64 64
+JWT_SECRET=la-tua-chiave-jwt-generata
+```
+
+### 2. Upload dei File sul Server
+
+#### Via FTP/SFTP:
+```
+Carica tutto il progetto in:
+/percorso/del/server/ELPB/
+
+Struttura finale:
+ELPB/
+├── backend/
+│   ├── config/
+│   ├── database/
+│   ├── public/
+│   │   ├── index.php
+│   │   └── uploads/
+│   ├── src/
+│   ├── vendor/
+│   ├── .env
+│   └── composer.json
+└── frontend/
+    └── dist/
+        ├── index.html
+        └── assets/
+```
+
+#### Via Git (Raccomandato):
+```bash
+# Sul server
+cd /percorso/del/server/
+git clone [url-repository] ELPB
+cd ELPB
+
+# Checkout del branch main
+git checkout main
+git pull origin main
+```
+
+### 3. Configurazione Backend sul Server
 
 ```bash
 cd backend
+
+# Installa dipendenze PHP
+composer install --no-dev --optimize-autoloader
+
+# Copia il file .env di produzione
+cp .env.production .env
+
+# IMPORTANTE: Modifica .env con le credenziali corrette
+nano .env
+
+# Crea le directory necessarie
+mkdir -p public/uploads/images
+chmod 755 public/uploads
+chmod 755 public/uploads/images
+
+# Esegui le migration del database
 php database/migrations/create_tables.php
+php database/migrations/add_appointment_fields.php
+php database/migrations/add_missing_leads_fields.php
+php database/migrations/add_recaptcha_settings.php
 ```
 
-### 6. Configurare i permessi
+### 4. Configurazione Frontend
 
-Assicurati che le seguenti cartelle abbiano permessi di scrittura:
-```bash
-chmod 755 backend/public/uploads
-```
+Il frontend è già buildato in `frontend/dist/`. Deve essere servito dal webserver.
 
-## Struttura consigliata sul server
-
-```
-public_html/
-├── index.html              (frontend build)
-├── assets/                 (frontend assets)
-├── .htaccess              (routing Vue)
-└── backend/
-    ├── public/
-    │   ├── index.php
-    │   └── uploads/
-    ├── src/
-    ├── config/
-    ├── database/
-    └── .env
-```
-
-## Troubleshooting
-
-### Pagina bianca
-- Verifica che `.htaccess` sia stato caricato
-- Controlla la console del browser per errori
-- Verifica che `VITE_API_URL` in `.env.production` sia corretto
-- Verifica che Vue Router usi `import.meta.env.BASE_URL` in `src/router/index.js`
-
-### Errori API
-- Verifica che il backend sia accessibile dall'URL configurato
-- Controlla i log del server PHP
-- Assicurati che CORS sia configurato correttamente in `backend/public/index.php`
-
-### Routing non funziona
-- Verifica che `mod_rewrite` sia abilitato su Apache
-- Controlla che `.htaccess` sia nella root del frontend
-
-### Gli stili dei blocchi (colore sfondo, ecc) non vengono salvati
-
-**Causa**: Il server usa MySQL < 5.7.8 che non supporta il tipo di campo `JSON` nativo.
-
-**Soluzione**:
-1. Sul server, esegui la migrazione compatibile invece di quella standard:
-   ```bash
-   cd backend
-   php database/migrations/create_tables_compatible.php
-   ```
-   Questa usa il tipo `TEXT` invece di `JSON`, che è compatibile con tutte le versioni di MySQL.
-
-2. **Importante**: Se hai già creato le tabelle con `create_tables.php`, devi prima rimuovere il database o le tabelle esistenti.
-
-3. Per verificare quale versione di MySQL stai usando e vedere i dati raw nel database:
-   ```
-   GET https://tuodominio.com/ELPB/backend/public/api/debug/database
-   ```
-   Questo endpoint ti mostrerà:
-   - La versione di MySQL
-   - I dati raw salvati nel database
-   - Come vengono deserializzati gli stili
-
-**Nota**: I modelli Eloquent gestiscono automaticamente la serializzazione/deserializzazione JSON anche con campi TEXT, quindi non serve modificare il codice dell'applicazione.
-
-## Test locale della build di produzione
-
-Prima di fare l'upload, puoi testare la build:
-
+#### Crea file `.env.production` nel frontend (locale):
 ```bash
 cd frontend
-npm run build
-npm run preview
+cat > .env.production << 'EOF'
+VITE_API_URL=https://edysma.net/ELPB/backend/public/api
+EOF
 ```
 
-Poi apri `http://localhost:4173` per vedere la versione di produzione.
+Poi rebuilda:
+```bash
+npm run build
+```
+
+E ri-carica i file `frontend/dist/*` sul server.
+
+### 5. Configurazione Apache/Nginx
+
+#### Apache (.htaccess già presente)
+
+Il file `backend/public/.htaccess` è già configurato.
+
+**Importante**: Assicurati che il DocumentRoot o Alias punti a `ELPB/frontend/dist/`:
+
+```apache
+# Nel tuo VirtualHost o .htaccess principale
+<IfModule alias_module>
+    Alias /ELPB "/percorso/completo/ELPB/frontend/dist"
+    <Directory "/percorso/completo/ELPB/frontend/dist">
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        # Rewrite per Vue Router
+        RewriteEngine On
+        RewriteBase /ELPB/
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /ELPB/index.html [L]
+    </Directory>
+
+    # Backend API
+    Alias /ELPB/backend/public "/percorso/completo/ELPB/backend/public"
+    <Directory "/percorso/completo/ELPB/backend/public">
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</IfModule>
+```
+
+### 6. Permessi File
+
+```bash
+# Backend
+cd /percorso/ELPB/backend
+chown -R www-data:www-data .
+chmod -R 755 .
+chmod -R 775 public/uploads
+
+# Frontend
+cd /percorso/ELPB/frontend/dist
+chown -R www-data:www-data .
+chmod -R 755 .
+```
+
+### 7. Creazione Utente Admin (Prima volta)
+
+Accedi al database e crea manualmente il primo utente admin:
+
+```sql
+USE landing_page_builder;
+
+-- Crea la prima company
+INSERT INTO companies (name, created_at, updated_at)
+VALUES ('Azienda Demo', NOW(), NOW());
+
+-- Crea l'admin (password: admin123)
+-- Password hash generato con: password_hash('admin123', PASSWORD_DEFAULT)
+INSERT INTO users (name, email, password, role, company_id, created_at, updated_at)
+VALUES (
+    'Admin',
+    'admin@example.com',
+    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    'admin',
+    NULL,
+    NOW(),
+    NOW()
+);
+```
+
+**IMPORTANTE**: Cambia la password dopo il primo login!
+
+### 8. Test del Deploy
+
+1. **Test Backend API:**
+   ```bash
+   curl https://edysma.net/ELPB/backend/public/api/debug/database
+   ```
+
+   Dovrebbe rispondere con: `{"status":"success","message":"Database connection successful"}`
+
+2. **Test Frontend:**
+   - Apri `https://edysma.net/ELPB/`
+   - Dovresti vedere la pagina di login
+   - Prova a fare login con le credenziali admin
+
+3. **Test Completo:**
+   - Login come admin
+   - Crea una pagina di test
+   - Pubblica la pagina
+   - Verifica che sia accessibile pubblicamente
+
+## 🔄 Aggiornamenti Futuri
+
+### Aggiornamento Codice (via Git)
+
+```bash
+cd /percorso/ELPB
+git pull origin main
+
+# Backend
+cd backend
+composer install --no-dev --optimize-autoloader
+
+# Esegui eventuali nuove migration
+ls database/migrations/*.php | while read migration; do php "$migration"; done
+
+# Frontend - rebuilda localmente e ricarica dist/
+cd ../frontend
+npm run build
+# Poi carica frontend/dist/* sul server
+```
+
+## ⚠️ Troubleshooting
+
+### Errore "CORS"
+- Verifica che `APP_URL` in `.env` corrisponda all'URL pubblico
+- Controlla che il middleware CORS in `backend/public/index.php` sia configurato
+
+### Errore "JWT token invalid"
+- Verifica che `JWT_SECRET` sia lo stesso in `.env`
+- Cancella i token nel browser (localStorage)
+
+### Errore "Database connection failed"
+- Verifica credenziali in `.env`
+- Controlla che MySQL sia avviato
+- Verifica che l'utente abbia i permessi corretti
+
+### Immagini non caricate
+- Verifica permessi su `backend/public/uploads/`
+- Verifica che `APP_URL` in `.env` sia corretto
+
+### Pagine non trovate (404)
+- Verifica configurazione Apache/Nginx
+- Controlla che `BASE_PATH` in `.env` sia corretto
+- Verifica che il rewrite module sia abilitato
+
+## 📞 Supporto
+
+Per problemi o domande, consulta:
+- `TROUBLESHOOTING.md` - Guida risoluzione problemi
+- `CLAUDE.md` - Documentazione progetto
+
+---
+
+**Ultimo aggiornamento**: Dicembre 2024
