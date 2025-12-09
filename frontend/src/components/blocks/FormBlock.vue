@@ -171,7 +171,11 @@ const recaptchaElement = ref(null)
 let recaptchaWidgetId = null
 
 const recaptchaSiteKey = computed(() => {
-  return props.page?.recaptchaSiteKey || ''
+  // Usa le chiavi da recaptcha_settings se reCAPTCHA è abilitato
+  if (props.page?.recaptcha_settings?.enabled) {
+    return props.page.recaptcha_settings.site_key || ''
+  }
+  return ''
 })
 
 // Minimum datetime (now + 1 hour)

@@ -15,6 +15,7 @@ class Page extends Model
         'meta_description',
         'is_published',
         'styles',
+        'recaptcha_settings',
         'company_id',
         'user_id'
     ];
@@ -22,6 +23,7 @@ class Page extends Model
     protected $casts = [
         'is_published' => 'boolean',
         'styles' => 'array',
+        'recaptcha_settings' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];

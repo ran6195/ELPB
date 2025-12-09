@@ -87,12 +87,37 @@ class LeadController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
 
-        // Get page publication status
+        // Get page and verify reCAPTCHA if enabled
         $pagePublished = false;
         if (!empty($data['page_id'])) {
             $page = Page::find($data['page_id']);
             if ($page) {
                 $pagePublished = $page->is_published;
+
+                // Verify reCAPTCHA if enabled
+                if ($page->recaptcha_settings &&
+                    isset($page->recaptcha_settings['enabled']) &&
+                    $page->recaptcha_settings['enabled'] === true) {
+
+                    // Check if reCAPTCHA token is present
+                    if (empty($data['recaptcha_token'])) {
+                        $response->getBody()->write(json_encode(['error' => 'reCAPTCHA verification is required']));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                    }
+
+                    // Verify reCAPTCHA token
+                    $secretKey = $page->recaptcha_settings['secret_key'] ?? '';
+                    if (empty($secretKey)) {
+                        $response->getBody()->write(json_encode(['error' => 'reCAPTCHA configuration error']));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+                    }
+
+                    $recaptchaValid = $this->verifyRecaptcha($data['recaptcha_token'], $secretKey);
+                    if (!$recaptchaValid) {
+                        $response->getBody()->write(json_encode(['error' => 'reCAPTCHA verification failed. Please try again.']));
+                        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                    }
+                }
             }
         }
 
@@ -115,5 +140,35 @@ class LeadController
             'lead' => $lead
         ]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+    }
+
+    /**
+     * Verify reCAPTCHA token with Google API
+     */
+    private function verifyRecaptcha($token, $secretKey)
+    {
+        $url = 'https://www.google.com/recaptcha/api/siteverify';
+        $data = [
+            'secret' => $secretKey,
+            'response' => $token
+        ];
+
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($data)
+            ]
+        ];
+
+        $context  = stream_context_create($options);
+        $result = @file_get_contents($url, false, $context);
+
+        if ($result === false) {
+            return false;
+        }
+
+        $responseData = json_decode($result, true);
+        return isset($responseData['success']) && $responseData['success'] === true;
     }
 }

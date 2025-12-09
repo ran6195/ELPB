@@ -92,6 +92,23 @@ export const usePageStore = defineStore('page', {
       }
     },
 
+    async duplicatePage(id) {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await apiClient.post(`/pages/${id}/duplicate`)
+        // Aggiungi la nuova pagina in cima alla lista
+        this.pages.unshift(response.data)
+        return response.data
+      } catch (error) {
+        this.error = error.message
+        console.error('Error duplicating page:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     async submitLead(leadData) {
       try {
         const response = await apiClient.post('/leads', leadData)

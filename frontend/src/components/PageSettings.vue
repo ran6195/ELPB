@@ -157,19 +157,65 @@
         Integrazioni
       </h4>
 
-      <!-- Google reCAPTCHA -->
-      <div class="mb-5">
-        <label class="block text-xs font-medium text-gray-700 mb-2">Google reCAPTCHA Site Key</label>
-        <input
-          v-model="recaptchaSiteKey"
-          type="text"
-          placeholder="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI (chiave di test)"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
-        />
-        <p class="text-xs text-gray-500 mt-1">
-          Chiave pubblica per Google reCAPTCHA v2. Verrà applicata a tutti i form della pagina.
-          <a href="https://www.google.com/recaptcha/admin" target="_blank" class="text-primary-600 underline">Ottieni una chiave</a>
-        </p>
+      <!-- Google reCAPTCHA Toggle -->
+      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
+        <div>
+          <p class="text-sm font-medium text-gray-900">Google reCAPTCHA</p>
+          <p class="text-xs text-gray-500 mt-0.5">
+            {{ recaptchaEnabled ? 'Protezione anti-spam attiva' : 'Protezione anti-spam disattivata' }}
+          </p>
+        </div>
+        <button
+          @click="recaptchaEnabled = !recaptchaEnabled"
+          :class="[
+            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            recaptchaEnabled ? 'bg-primary-600' : 'bg-gray-200'
+          ]"
+        >
+          <span
+            :class="[
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              recaptchaEnabled ? 'translate-x-6' : 'translate-x-1'
+            ]"
+          />
+        </button>
+      </div>
+
+      <!-- Google reCAPTCHA Keys (mostrati solo se abilitato) -->
+      <div v-if="recaptchaEnabled" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">reCAPTCHA Site Key (Pubblica)</label>
+          <input
+            v-model="recaptchaSiteKey"
+            type="text"
+            placeholder="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+          />
+          <p class="text-xs text-gray-500 mt-1">
+            Chiave pubblica per reCAPTCHA v2 Checkbox
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">reCAPTCHA Secret Key (Privata)</label>
+          <input
+            v-model="recaptchaSecretKey"
+            type="password"
+            placeholder="6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+          />
+          <p class="text-xs text-gray-500 mt-1">
+            Chiave privata per validazione server-side.
+            <a href="https://www.google.com/recaptcha/admin" target="_blank" class="text-primary-600 underline">Ottieni le chiavi</a>
+          </p>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p class="text-xs text-blue-700">
+            <strong>Nota:</strong> Le chiavi reCAPTCHA vengono applicate a tutti i form della pagina.
+            Per testare, puoi usare le chiavi di test di Google (sopra).
+          </p>
+        </div>
       </div>
     </div>
 
@@ -289,12 +335,40 @@ const roundedCorners = computed({
   }
 })
 
-const recaptchaSiteKey = computed({
+// reCAPTCHA Settings
+const recaptchaEnabled = computed({
   get() {
-    return localPage.value.recaptchaSiteKey || ''
+    return localPage.value.recaptcha_settings?.enabled ?? false
   },
   set(value) {
-    localPage.value.recaptchaSiteKey = value
+    if (!localPage.value.recaptcha_settings) {
+      localPage.value.recaptcha_settings = {}
+    }
+    localPage.value.recaptcha_settings.enabled = value
+  }
+})
+
+const recaptchaSiteKey = computed({
+  get() {
+    return localPage.value.recaptcha_settings?.site_key || ''
+  },
+  set(value) {
+    if (!localPage.value.recaptcha_settings) {
+      localPage.value.recaptcha_settings = {}
+    }
+    localPage.value.recaptcha_settings.site_key = value
+  }
+})
+
+const recaptchaSecretKey = computed({
+  get() {
+    return localPage.value.recaptcha_settings?.secret_key || ''
+  },
+  set(value) {
+    if (!localPage.value.recaptcha_settings) {
+      localPage.value.recaptcha_settings = {}
+    }
+    localPage.value.recaptcha_settings.secret_key = value
   }
 })
 

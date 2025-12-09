@@ -93,6 +93,7 @@ class PageController
             'meta_description' => $data['meta_description'] ?? null,
             'is_published' => $data['is_published'] ?? false,
             'styles' => $data['styles'] ?? null,
+            'recaptcha_settings' => $data['recaptcha_settings'] ?? null,
             'company_id' => $user->company_id,
             'user_id' => $user->id
         ]);
@@ -141,7 +142,8 @@ class PageController
             'meta_title' => $data['meta_title'] ?? $page->meta_title,
             'meta_description' => $data['meta_description'] ?? $page->meta_description,
             'is_published' => $data['is_published'] ?? $page->is_published,
-            'styles' => $data['styles'] ?? $page->styles
+            'styles' => $data['styles'] ?? $page->styles,
+            'recaptcha_settings' => $data['recaptcha_settings'] ?? $page->recaptcha_settings
         ]);
 
         // Update blocks if provided
@@ -262,5 +264,69 @@ class PageController
             'page' => $page
         ]));
         return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Duplicate a page with all its blocks
+     */
+    public function duplicate(Request $request, Response $response, array $args)
+    {
+        $user = $request->getAttribute('user');
+        $originalPage = Page::with('blocks')->find($args['id']);
+
+        if (!$originalPage) {
+            $response->getBody()->write(json_encode(['error' => 'Page not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Controlla i permessi - l'utente deve poter visualizzare la pagina per duplicarla
+        if (!$user || !$user->canViewPage($originalPage)) {
+            $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        // Genera il nuovo titolo
+        $newTitle = "Copia di " . $originalPage->title;
+
+        // Genera lo slug base dal nuovo titolo
+        $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $newTitle)));
+
+        // Assicura che lo slug sia unico aggiungendo un suffisso numerico
+        $slug = $baseSlug;
+        $counter = 1;
+        while (Page::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        // Crea la nuova pagina (sempre non pubblicata)
+        $newPage = Page::create([
+            'title' => $newTitle,
+            'slug' => $slug,
+            'meta_title' => $originalPage->meta_title,
+            'meta_description' => $originalPage->meta_description,
+            'is_published' => false,  // Sempre non pubblicata per sicurezza
+            'styles' => $originalPage->styles,
+            'recaptcha_settings' => $originalPage->recaptcha_settings,
+            'company_id' => $originalPage->company_id,
+            'user_id' => $user->id  // La copia appartiene all'utente che la duplica
+        ]);
+
+        // Duplica tutti i blocchi
+        foreach ($originalPage->blocks as $originalBlock) {
+            $newPage->blocks()->create([
+                'type' => $originalBlock->type,
+                'content' => $originalBlock->content,
+                'styles' => $originalBlock->styles,
+                'position' => $originalBlock->position,
+                'order' => $originalBlock->order
+            ]);
+        }
+
+        // Ricarica la pagina con tutti i blocchi e le relazioni
+        $newPage->load(['blocks', 'company', 'user']);
+
+        $response->getBody()->write(json_encode($newPage));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
     }
 }

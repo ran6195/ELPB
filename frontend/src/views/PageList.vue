@@ -127,13 +127,21 @@
                 Modifica
               </button>
               <!-- Bottoni secondari affiancati -->
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-2 gap-2">
                 <button
                   @click="previewPage(page.id)"
                   class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 transition-colors"
                 >
                   Anteprima
                 </button>
+                <button
+                  @click="duplicatePage(page.id)"
+                  class="bg-white hover:bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 hover:border-blue-200 transition-colors"
+                >
+                  Duplica
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
                 <button
                   v-if="page.is_published"
                   @click="viewPublicPage(page.slug)"
@@ -143,6 +151,7 @@
                 </button>
                 <button
                   @click="deletePage(page.id)"
+                  :class="page.is_published ? '' : 'col-span-2'"
                   class="bg-white hover:bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 hover:border-red-200 transition-colors"
                 >
                   Elimina
@@ -202,6 +211,17 @@ const deletePage = async (id) => {
       await pageStore.deletePage(id)
     } catch (error) {
       alert('Errore durante l\'eliminazione della pagina')
+    }
+  }
+}
+
+const duplicatePage = async (id) => {
+  if (confirm('Vuoi duplicare questa pagina? Verrà creata una copia non pubblicata.')) {
+    try {
+      const duplicatedPage = await pageStore.duplicatePage(id)
+      alert(`Pagina duplicata con successo! Nuova pagina: "${duplicatedPage.title}"`)
+    } catch (error) {
+      alert('Errore durante la duplicazione della pagina')
     }
   }
 }
