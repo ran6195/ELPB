@@ -94,6 +94,7 @@ class PageController
             'is_published' => $data['is_published'] ?? false,
             'styles' => $data['styles'] ?? null,
             'recaptcha_settings' => $data['recaptcha_settings'] ?? null,
+            'quick_contacts' => $data['quickContacts'] ?? $data['quick_contacts'] ?? null,
             'company_id' => $user->company_id,
             'user_id' => $user->id
         ]);
@@ -143,7 +144,8 @@ class PageController
             'meta_description' => $data['meta_description'] ?? $page->meta_description,
             'is_published' => $data['is_published'] ?? $page->is_published,
             'styles' => $data['styles'] ?? $page->styles,
-            'recaptcha_settings' => $data['recaptcha_settings'] ?? $page->recaptcha_settings
+            'recaptcha_settings' => $data['recaptcha_settings'] ?? $page->recaptcha_settings,
+            'quick_contacts' => $data['quickContacts'] ?? $data['quick_contacts'] ?? $page->quick_contacts
         ]);
 
         // Update blocks if provided
@@ -183,6 +185,12 @@ class PageController
         if (!$user || !$user->canEditPage($page)) {
             $response->getBody()->write(json_encode(['error' => 'Forbidden']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        // Impedisce l'eliminazione di pagine pubblicate
+        if ($page->is_published) {
+            $response->getBody()->write(json_encode(['error' => 'Non puoi eliminare una pagina pubblicata. Prima devi rimuovere la pubblicazione.']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
 
         $page->delete();
@@ -308,6 +316,7 @@ class PageController
             'is_published' => false,  // Sempre non pubblicata per sicurezza
             'styles' => $originalPage->styles,
             'recaptcha_settings' => $originalPage->recaptcha_settings,
+            'quick_contacts' => $originalPage->quickContacts ?? $originalPage->quick_contacts ?? null,
             'company_id' => $originalPage->company_id,
             'user_id' => $user->id  // La copia appartiene all'utente che la duplica
         ]);

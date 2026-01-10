@@ -158,16 +158,12 @@
       <div class="flex-1 overflow-y-auto bg-gray-100">
         <!-- Wrapper per simulare device -->
         <div
-          :class="[
-            'mx-auto transition-all duration-300',
-            viewMode === 'desktop' ? 'w-full' : '',
-            viewMode === 'tablet' ? 'max-w-3xl shadow-xl my-8' : '',
-            viewMode === 'mobile' ? 'max-w-sm shadow-xl my-8' : ''
-          ]"
+          v-if="viewMode === 'desktop'"
+          class="w-full transition-all duration-300"
           :style="{
             backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
             fontFamily: page.styles?.fontFamily || 'inherit',
-            minHeight: viewMode === 'desktop' ? '100%' : 'auto'
+            minHeight: '100%'
           }"
         >
           <div
@@ -223,6 +219,183 @@
             </div>
           </template>
         </draggable>
+
+        <!-- Quick Contacts (Desktop) -->
+        <QuickContactBlock
+          :block="{ type: 'quick-contact', content: page.quickContacts || {} }"
+          :editable="true"
+        />
+        </div>
+
+        <!-- Device Frame per Tablet -->
+        <div
+          v-else-if="viewMode === 'tablet'"
+          class="mx-auto my-8 transition-all duration-300"
+          style="width: 768px"
+        >
+          <!-- Device bezel/frame -->
+          <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 relative">
+            <!-- Notch/camera tablet -->
+            <div class="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-600 rounded-full"></div>
+
+            <!-- Screen area con scroll interno -->
+            <div
+              class="bg-white rounded-2xl overflow-y-auto"
+              style="height: 1024px"
+              :style="{
+                backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
+                fontFamily: page.styles?.fontFamily || 'inherit'
+              }"
+            >
+              <div
+                v-if="page.blocks.length === 0"
+                class="flex items-center justify-center h-full text-gray-400"
+              >
+                <p class="text-base">Clicca su un blocco nella sidebar per iniziare</p>
+              </div>
+
+              <!-- Blocchi -->
+              <draggable
+                v-model="page.blocks"
+                item-key="id"
+                @end="updateBlockOrder"
+                @move="onBlockMove"
+                :disabled="cleanView"
+                class="min-h-full flex flex-col"
+                :style="{ gap: `${page.styles?.blockGap ?? 15}px` }"
+              >
+                <template #item="{ element, index }">
+                  <div
+                    :class="[
+                      'relative',
+                      !cleanView && 'group border-2 border-transparent hover:border-primary-300 transition-colors',
+                      !cleanView && (element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move')
+                    ]"
+                  >
+                    <!-- Controlli blocco -->
+                    <div v-if="!cleanView" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-3 z-10">
+                      <button
+                        @click="editBlock(index)"
+                        class="bg-white text-gray-700 px-4 py-2 rounded-lg shadow-md text-sm font-medium hover:bg-gray-50 border border-gray-300 transition-colors"
+                      >
+                        Modifica
+                      </button>
+                      <button
+                        @click="deleteBlock(index)"
+                        class="bg-white text-red-600 px-4 py-2 rounded-lg shadow-md text-sm font-medium hover:bg-red-50 border border-gray-300 transition-colors"
+                      >
+                        Elimina
+                      </button>
+                    </div>
+
+                    <!-- Render blocco -->
+                    <component
+                      :is="getBlockComponent(element.type)"
+                      :block="element"
+                      :editable="true"
+                      :rounded-corners="page.styles?.roundedCorners ?? true"
+                      :page="page"
+                      @update="(updatedBlock) => updateBlockInline(index, updatedBlock)"
+                    />
+                  </div>
+                </template>
+              </draggable>
+
+              <!-- Quick Contacts (Tablet) -->
+              <QuickContactBlock
+                :block="{ type: 'quick-contact', content: page.quickContacts || {} }"
+                :editable="true"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Device Frame per Mobile -->
+        <div
+          v-else-if="viewMode === 'mobile'"
+          class="mx-auto my-8 transition-all duration-300"
+          style="width: 390px"
+        >
+          <!-- Device bezel/frame -->
+          <div class="bg-gray-900 rounded-[3rem] shadow-2xl p-4 relative">
+            <!-- Notch iPhone style -->
+            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-40 h-7 bg-gray-900 rounded-b-3xl z-20 flex items-center justify-center">
+              <div class="w-16 h-4 bg-gray-800 rounded-full"></div>
+            </div>
+
+            <!-- Screen area con scroll interno -->
+            <div
+              class="bg-white rounded-[2.5rem] overflow-y-auto relative"
+              style="height: 844px"
+              :style="{
+                backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
+                fontFamily: page.styles?.fontFamily || 'inherit'
+              }"
+            >
+              <div
+                v-if="page.blocks.length === 0"
+                class="flex items-center justify-center h-full text-gray-400"
+              >
+                <p class="text-sm text-center px-4">Clicca su un blocco nella sidebar per iniziare</p>
+              </div>
+
+              <!-- Blocchi -->
+              <draggable
+                v-model="page.blocks"
+                item-key="id"
+                @end="updateBlockOrder"
+                @move="onBlockMove"
+                :disabled="cleanView"
+                class="min-h-full flex flex-col"
+                :style="{ gap: `${page.styles?.blockGap ?? 15}px` }"
+              >
+                <template #item="{ element, index }">
+                  <div
+                    :class="[
+                      'relative',
+                      !cleanView && 'group border-2 border-transparent hover:border-primary-300 transition-colors',
+                      !cleanView && (element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move')
+                    ]"
+                  >
+                    <!-- Controlli blocco -->
+                    <div v-if="!cleanView" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
+                      <button
+                        @click="editBlock(index)"
+                        class="bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-xs font-medium hover:bg-gray-50 border border-gray-300 transition-colors"
+                      >
+                        Modifica
+                      </button>
+                      <button
+                        @click="deleteBlock(index)"
+                        class="bg-white text-red-600 px-3 py-1.5 rounded-lg shadow-md text-xs font-medium hover:bg-red-50 border border-gray-300 transition-colors"
+                      >
+                        Elimina
+                      </button>
+                    </div>
+
+                    <!-- Render blocco -->
+                    <component
+                      :is="getBlockComponent(element.type)"
+                      :block="element"
+                      :editable="true"
+                      :rounded-corners="page.styles?.roundedCorners ?? true"
+                      :page="page"
+                      @update="(updatedBlock) => updateBlockInline(index, updatedBlock)"
+                    />
+                  </div>
+                </template>
+              </draggable>
+
+              <!-- Quick Contacts (Mobile) -->
+              <QuickContactBlock
+                :block="{ type: 'quick-contact', content: page.quickContacts || {} }"
+                :editable="true"
+              />
+            </div>
+
+            <!-- Home indicator iOS -->
+            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-700 rounded-full"></div>
+          </div>
         </div>
       </div>
 
@@ -296,6 +469,7 @@ import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
 import SliderBlock from '../components/blocks/SliderBlock.vue'
 import MapBlock from '../components/blocks/MapBlock.vue'
+import QuickContactBlock from '../components/blocks/QuickContactBlock.vue'
 import BlockEditor from '../components/BlockEditor.vue'
 import PageSettings from '../components/PageSettings.vue'
 import { loadGoogleFont } from '../utils/googleFonts'
@@ -311,7 +485,44 @@ const page = ref({
   meta_description: '',
   is_published: false,
   styles: { backgroundColor: '#FFFFFF', blockGap: 15, fontFamily: '', roundedCorners: true },
-  blocks: []
+  blocks: [],
+  quickContacts: {
+    whatsapp: {
+      enabled: false,
+      number: '',
+      message: 'Ciao! Vorrei maggiori informazioni',
+      tooltip: 'Contattaci su WhatsApp',
+      showText: false,
+      text: 'WhatsApp',
+      style: {
+        backgroundColor: '#25D366',
+        color: '#FFFFFF',
+        bottom: '20px',
+        right: '20px',
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        fontSize: '24px'
+      }
+    },
+    phone: {
+      enabled: false,
+      number: '',
+      tooltip: 'Chiamaci ora',
+      showText: false,
+      text: 'Chiama',
+      style: {
+        backgroundColor: '#007BFF',
+        color: '#FFFFFF',
+        bottom: '20px',
+        left: '20px',
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        fontSize: '24px'
+      }
+    }
+  }
 })
 
 const selectedBlockIndex = ref(null)
@@ -358,6 +569,65 @@ onMounted(async () => {
   if (route.params.id) {
     const data = await pageStore.fetchPage(route.params.id)
     if (data) {
+      // Default quick contacts structure
+      const defaultQuickContacts = {
+        whatsapp: {
+          enabled: false,
+          number: '',
+          message: 'Ciao! Vorrei maggiori informazioni',
+          tooltip: 'Contattaci su WhatsApp',
+          showText: false,
+          text: 'WhatsApp',
+          style: {
+            backgroundColor: '#25D366',
+            color: '#FFFFFF',
+            bottom: '20px',
+            right: '20px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            fontSize: '24px'
+          }
+        },
+        phone: {
+          enabled: false,
+          number: '',
+          tooltip: 'Chiamaci ora',
+          showText: false,
+          text: 'Chiama',
+          style: {
+            backgroundColor: '#007BFF',
+            color: '#FFFFFF',
+            bottom: '20px',
+            left: '20px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            fontSize: '24px'
+          }
+        }
+      }
+
+      // Deep merge quickContacts with defaults
+      const quickContacts = data.quickContacts ? {
+        whatsapp: {
+          ...defaultQuickContacts.whatsapp,
+          ...(data.quickContacts.whatsapp || {}),
+          style: {
+            ...defaultQuickContacts.whatsapp.style,
+            ...(data.quickContacts.whatsapp?.style || {})
+          }
+        },
+        phone: {
+          ...defaultQuickContacts.phone,
+          ...(data.quickContacts.phone || {}),
+          style: {
+            ...defaultQuickContacts.phone.style,
+            ...(data.quickContacts.phone?.style || {})
+          }
+        }
+      } : defaultQuickContacts
+
       page.value = {
         ...data,
         styles: {
@@ -365,7 +635,8 @@ onMounted(async () => {
           blockGap: data.styles?.blockGap ?? 15,
           fontFamily: data.styles?.fontFamily || '',
           roundedCorners: data.styles?.roundedCorners ?? true
-        }
+        },
+        quickContacts: quickContacts
       }
       // Carica il font se specificato
       if (data.styles?.fontFamily) {
@@ -497,7 +768,20 @@ const getDefaultContent = (type) => {
       logoHeight: '50px',
       marginTop: '0px',
       showMenu: false,
-      menuLinks: []
+      menuLinks: [],
+      socialLinks: {
+        facebook: '',
+        instagram: '',
+        twitter: ''
+      },
+      socialButtonStyle: {
+        backgroundColor: 'transparent',
+        color: '#FFFFFF',
+        padding: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderRadius: '50%'
+      }
     },
     hero: {
       title: 'Titolo Hero',
@@ -773,6 +1057,19 @@ const autoSave = async () => {
       saveStatus.value = 'saved'
     } else {
       const newPage = await pageStore.createPage(page.value)
+      // Update local page with data from backend (including unique slug)
+      page.value = {
+        ...page.value,
+        ...newPage,
+        styles: {
+          ...page.value.styles,
+          ...(newPage.styles || {})
+        },
+        quickContacts: {
+          ...page.value.quickContacts,
+          ...(newPage.quickContacts || {})
+        }
+      }
       router.push(`/editor/${newPage.id}`)
       saveStatus.value = 'saved'
     }
@@ -787,7 +1084,9 @@ const goBack = () => {
 }
 
 const updatePageSettings = (updatedPage) => {
+  console.log('PageEditor - updatePageSettings received:', JSON.parse(JSON.stringify(updatedPage)))
   page.value = { ...page.value, ...updatedPage }
+  console.log('PageEditor - page.value after update:', JSON.parse(JSON.stringify(page.value)))
   // Non chiudiamo più il pannello dopo il salvataggio
   // showSettings.value = false
 }

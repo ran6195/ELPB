@@ -1,0 +1,26 @@
+# File di configurazione con dati sensibili
+.env
+
+# Cache (se implementata)
+cache/
+*.cache
+
+# Log
+*.log
+
+# File temporanei
+*.tmp
+*.temp
+
+# Backup
+*.bak
+*.backup
+
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*

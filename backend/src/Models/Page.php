@@ -16,6 +16,7 @@ class Page extends Model
         'is_published',
         'styles',
         'recaptcha_settings',
+        'quick_contacts',
         'company_id',
         'user_id'
     ];
@@ -24,9 +25,23 @@ class Page extends Model
         'is_published' => 'boolean',
         'styles' => 'array',
         'recaptcha_settings' => 'array',
+        'quick_contacts' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
+
+    /**
+     * Override toArray to include camelCase quickContacts for frontend compatibility
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+        // Add camelCase version for frontend (use array_key_exists to handle null values)
+        if (array_key_exists('quick_contacts', $array)) {
+            $array['quickContacts'] = $array['quick_contacts'];
+        }
+        return $array;
+    }
 
     public function blocks()
     {

@@ -209,11 +209,21 @@ const previewPage = (id) => {
 }
 
 const deletePage = async (id) => {
+  // Trova la pagina per verificare se è pubblicata
+  const page = pageStore.pages.find(p => p.id === id)
+
+  if (page && page.is_published) {
+    alert('Non puoi eliminare una pagina pubblicata. Prima devi rimuovere la pubblicazione.')
+    return
+  }
+
   if (confirm('Sei sicuro di voler eliminare questa pagina?')) {
     try {
       await pageStore.deletePage(id)
     } catch (error) {
-      alert('Errore durante l\'eliminazione della pagina')
+      // Mostra il messaggio di errore specifico dal backend
+      const errorMessage = error.response?.data?.error || 'Errore durante l\'eliminazione della pagina'
+      alert(errorMessage)
     }
   }
 }

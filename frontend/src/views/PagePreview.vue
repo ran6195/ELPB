@@ -24,6 +24,13 @@
           :page="page"
         />
       </div>
+
+      <!-- Quick Contacts -->
+      <QuickContactBlock
+        v-if="page.quickContacts"
+        :block="{ type: 'quick-contact', content: page.quickContacts }"
+        :editable="false"
+      />
     </div>
 
     <div v-else class="flex items-center justify-center h-screen">
@@ -52,6 +59,7 @@ import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
 import SliderBlock from '../components/blocks/SliderBlock.vue'
 import MapBlock from '../components/blocks/MapBlock.vue'
+import QuickContactBlock from '../components/blocks/QuickContactBlock.vue'
 
 const route = useRoute()
 const pageStore = usePageStore()
