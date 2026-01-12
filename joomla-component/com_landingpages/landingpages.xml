@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" version="4.0" method="upgrade">
+    <name>COM_LANDINGPAGES</name>
+    <author>Your Name</author>
+    <creationDate>2026-01-10</creationDate>
+    <copyright>Copyright (C) 2026</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <authorEmail>your@email.com</authorEmail>
+    <authorUrl>https://yourwebsite.com</authorUrl>
+    <version>2.0.2</version>
+    <description>COM_LANDINGPAGES_XML_DESCRIPTION - Full Stack Landing Page Builder with Vue.js frontend and PHP REST API backend - Complete block styles support (font-family, background-color, text-color, padding, rounded-corners)</description>
+
+    <!-- Site files -->
+    <files folder="site">
+        <filename>landingpages.php</filename>
+        <filename>controller.php</filename>
+        <folder>models</folder>
+        <folder>views</folder>
+        <folder>helpers</folder>
+        <folder>assets</folder>
+        <folder>api</folder>
+    </files>
+
+    <!-- Site language files -->
+    <languages folder="site/language">
+        <language tag="en-GB">en-GB/en-GB.com_landingpages.ini</language>
+    </languages>
+
+    <!-- Administration files -->
+    <administration>
+        <menu>COM_LANDINGPAGES</menu>
+        <files folder="admin">
+            <filename>landingpages.php</filename>
+            <filename>controller.php</filename>
+            <filename>config.xml</filename>
+            <folder>models</folder>
+            <folder>views</folder>
+            <folder>sql</folder>
+        </files>
+        <languages folder="admin/language">
+            <language tag="en-GB">en-GB/en-GB.com_landingpages.ini</language>
+            <language tag="en-GB">en-GB/en-GB.com_landingpages.sys.ini</language>
+        </languages>
+    </administration>
+
+    <!-- Update servers -->
+    <updateservers>
+        <server type="extension" priority="1" name="Landing Pages Updates">
+            <![CDATA[https://yourserver.com/updates/com_landingpages.xml]]>
+        </server>
+    </updateservers>
+</extension>
