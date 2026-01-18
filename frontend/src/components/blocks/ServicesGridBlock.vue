@@ -1,18 +1,18 @@
 <template>
   <div class="services-grid-block">
-    <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <!-- Titolo sezione -->
       <h2
         v-if="block.content.title"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
-        class="text-3xl font-bold text-center mb-12 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+        class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
       >
         {{ block.content.title }}
       </h2>
 
       <!-- Griglia Servizi -->
-      <div class="grid md:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
         <div
           v-for="(service, index) in block.content.services"
           :key="index"
@@ -35,11 +35,11 @@
           </div>
 
           <!-- Contenuto Card -->
-          <div class="p-6">
+          <div class="p-5 sm:p-6">
             <h3
               :contenteditable="editable"
               @blur="updateService(index, 'title', $event.target.innerText)"
-              class="text-xl font-semibold mb-3 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+              class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
             >
               {{ service.title }}
             </h3>
@@ -47,7 +47,7 @@
             <p
               :contenteditable="editable"
               @blur="updateService(index, 'description', $event.target.innerText)"
-              class="text-gray-600 leading-relaxed outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+              class="text-sm sm:text-base text-gray-600 leading-relaxed outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
             >
               {{ service.description }}
             </p>
@@ -56,7 +56,7 @@
             <a
               v-if="service.link"
               :href="service.link"
-              class="inline-block mt-4 text-primary-600 hover:text-primary-700 font-medium transition-all hover:translate-x-1 cursor-pointer"
+              class="inline-block mt-3 sm:mt-4 text-sm sm:text-base text-primary-600 hover:text-primary-700 font-medium transition-all hover:translate-x-1 cursor-pointer"
             >
               Scopri di più →
             </a>

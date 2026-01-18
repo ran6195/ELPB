@@ -19,7 +19,7 @@
         </div>
         <div class="flex gap-3 items-center">
           <button
-            @click="showSettings = !showSettings"
+            @click="showSettings = !showSettings; selectedBlockIndex = null"
             class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors border border-gray-300"
           >
             ⚙️ Impostazioni
@@ -240,7 +240,7 @@
 
             <!-- Screen area con scroll interno -->
             <div
-              class="bg-white rounded-2xl overflow-y-auto"
+              class="bg-white rounded-2xl overflow-y-auto viewport-tablet"
               style="height: 1024px"
               :style="{
                 backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
@@ -325,7 +325,7 @@
 
             <!-- Screen area con scroll interno -->
             <div
-              class="bg-white rounded-[2.5rem] overflow-y-auto relative"
+              class="bg-white rounded-[2.5rem] overflow-y-auto relative viewport-mobile"
               style="height: 844px"
               :style="{
                 backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
@@ -469,6 +469,7 @@ import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
 import SliderBlock from '../components/blocks/SliderBlock.vue'
 import MapBlock from '../components/blocks/MapBlock.vue'
+import SocialBlock from '../components/blocks/SocialBlock.vue'
 import QuickContactBlock from '../components/blocks/QuickContactBlock.vue'
 import BlockEditor from '../components/BlockEditor.vue'
 import PageSettings from '../components/PageSettings.vue'
@@ -480,7 +481,7 @@ const pageStore = usePageStore()
 
 const page = ref({
   title: 'Nuova Pagina',
-  slug: '',
+  slug: 'nuova-pagina',
   meta_title: '',
   meta_description: '',
   is_published: false,
@@ -541,13 +542,14 @@ const blockTypes = [
   { type: 'video', name: 'Video', description: 'Video a schermo intero senza testo' },
   { type: 'text', name: 'Testo', description: 'Blocco di testo semplice' },
   { type: 'features', name: 'Vantaggi', description: 'Griglia 3 colonne con icone e testo' },
-  { type: 'services-grid', name: 'Servizi Grid', description: 'Griglia servizi con immagini' },
+  { type: 'services-grid', name: 'Griglia Servizi', description: 'Griglia servizi con immagini' },
   { type: 'cta', name: 'Call to Action', description: 'Sezione con pulsante CTA centrato' },
   { type: 'two-column-text-image', name: 'Testo + Immagine', description: 'Testo a sinistra, immagine a destra' },
   { type: 'two-column-image-text', name: 'Immagine + Testo', description: 'Immagine a sinistra, testo a destra' },
   { type: 'video-info', name: 'Video + Info', description: 'Video a sinistra, informazioni a destra' },
   { type: 'slider', name: 'Slider', description: 'Slider di immagini configurabile con autoplay' },
   { type: 'map', name: 'Mappa Google', description: 'Mappa di Google Maps con info contatto' },
+  { type: 'social', name: 'Social Media', description: 'Link a social media con icone personalizzabili' },
   { type: 'form', name: 'Form', description: 'Form di contatto per lead' },
   { type: 'footer', name: 'Footer', description: 'Footer con info azienda e contatti' }
 ]
@@ -894,12 +896,21 @@ const getDefaultContent = (type) => {
         { name: 'notes', label: 'Note', type: 'textarea', required: false }
       ],
       buttonText: 'Invia',
+      buttonStyle: {
+        backgroundColor: '#4F46E5',
+        textColor: '#FFFFFF',
+        fontSize: '16px',
+        padding: '12px 32px',
+        borderRadius: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderStyle: 'solid',
+        shadow: 'md'
+      },
       showPrivacy: true,
       privacyLink: '/privacy-policy',
       privacyTextColor: '#374151',
-      thankYouUrl: '',
-      enableAppointment: false,
-      appointmentLabel: 'Richiedi un appuntamento'
+      thankYouUrl: ''
     },
     'video-info': {
       videoUrl: '',
@@ -952,7 +963,24 @@ const getDefaultContent = (type) => {
       phone: '+39 123 456 7890',
       email: 'info@example.com'
     },
+    social: {
+      facebookUrl: '',
+      instagramUrl: '',
+      xUrl: '',
+      linkedinUrl: '',
+      youtubeUrl: '',
+      iconStyle: 'colored',
+      buttonSize: 48,
+      buttonSpacing: 16,
+      buttonBackground: 'transparent',
+      borderRadius: 8,
+      shadow: 'md',
+      borderWidth: 0,
+      borderColor: '#e5e7eb',
+      borderStyle: 'solid'
+    },
     footer: {
+      fullWidth: true, // Larghezza completa di default
       companyTitle: 'La Nostra Azienda',
       companyName: 'La Tua Azienda',
       companyDescription: 'Descrizione breve della tua azienda e dei servizi offerti.',
@@ -986,6 +1014,7 @@ const getBlockComponent = (type) => {
     'video-info': VideoInfoBlock,
     slider: SliderBlock,
     map: MapBlock,
+    social: SocialBlock,
     form: FormBlock,
     footer: FooterBlock
   }
@@ -994,6 +1023,7 @@ const getBlockComponent = (type) => {
 
 const editBlock = (index) => {
   selectedBlockIndex.value = index
+  showSettings.value = false // Chiude impostazioni pagina quando si seleziona un blocco
 }
 
 const deleteBlock = (index) => {
@@ -1091,3 +1121,32 @@ const updatePageSettings = (updatedPage) => {
   // showSettings.value = false
 }
 </script>
+
+<style scoped>
+/* Forza layout mobile/tablet nelle viste simulate */
+.viewport-mobile :deep(.grid),
+.viewport-tablet :deep(.grid) {
+  /* Forza tutte le grid a 1 colonna nelle viste mobile/tablet */
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  gap: 1.5rem !important; /* 24px - equivalente a gap-6 */
+}
+
+/* Forza anche padding e font size ridotti */
+.viewport-mobile :deep(h2),
+.viewport-mobile :deep(h3) {
+  font-size: 1.5rem !important; /* text-2xl */
+}
+
+.viewport-mobile :deep(p) {
+  font-size: 0.875rem !important; /* text-sm */
+}
+
+.viewport-tablet :deep(h2),
+.viewport-tablet :deep(h3) {
+  font-size: 1.5rem !important; /* text-2xl */
+}
+
+.viewport-tablet :deep(p) {
+  font-size: 0.875rem !important; /* text-sm */
+}
+</style>

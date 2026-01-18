@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Page extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'pages';
 
     protected $fillable = [
@@ -16,6 +19,7 @@ class Page extends Model
         'is_published',
         'styles',
         'recaptcha_settings',
+        'tracking_settings',
         'quick_contacts',
         'company_id',
         'user_id'
@@ -25,9 +29,11 @@ class Page extends Model
         'is_published' => 'boolean',
         'styles' => 'array',
         'recaptcha_settings' => 'array',
+        'tracking_settings' => 'array',
         'quick_contacts' => 'array',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime'
     ];
 
     /**

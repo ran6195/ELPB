@@ -2,12 +2,12 @@
   <div>
     <div
       :class="[
-        'max-w-7xl mx-auto px-6 py-12',
+        'max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12',
         roundedCorners ? 'rounded-lg' : ''
       ]"
       :style="blockStyles"
     >
-    <div class="grid md:grid-cols-2 gap-8 items-center">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
       <!-- Colonna immagine (sinistra) -->
       <div class="relative">
         <img
@@ -35,14 +35,14 @@
         <h2
           :contenteditable="editable"
           @blur="updateContent('title', $event.target.innerText)"
-          class="text-3xl font-bold text-gray-900 mb-4 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+          class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
         >
           {{ block.content.title }}
         </h2>
         <p
           :contenteditable="editable"
           @blur="updateContent('text', $event.target.innerText)"
-          class="text-gray-600 leading-relaxed outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+          class="text-sm sm:text-base text-gray-600 leading-relaxed outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
         >
           {{ block.content.text }}
         </p>

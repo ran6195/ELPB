@@ -6,6 +6,7 @@ import apiClient from '../api/axios'
 export const usePageStore = defineStore('page', {
   state: () => ({
     pages: [],
+    archivedPages: [],
     currentPage: null,
     loading: false,
     error: null
@@ -159,6 +160,40 @@ export const usePageStore = defineStore('page', {
       } catch (error) {
         this.error = error.message
         console.error('Error deleting lead:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchArchivedPages() {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await apiClient.get('/pages/archived')
+        this.archivedPages = response.data
+      } catch (error) {
+        this.error = error.message
+        console.error('Error fetching archived pages:', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async restorePage(id) {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await apiClient.post(`/pages/${id}/restore`)
+        // Rimuovi dalla lista archiviate
+        this.archivedPages = this.archivedPages.filter(p => p.id !== id)
+        // Aggiungi alle pagine attive
+        this.pages.unshift(response.data.page)
+        return response.data
+      } catch (error) {
+        this.error = error.message
+        console.error('Error restoring page:', error)
         throw error
       } finally {
         this.loading = false

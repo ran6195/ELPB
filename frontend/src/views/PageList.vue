@@ -45,6 +45,15 @@
                 <span>👥</span>
                 <span>Gestione</span>
               </router-link>
+              <router-link
+                to="/archived"
+                class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                <span>Archivio</span>
+              </router-link>
               <button
                 @click="createNewPage"
                 class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
@@ -144,22 +153,12 @@
                   Duplica
                 </button>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <button
-                  v-if="page.is_published"
-                  @click="viewPublicPage(page.slug)"
-                  class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 transition-colors"
-                >
-                  Vedi
-                </button>
-                <button
-                  @click="deletePage(page.id)"
-                  :class="page.is_published ? '' : 'col-span-2'"
-                  class="bg-white hover:bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 hover:border-red-200 transition-colors"
-                >
-                  Elimina
-                </button>
-              </div>
+              <button
+                @click="deletePage(page.id)"
+                class="w-full bg-white hover:bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 hover:border-red-200 transition-colors"
+              >
+                Elimina
+              </button>
             </div>
           </div>
         </div>
@@ -213,15 +212,36 @@ const deletePage = async (id) => {
   const page = pageStore.pages.find(p => p.id === id)
 
   if (page && page.is_published) {
-    alert('Non puoi eliminare una pagina pubblicata. Prima devi rimuovere la pubblicazione.')
+    // Chiedi all'utente se vuole togliere la pubblicazione
+    const unpublishConfirm = confirm(
+      'Questa pagina è pubblicata. Vuoi toglierla dalla pubblicazione ed eliminarla?\n\n' +
+      'Clicca OK per togliere la pubblicazione ed eliminare.\n' +
+      'Clicca Annulla per annullare l\'operazione.'
+    )
+
+    if (!unpublishConfirm) {
+      return
+    }
+
+    try {
+      // Prima toglie la pubblicazione
+      page.is_published = false
+      await pageStore.updatePage(id, page)
+
+      // Poi elimina la pagina
+      await pageStore.deletePage(id)
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Errore durante l\'eliminazione della pagina'
+      alert(errorMessage)
+    }
     return
   }
 
+  // Se la pagina non è pubblicata, chiedi conferma normale
   if (confirm('Sei sicuro di voler eliminare questa pagina?')) {
     try {
       await pageStore.deletePage(id)
     } catch (error) {
-      // Mostra il messaggio di errore specifico dal backend
       const errorMessage = error.response?.data?.error || 'Errore durante l\'eliminazione della pagina'
       alert(errorMessage)
     }
@@ -237,10 +257,6 @@ const duplicatePage = async (id) => {
       alert('Errore durante la duplicazione della pagina')
     }
   }
-}
-
-const viewPublicPage = (slug) => {
-  router.push(`/p/${slug}`)
 }
 
 const formatDate = (dateString) => {

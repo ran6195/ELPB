@@ -71,51 +71,60 @@ class PageController
 
         $data = json_decode($request->getBody()->getContents(), true);
 
-        // Validate required fields
-        if (empty($data['title']) || empty($data['slug'])) {
-            $response->getBody()->write(json_encode(['error' => 'Title and slug are required']));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
-
-        // Ensure unique slug
-        $slug = $data['slug'];
-        $counter = 1;
-        while (Page::where('slug', $slug)->exists()) {
-            $slug = $data['slug'] . '-' . $counter;
-            $counter++;
-        }
-
-        // Create page con company_id e user_id
-        $page = Page::create([
-            'title' => $data['title'],
-            'slug' => $slug,
-            'meta_title' => $data['meta_title'] ?? null,
-            'meta_description' => $data['meta_description'] ?? null,
-            'is_published' => $data['is_published'] ?? false,
-            'styles' => $data['styles'] ?? null,
-            'recaptcha_settings' => $data['recaptcha_settings'] ?? null,
-            'quick_contacts' => $data['quickContacts'] ?? $data['quick_contacts'] ?? null,
-            'company_id' => $user->company_id,
-            'user_id' => $user->id
-        ]);
-
-        // Create blocks if provided
-        if (!empty($data['blocks'])) {
-            foreach ($data['blocks'] as $blockData) {
-                $page->blocks()->create([
-                    'type' => $blockData['type'],
-                    'content' => $blockData['content'] ?? [],
-                    'styles' => $blockData['styles'] ?? [],
-                    'position' => $blockData['position'] ?? [],
-                    'order' => $blockData['order'] ?? 0
-                ]);
+        try {
+            // Validate required fields
+            if (empty($data['title']) || empty($data['slug'])) {
+                $response->getBody()->write(json_encode(['error' => 'Title and slug are required']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
+
+            // Ensure unique slug (check also soft-deleted pages)
+            $slug = $data['slug'];
+            $counter = 1;
+            while (Page::withTrashed()->where('slug', $slug)->exists()) {
+                $slug = $data['slug'] . '-' . $counter;
+                $counter++;
+            }
+
+            // Create page con company_id e user_id
+            $page = Page::create([
+                'title' => $data['title'],
+                'slug' => $slug,
+                'meta_title' => $data['meta_title'] ?? null,
+                'meta_description' => $data['meta_description'] ?? null,
+                'is_published' => $data['is_published'] ?? false,
+                'styles' => $data['styles'] ?? null,
+                'recaptcha_settings' => $data['recaptcha_settings'] ?? null,
+                'tracking_settings' => $data['tracking_settings'] ?? null,
+                'quick_contacts' => $data['quickContacts'] ?? $data['quick_contacts'] ?? null,
+                'company_id' => $user->company_id,
+                'user_id' => $user->id
+            ]);
+
+            // Create blocks if provided
+            if (!empty($data['blocks'])) {
+                foreach ($data['blocks'] as $blockData) {
+                    $page->blocks()->create([
+                        'type' => $blockData['type'],
+                        'content' => $blockData['content'] ?? [],
+                        'styles' => $blockData['styles'] ?? [],
+                        'position' => $blockData['position'] ?? [],
+                        'order' => $blockData['order'] ?? 0
+                    ]);
+                }
+            }
+
+            $page->load('blocks');
+
+            $response->getBody()->write(json_encode($page));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+        } catch (\Exception $e) {
+            $response->getBody()->write(json_encode([
+                'error' => 'Internal server error',
+                'message' => $e->getMessage()
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
-
-        $page->load('blocks');
-
-        $response->getBody()->write(json_encode($page));
-        return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
     }
 
     public function update(Request $request, Response $response, array $args)
@@ -136,6 +145,18 @@ class PageController
 
         $data = json_decode($request->getBody()->getContents(), true);
 
+        // Ensure unique slug if it's being changed (check also soft-deleted pages)
+        $newSlug = $data['slug'] ?? $page->slug;
+        if ($newSlug !== $page->slug) {
+            $slug = $newSlug;
+            $counter = 1;
+            while (Page::withTrashed()->where('slug', $slug)->where('id', '!=', $page->id)->exists()) {
+                $slug = $newSlug . '-' . $counter;
+                $counter++;
+            }
+            $data['slug'] = $slug;
+        }
+
         // Update page
         $page->update([
             'title' => $data['title'] ?? $page->title,
@@ -145,6 +166,7 @@ class PageController
             'is_published' => $data['is_published'] ?? $page->is_published,
             'styles' => $data['styles'] ?? $page->styles,
             'recaptcha_settings' => $data['recaptcha_settings'] ?? $page->recaptcha_settings,
+            'tracking_settings' => $data['tracking_settings'] ?? $page->tracking_settings,
             'quick_contacts' => $data['quickContacts'] ?? $data['quick_contacts'] ?? $page->quick_contacts
         ]);
 
@@ -185,12 +207,6 @@ class PageController
         if (!$user || !$user->canEditPage($page)) {
             $response->getBody()->write(json_encode(['error' => 'Forbidden']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
-        }
-
-        // Impedisce l'eliminazione di pagine pubblicate
-        if ($page->is_published) {
-            $response->getBody()->write(json_encode(['error' => 'Non puoi eliminare una pagina pubblicata. Prima devi rimuovere la pubblicazione.']));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
 
         $page->delete();
@@ -299,10 +315,10 @@ class PageController
         // Genera lo slug base dal nuovo titolo
         $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $newTitle)));
 
-        // Assicura che lo slug sia unico aggiungendo un suffisso numerico
+        // Assicura che lo slug sia unico aggiungendo un suffisso numerico (check also soft-deleted pages)
         $slug = $baseSlug;
         $counter = 1;
-        while (Page::where('slug', $slug)->exists()) {
+        while (Page::withTrashed()->where('slug', $slug)->exists()) {
             $slug = $baseSlug . '-' . $counter;
             $counter++;
         }
@@ -316,6 +332,7 @@ class PageController
             'is_published' => false,  // Sempre non pubblicata per sicurezza
             'styles' => $originalPage->styles,
             'recaptcha_settings' => $originalPage->recaptcha_settings,
+            'tracking_settings' => $originalPage->tracking_settings,
             'quick_contacts' => $originalPage->quickContacts ?? $originalPage->quick_contacts ?? null,
             'company_id' => $originalPage->company_id,
             'user_id' => $user->id  // La copia appartiene all'utente che la duplica
@@ -337,5 +354,59 @@ class PageController
 
         $response->getBody()->write(json_encode($newPage));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+    }
+
+    /**
+     * Get archived (soft deleted) pages
+     */
+    public function archived(Request $request, Response $response)
+    {
+        $user = $request->getAttribute('user');
+
+        $query = Page::onlyTrashed()->with(['blocks', 'company', 'user']);
+
+        // Filtra per permessi come in index()
+        if ($user->isUser()) {
+            $query->where('user_id', $user->id);
+        } elseif ($user->isCompany()) {
+            $query->where('company_id', $user->company_id);
+        }
+        // Admin vede tutto
+
+        $pages = $query->orderBy('deleted_at', 'desc')->get();
+
+        $response->getBody()->write(json_encode($pages));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * Restore archived page
+     */
+    public function restore(Request $request, Response $response, array $args)
+    {
+        $user = $request->getAttribute('user');
+        $page = Page::onlyTrashed()->find($args['id']);
+
+        if (!$page) {
+            $response->getBody()->write(json_encode(['error' => 'Archived page not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Verifica permessi
+        if (!$user || !$user->canEditPage($page)) {
+            $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        $page->restore();
+
+        // Ricarica la pagina ripristinata
+        $page->load(['blocks', 'company', 'user']);
+
+        $response->getBody()->write(json_encode([
+            'message' => 'Page restored successfully',
+            'page' => $page
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
     }
 }

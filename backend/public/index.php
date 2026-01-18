@@ -76,14 +76,17 @@ $app->put('/api/company/pages/{id}/reassign', '\App\Controllers\PageController:r
 
 // Pages routes (tutte protette)
 $app->get('/api/pages', '\App\Controllers\PageController:index')->add(AuthMiddleware::class);
+$app->get('/api/pages/archived', '\App\Controllers\PageController:archived')->add(AuthMiddleware::class);
 $app->get('/api/pages/{id}', '\App\Controllers\PageController:show')->add(AuthMiddleware::class);
 $app->post('/api/pages', '\App\Controllers\PageController:store')->add(AuthMiddleware::class);
 $app->post('/api/pages/{id}/duplicate', '\App\Controllers\PageController:duplicate')->add(AuthMiddleware::class);
+$app->post('/api/pages/{id}/restore', '\App\Controllers\PageController:restore')->add(AuthMiddleware::class);
 $app->put('/api/pages/{id}', '\App\Controllers\PageController:update')->add(AuthMiddleware::class);
 $app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(AuthMiddleware::class);
 
 // Upload routes (protette)
 $app->post('/api/upload/image', '\App\Controllers\UploadController:uploadImage')->add(AuthMiddleware::class);
+$app->post('/api/upload/video', '\App\Controllers\UploadController:uploadVideo')->add(AuthMiddleware::class);
 
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);

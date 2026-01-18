@@ -2,13 +2,13 @@
 <extension type="component" version="4.0" method="upgrade">
     <name>COM_LANDINGPAGES</name>
     <author>Your Name</author>
-    <creationDate>2026-01-10</creationDate>
+    <creationDate>2026-01-14</creationDate>
     <copyright>Copyright (C) 2026</copyright>
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>your@email.com</authorEmail>
     <authorUrl>https://yourwebsite.com</authorUrl>
-    <version>2.0.2</version>
-    <description>COM_LANDINGPAGES_XML_DESCRIPTION - Full Stack Landing Page Builder with Vue.js frontend and PHP REST API backend - Complete block styles support (font-family, background-color, text-color, padding, rounded-corners)</description>
+    <version>2.0.7</version>
+    <description>COM_LANDINGPAGES_XML_DESCRIPTION - v2.0.7: Integrazione Google Tag Manager - possibilità di inserire GTM Container ID nelle impostazioni della pagina per gestire tutti i tag di tracciamento (Analytics, Ads, Facebook Pixel, ecc.) da un'unica interfaccia GTM. Include anche personalizzazione completa del bottone submit del Form.</description>
 
     <!-- Site files -->
     <files folder="site">

@@ -69,6 +69,10 @@ class BlockRenderer
             $css[] = 'padding: ' . $styles['padding'];
         }
 
+        if (!empty($styles['fontFamily'])) {
+            $css[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+        }
+
         return !empty($css) ? 'style="' . implode('; ', $css) . '"' : '';
     }
 
@@ -523,17 +527,17 @@ HTML;
 
         $html = <<<HTML
 <div class="features-block">
-    <div class="max-w-7xl mx-auto px-6 py-16 {$roundedClass}" {$blockStyle}>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 {$roundedClass}" {$blockStyle}>
 HTML;
 
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl font-bold text-center mb-12">{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">{$title}</h2>
 HTML;
         }
 
-        $html .= '<div class="grid md:grid-cols-3 gap-8">';
+        $html .= '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">';
 
         foreach ($features as $feature) {
             $featureTitle = htmlspecialchars($feature['title'] ?? '');
@@ -549,8 +553,8 @@ HTML;
                         </svg>
                     </div>
                 </div>
-                <h3 class="text-xl font-semibold mb-3">{$featureTitle}</h3>
-                <p class="text-gray-600 leading-relaxed">{$featureDesc}</p>
+                <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{$featureTitle}</h3>
+                <p class="text-sm sm:text-base text-gray-600 leading-relaxed">{$featureDesc}</p>
             </div>
 HTML;
         }
@@ -571,17 +575,17 @@ HTML;
 
         $html = <<<HTML
 <div class="services-grid-block">
-    <div class="max-w-7xl mx-auto px-6 py-16 {$roundedClass}" {$blockStyle}>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 {$roundedClass}" {$blockStyle}>
 HTML;
 
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl font-bold text-center mb-12">{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">{$title}</h2>
 HTML;
         }
 
-        $html .= '<div class="grid md:grid-cols-3 gap-8">';
+        $html .= '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">';
 
         foreach ($services as $service) {
             $serviceTitle = htmlspecialchars($service['title'] ?? '');
@@ -612,15 +616,15 @@ HTML;
             $html .= <<<HTML
 
                 </div>
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold mb-3">{$serviceTitle}</h3>
-                    <p class="text-gray-600 leading-relaxed">{$serviceDesc}</p>
+                <div class="p-5 sm:p-6">
+                    <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{$serviceTitle}</h3>
+                    <p class="text-sm sm:text-base text-gray-600 leading-relaxed">{$serviceDesc}</p>
 HTML;
 
             if (!empty($serviceLink)) {
                 $html .= <<<HTML
 
-                    <a href="{$serviceLink}" class="inline-block mt-4 text-blue-600 hover:text-blue-700 font-medium">
+                    <a href="{$serviceLink}" class="inline-block mt-3 sm:mt-4 text-sm sm:text-base text-blue-600 hover:text-blue-700 font-medium">
                         Scopri di più →
                     </a>
 HTML;
@@ -704,6 +708,10 @@ HTML;
             $inlineStyles[] = 'padding: ' . $styles['padding'];
         }
 
+        if (!empty($styles['fontFamily'])) {
+            $inlineStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+        }
+
         // Add background image if present
         if (!empty($backgroundImage)) {
             $inlineStyles[] = 'background-image: url(' . $backgroundImage . ')';
@@ -716,12 +724,35 @@ HTML;
 
         $styleAttr = !empty($inlineStyles) ? 'style="' . implode('; ', $inlineStyles) . '"' : '';
 
+        // Button styles
+        $buttonStyle = $content['buttonStyle'] ?? [];
+        $buttonBg = htmlspecialchars($buttonStyle['backgroundColor'] ?? '#4F46E5');
+        $buttonColor = htmlspecialchars($buttonStyle['textColor'] ?? '#FFFFFF');
+        $buttonFontSize = htmlspecialchars($buttonStyle['fontSize'] ?? '16px');
+        $buttonPadding = htmlspecialchars($buttonStyle['padding'] ?? '12px 32px');
+        $buttonRadius = htmlspecialchars($buttonStyle['borderRadius'] ?? '8px');
+        $buttonBorderWidth = htmlspecialchars($buttonStyle['borderWidth'] ?? '0px');
+        $buttonBorderColor = htmlspecialchars($buttonStyle['borderColor'] ?? 'transparent');
+        $buttonBorderStyle = htmlspecialchars($buttonStyle['borderStyle'] ?? 'solid');
+        $buttonShadow = $buttonStyle['shadow'] ?? 'md';
+
+        $shadowMap = [
+            'none' => 'none',
+            'sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            'xl' => '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        ];
+        $boxShadow = $shadowMap[$buttonShadow] ?? $shadowMap['md'];
+
+        $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
+
         return <<<HTML
 <div class="hero-block">
     <div class="max-w-7xl mx-auto px-6 py-20 text-center {$roundedClass}" {$styleAttr}>
         <h1 class="text-5xl font-bold mb-4">{$title}</h1>
         <p class="text-xl mb-8">{$subtitle}</p>
-        <a href="{$buttonLink}" class="inline-block bg-white text-indigo-600 px-8 py-3 font-semibold hover:bg-gray-100 transition {$roundedClass}">
+        <a href="{$buttonLink}" class="inline-block font-semibold transition-all hover:opacity-90" style="{$buttonStyles}">
             {$buttonText}
         </a>
     </div>
@@ -764,15 +795,15 @@ HTML;
         $blockStyle = $this->getBlockStyle($styles);
 
         return <<<HTML
-<section class="two-column-text-image py-12 px-4" {$blockStyle}>
-    <div class="container mx-auto">
-        <div class="grid md:grid-cols-2 gap-8 items-center">
+<section class="two-column-text-image py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
+    <div class="container mx-auto max-w-7xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
             <div>
-                <h2 class="text-3xl font-bold mb-4">{$title}</h2>
-                <p class="text-lg">{$text}</p>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{$title}</h2>
+                <p class="text-sm sm:text-base text-gray-600">{$text}</p>
             </div>
             <div>
-                <img src="{$image}" alt="{$title}" class="w-full h-auto {$roundedClass}">
+                <img src="{$image}" alt="{$title}" class="w-full h-auto shadow-lg {$roundedClass}">
             </div>
         </div>
     </div>
@@ -793,15 +824,15 @@ HTML;
         $blockStyle = $this->getBlockStyle($styles);
 
         return <<<HTML
-<section class="two-column-image-text py-12 px-4" {$blockStyle}>
-    <div class="container mx-auto">
-        <div class="grid md:grid-cols-2 gap-8 items-center">
+<section class="two-column-image-text py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
+    <div class="container mx-auto max-w-7xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
             <div>
-                <img src="{$image}" alt="{$title}" class="w-full h-auto {$roundedClass}">
+                <img src="{$image}" alt="{$title}" class="w-full h-auto shadow-lg {$roundedClass}">
             </div>
             <div>
-                <h2 class="text-3xl font-bold mb-4">{$title}</h2>
-                <p class="text-lg">{$text}</p>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{$title}</h2>
+                <p class="text-sm sm:text-base text-gray-600">{$text}</p>
             </div>
         </div>
     </div>
@@ -901,6 +932,29 @@ HTML;
 
         $blockStyle = $this->getBlockStyle($styles);
 
+        // Button styles
+        $buttonStyle = $content['buttonStyle'] ?? [];
+        $buttonBg = htmlspecialchars($buttonStyle['backgroundColor'] ?? '#4F46E5');
+        $buttonColor = htmlspecialchars($buttonStyle['textColor'] ?? '#FFFFFF');
+        $buttonFontSize = htmlspecialchars($buttonStyle['fontSize'] ?? '16px');
+        $buttonPadding = htmlspecialchars($buttonStyle['padding'] ?? '12px 32px');
+        $buttonRadius = htmlspecialchars($buttonStyle['borderRadius'] ?? '8px');
+        $buttonBorderWidth = htmlspecialchars($buttonStyle['borderWidth'] ?? '0px');
+        $buttonBorderColor = htmlspecialchars($buttonStyle['borderColor'] ?? 'transparent');
+        $buttonBorderStyle = htmlspecialchars($buttonStyle['borderStyle'] ?? 'solid');
+        $buttonShadow = $buttonStyle['shadow'] ?? 'md';
+
+        $shadowMap = [
+            'none' => 'none',
+            'sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            'xl' => '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        ];
+        $boxShadow = $shadowMap[$buttonShadow] ?? $shadowMap['md'];
+
+        $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
+
         $html = <<<HTML
 <section class="form-block py-12 px-4" {$blockStyle}>
     <div class="container mx-auto max-w-2xl">
@@ -969,7 +1023,7 @@ HTML;
 
         $html .= <<<HTML
 
-            <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 font-medium transition-colors {$roundedClass}">
+            <button type="submit" class="w-full font-medium transition-colors" style="{$buttonStyles}">
                 {$buttonText}
             </button>
 
@@ -1509,55 +1563,266 @@ HTML;
     }
 
     /**
+     * Render Social block
+     */
+    protected function renderSocial($content, $styles, $block)
+    {
+        $facebookUrl = htmlspecialchars($content['facebookUrl'] ?? '');
+        $instagramUrl = htmlspecialchars($content['instagramUrl'] ?? '');
+        $xUrl = htmlspecialchars($content['xUrl'] ?? '');
+        $linkedinUrl = htmlspecialchars($content['linkedinUrl'] ?? '');
+        $youtubeUrl = htmlspecialchars($content['youtubeUrl'] ?? '');
+
+        $iconStyle = $content['iconStyle'] ?? 'colored';
+        $buttonSize = intval($content['buttonSize'] ?? 48);
+        $buttonSpacing = intval($content['buttonSpacing'] ?? 16);
+        $buttonBackground = htmlspecialchars($content['buttonBackground'] ?? 'transparent');
+        $borderRadius = intval($content['borderRadius'] ?? 8);
+        $shadow = $content['shadow'] ?? 'md';
+        $borderWidth = intval($content['borderWidth'] ?? 0);
+        $borderColor = htmlspecialchars($content['borderColor'] ?? '#e5e7eb');
+        $borderStyle = $content['borderStyle'] ?? 'solid';
+
+        $roundedClass = $this->getRoundedClass();
+        $blockStyle = $this->getBlockStyle($styles);
+
+        // Shadow map
+        $shadowMap = [
+            'none' => 'none',
+            'sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            'xl' => '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        ];
+        $boxShadow = $shadowMap[$shadow] ?? $shadowMap['md'];
+
+        $buttonStyle = sprintf(
+            'display: inline-flex; align-items: center; justify-content: center; ' .
+            'border-radius: %dpx; box-shadow: %s; border-width: %dpx; ' .
+            'border-color: %s; border-style: %s; padding: 12px; background-color: %s; ' .
+            'transition: opacity 0.3s;',
+            $borderRadius,
+            $boxShadow,
+            $borderWidth,
+            $borderColor,
+            $borderStyle,
+            $buttonBackground
+        );
+
+        $currentColor = ($iconStyle === 'monochrome') ? 'currentColor' : '';
+
+        $html = <<<HTML
+<div class="social-block">
+    <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
+        <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: {$buttonSpacing}px;">
+HTML;
+
+        // Facebook
+        if (!empty($facebookUrl)) {
+            $fbIcon = ($iconStyle === 'colored')
+                ? '<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>'
+                : '<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="' . $currentColor . '"/>';
+
+            $html .= <<<HTML
+
+            <a href="{$facebookUrl}" target="_blank" rel="noopener noreferrer" style="{$buttonStyle}" title="Facebook" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <svg width="{$buttonSize}" height="{$buttonSize}" viewBox="0 0 24 24" fill="none">
+                    {$fbIcon}
+                </svg>
+            </a>
+HTML;
+        }
+
+        // Instagram
+        if (!empty($instagramUrl)) {
+            if ($iconStyle === 'colored') {
+                $igIcon = <<<SVG
+<defs>
+    <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#FD5949;stop-opacity:1" />
+        <stop offset="50%" style="stop-color:#D6249F;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#285AEB;stop-opacity:1" />
+    </linearGradient>
+</defs>
+<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" fill="url(#instagram-gradient)"/>
+SVG;
+            } else {
+                $igIcon = '<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" fill="' . $currentColor . '"/>';
+            }
+
+            $html .= <<<HTML
+
+            <a href="{$instagramUrl}" target="_blank" rel="noopener noreferrer" style="{$buttonStyle}" title="Instagram" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <svg width="{$buttonSize}" height="{$buttonSize}" viewBox="0 0 24 24" fill="none">
+                    {$igIcon}
+                </svg>
+            </a>
+HTML;
+        }
+
+        // X (Twitter)
+        if (!empty($xUrl)) {
+            $xColor = ($iconStyle === 'colored') ? '#000000' : $currentColor;
+            $html .= <<<HTML
+
+            <a href="{$xUrl}" target="_blank" rel="noopener noreferrer" style="{$buttonStyle}" title="X (Twitter)" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <svg width="{$buttonSize}" height="{$buttonSize}" viewBox="0 0 24 24" fill="{$xColor}">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+            </a>
+HTML;
+        }
+
+        // LinkedIn
+        if (!empty($linkedinUrl)) {
+            $liIcon = ($iconStyle === 'colored')
+                ? '<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0A66C2"/>'
+                : '<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="' . $currentColor . '"/>';
+
+            $html .= <<<HTML
+
+            <a href="{$linkedinUrl}" target="_blank" rel="noopener noreferrer" style="{$buttonStyle}" title="LinkedIn" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <svg width="{$buttonSize}" height="{$buttonSize}" viewBox="0 0 24 24" fill="none">
+                    {$liIcon}
+                </svg>
+            </a>
+HTML;
+        }
+
+        // YouTube
+        if (!empty($youtubeUrl)) {
+            $ytIcon = ($iconStyle === 'colored')
+                ? '<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#FF0000"/>'
+                : '<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="' . $currentColor . '"/>';
+
+            $html .= <<<HTML
+
+            <a href="{$youtubeUrl}" target="_blank" rel="noopener noreferrer" style="{$buttonStyle}" title="YouTube" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <svg width="{$buttonSize}" height="{$buttonSize}" viewBox="0 0 24 24" fill="none">
+                    {$ytIcon}
+                </svg>
+            </a>
+HTML;
+        }
+
+        $html .= <<<HTML
+
+        </div>
+    </div>
+</div>
+HTML;
+
+        return $html;
+    }
+
+    /**
      * Render Footer block
      */
     protected function renderFooter($content, $styles, $block)
     {
-        $companyName = htmlspecialchars($content['companyName'] ?? 'Company Name');
-        $companyInfo = htmlspecialchars($content['companyInfo'] ?? '');
+        $companyTitle = htmlspecialchars($content['companyTitle'] ?? '');
+        $companyName = htmlspecialchars($content['companyName'] ?? 'La Tua Azienda');
+        $companyDescription = htmlspecialchars($content['companyDescription'] ?? '');
+        $linksTitle = htmlspecialchars($content['linksTitle'] ?? 'Link Utili');
         $links = $content['links'] ?? [];
-        $contacts = $content['contacts'] ?? [];
+        $contactTitle = htmlspecialchars($content['contactTitle'] ?? 'Contatti');
+        $contactText = $content['contactText'] ?? ''; // HTML non escapato
+        $copyright = htmlspecialchars($content['copyright'] ?? '© ' . date('Y') . ' La Tua Azienda. Tutti i diritti riservati.');
         $roundedClass = $this->getRoundedClass();
 
-        $blockStyle = $this->getBlockStyle($styles);
+        // Gestisci fullWidth (default true per retrocompatibilità)
+        $fullWidth = !isset($content['fullWidth']) || $content['fullWidth'] === true;
 
-        $html = <<<HTML
-<footer class="footer-block py-12 px-4 bg-gray-800 text-white" {$blockStyle}>
-    <div class="container mx-auto">
-        <div class="grid md:grid-cols-3 gap-8">
-            <div>
-                <h3 class="text-xl font-bold mb-4">{$companyName}</h3>
-                <p>{$companyInfo}</p>
-            </div>
-HTML;
+        // Stili di default
+        $defaultBgColor = '#1F2937'; // gray-900
+        $defaultTextColor = '#FFFFFF';
 
-        if (!empty($links)) {
-            $html .= '<div><h4 class="text-lg font-semibold mb-4">Links</h4><ul class="space-y-2">';
-            foreach ($links as $link) {
-                $linkText = htmlspecialchars($link['text'] ?? '');
-                $linkUrl = htmlspecialchars($link['url'] ?? '#');
-                $html .= "<li><a href=\"{$linkUrl}\" class=\"hover:underline\">{$linkText}</a></li>";
+        if ($fullWidth) {
+            // FullWidth: stili sul wrapper esterno, contenuto limitato
+            $wrapperStyle = 'style="';
+            $wrapperStyle .= 'background-color: ' . ($styles['backgroundColor'] ?? $defaultBgColor) . '; ';
+            $wrapperStyle .= 'color: ' . ($styles['textColor'] ?? $defaultTextColor) . ';';
+            $wrapperStyle .= '"';
+
+            $containerClass = 'max-w-7xl mx-auto';
+
+            // Stili interni: solo padding e font
+            $innerStyles = [];
+            if (!empty($styles['padding'])) {
+                $innerStyles[] = 'padding: ' . $styles['padding'];
             }
-            $html .= '</ul></div>';
+            if (!empty($styles['fontFamily'])) {
+                $innerStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+            }
+            $innerStyle = !empty($innerStyles) ? 'style="' . implode('; ', $innerStyles) . '"' : '';
+        } else {
+            // NON fullWidth: wrapper limitato, stili sul div interno
+            $wrapperClass = 'max-w-7xl mx-auto';
+            $wrapperStyle = '';
+            $containerClass = '';
+
+            // Tutti gli stili sul div interno
+            $innerStyles = [];
+            $innerStyles[] = 'background-color: ' . ($styles['backgroundColor'] ?? $defaultBgColor);
+            $innerStyles[] = 'color: ' . ($styles['textColor'] ?? $defaultTextColor);
+            if (!empty($styles['padding'])) {
+                $innerStyles[] = 'padding: ' . $styles['padding'];
+            }
+            if (!empty($styles['fontFamily'])) {
+                $innerStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+            }
+            $innerStyle = 'style="' . implode('; ', $innerStyles) . '"';
         }
 
-        if (!empty($contacts)) {
-            $html .= '<div><h4 class="text-lg font-semibold mb-4">Contacts</h4><ul class="space-y-2">';
-            foreach ($contacts as $contact) {
-                $contactText = htmlspecialchars($contact['text'] ?? '');
-                $html .= "<li>{$contactText}</li>";
-            }
-            $html .= '</ul></div>';
-        }
+        $footerClass = $fullWidth ? '' : $wrapperClass;
 
-        $html .= <<<HTML
-        </div>
-        <div class="text-center mt-8 pt-8 border-t border-gray-700">
-            <p>&copy; <?php echo date('Y'); ?> {$companyName}. All rights reserved.</p>
-        </div>
-    </div>
-</footer>
-HTML;
+        $html = '<footer';
+        if (!empty($footerClass)) {
+            $html .= ' class="' . $footerClass . '"';
+        }
+        if (!empty($wrapperStyle)) {
+            $html .= ' ' . $wrapperStyle;
+        }
+        $html .= '>';
+
+        $html .= '<div class="px-6 py-12 ' . $containerClass . ' ' . $roundedClass . '" ' . $innerStyle . '>';
+        $html .= '<div class="grid md:grid-cols-3 gap-8">';
+
+        // Colonna 1: Info azienda
+        $html .= '<div>';
+        if (!empty($companyTitle)) {
+            $html .= '<h4 class="text-lg font-semibold mb-4">' . $companyTitle . '</h4>';
+        }
+        $html .= '<h3 class="text-xl font-bold mb-4">' . $companyName . '</h3>';
+        $html .= '<p class="text-gray-400 leading-relaxed">' . $companyDescription . '</p>';
+        $html .= '</div>';
+
+        // Colonna 2: Link utili
+        $html .= '<div>';
+        $html .= '<h4 class="text-lg font-semibold mb-4">' . $linksTitle . '</h4>';
+        $html .= '<ul class="space-y-2">';
+        foreach ($links as $link) {
+            $linkText = htmlspecialchars($link['text'] ?? '');
+            $linkUrl = htmlspecialchars($link['url'] ?? '#');
+            $html .= '<li><a href="' . $linkUrl . '" class="text-gray-400 hover:text-white transition-colors">' . $linkText . '</a></li>';
+        }
+        $html .= '</ul></div>';
+
+        // Colonna 3: Contatti
+        $html .= '<div>';
+        $html .= '<h4 class="text-lg font-semibold mb-4">' . $contactTitle . '</h4>';
+        $html .= '<div class="text-gray-400 prose prose-sm prose-invert max-w-none">' . $contactText . '</div>';
+        $html .= '</div>';
+
+        $html .= '</div>'; // Close grid
+
+        // Copyright
+        $html .= '<div class="border-t border-gray-800 mt-8 pt-8 text-center">';
+        $html .= '<p class="text-gray-400 text-sm">' . $copyright . '</p>';
+        $html .= '</div>';
+
+        $html .= '</div>'; // Close inner div
+        $html .= '</footer>';
 
         return $html;
     }

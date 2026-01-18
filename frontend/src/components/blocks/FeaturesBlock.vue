@@ -1,18 +1,18 @@
 <template>
   <div class="features-block">
-    <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
+    <div :class="['max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <!-- Titolo opzionale -->
       <h2
         v-if="block.content.title"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
-        class="text-3xl font-bold text-center mb-12 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+        class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
       >
         {{ block.content.title }}
       </h2>
 
       <!-- Griglia Features -->
-      <div class="grid md:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
         <div
           v-for="(feature, index) in block.content.features"
           :key="index"
@@ -41,7 +41,7 @@
           <h3
             :contenteditable="editable"
             @blur="updateFeature(index, 'title', $event.target.innerText)"
-            class="text-xl font-semibold mb-3 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+            class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
           >
             {{ feature.title }}
           </h3>
@@ -50,7 +50,7 @@
           <p
             :contenteditable="editable"
             @blur="updateFeature(index, 'description', $event.target.innerText)"
-            class="text-gray-600 leading-relaxed outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+            class="text-sm sm:text-base text-gray-600 leading-relaxed outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
           >
             {{ feature.description }}
           </p>

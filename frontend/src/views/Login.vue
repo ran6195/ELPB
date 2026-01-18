@@ -63,13 +63,6 @@
             <span v-else>Accedi</span>
           </button>
         </div>
-
-        <div class="text-center text-sm text-gray-600">
-          <p class="mt-4">Credenziali di test:</p>
-          <p class="mt-2">Admin: admin@example.com / admin123</p>
-          <p>Company: company@example.com / company123</p>
-          <p>User: user@example.com / user123</p>
-        </div>
       </form>
     </div>
   </div>

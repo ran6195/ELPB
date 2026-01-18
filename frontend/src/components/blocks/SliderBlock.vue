@@ -28,7 +28,7 @@
           :modules="modules"
           :slides-per-view="1"
           :space-between="block.content.slideGap ?? 20"
-          :loop="block.content.loop !== false"
+          :loop="loopEnabled"
           :autoplay="block.content.autoplay ? {
             delay: block.content.autoplayDelay || 3000,
             disableOnInteraction: false
@@ -155,6 +155,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
@@ -177,6 +178,20 @@ const props = defineProps({
 })
 
 const modules = [Navigation, Pagination, Autoplay]
+
+// Calcola se il loop mode può essere abilitato
+// Per funzionare correttamente, Swiper necessita di almeno slidesPerView * 2 slide
+const canEnableLoop = computed(() => {
+  const slides = props.block.content.slides || []
+  const slidesPerViewDesktop = props.block.content.slidesPerViewDesktop || 3
+  const minSlidesForLoop = slidesPerViewDesktop * 2
+  return slides.length >= minSlidesForLoop
+})
+
+// Loop è abilitato solo se configurato E ci sono abbastanza slide
+const loopEnabled = computed(() => {
+  return props.block.content.loop !== false && canEnableLoop.value
+})
 
 const updateContent = (field, value) => {
   if (props.editable) {

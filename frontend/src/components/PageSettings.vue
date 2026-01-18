@@ -217,6 +217,55 @@
           </p>
         </div>
       </div>
+
+      <!-- Google Tag Manager -->
+      <div class="mt-6 pt-6 border-t border-gray-200">
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
+          <div>
+            <p class="text-sm font-medium text-gray-900">Google Tag Manager</p>
+            <p class="text-xs text-gray-500 mt-0.5">
+              {{ gtmEnabled ? 'Tracciamento attivo' : 'Tracciamento disattivato' }}
+            </p>
+          </div>
+          <button
+            @click="gtmEnabled = !gtmEnabled"
+            :class="[
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+              gtmEnabled ? 'bg-primary-600' : 'bg-gray-200'
+            ]"
+          >
+            <span
+              :class="[
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                gtmEnabled ? 'translate-x-6' : 'translate-x-1'
+              ]"
+            />
+          </button>
+        </div>
+
+        <!-- GTM ID Field (mostrato solo se abilitato) -->
+        <div v-if="gtmEnabled" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">GTM Container ID</label>
+            <input
+              v-model="gtmId"
+              type="text"
+              placeholder="GTM-XXXXXXX"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Inserisci il tuo ID Container di Google Tag Manager (es. GTM-XXXXXXX).
+              <a href="https://tagmanager.google.com/" target="_blank" class="text-primary-600 underline">Crea un container</a>
+            </p>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-xs text-blue-700">
+              <strong>Info:</strong> Google Tag Manager permette di gestire tutti i tag di tracciamento (Analytics, Ads, Facebook Pixel, ecc.) da un'unica interfaccia, senza modificare il codice della landing page.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Contatti Rapidi -->
@@ -498,6 +547,31 @@ const recaptchaSecretKey = computed({
       localPage.value.recaptcha_settings = {}
     }
     localPage.value.recaptcha_settings.secret_key = value
+  }
+})
+
+// Google Tag Manager Settings
+const gtmEnabled = computed({
+  get() {
+    return localPage.value.tracking_settings?.gtm_enabled ?? false
+  },
+  set(value) {
+    if (!localPage.value.tracking_settings) {
+      localPage.value.tracking_settings = {}
+    }
+    localPage.value.tracking_settings.gtm_enabled = value
+  }
+})
+
+const gtmId = computed({
+  get() {
+    return localPage.value.tracking_settings?.gtm_id || ''
+  },
+  set(value) {
+    if (!localPage.value.tracking_settings) {
+      localPage.value.tracking_settings = {}
+    }
+    localPage.value.tracking_settings.gtm_id = value
   }
 })
 

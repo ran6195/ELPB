@@ -1,0 +1,121 @@
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║   📦 DEPLOY UPDATE - QUICK CONTACTS FEATURE                    ║
+║   Landing Page Builder - edysma.net/ELPB/                      ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+📅 Data: 10 Gennaio 2026
+
+═══════════════════════════════════════════════════════════════
+
+🎯 CONTENUTO PACCHETTO
+
+Nella cartella principale del progetto troverai:
+
+  ✅ deploy-backend-update-20260110.tar.gz (16 KB)
+     → File backend modificati + nuova migration
+
+  ✅ deploy-frontend-dist-20260110.tar.gz (329 KB)
+     → Frontend completo con nuove funzionalità
+
+  ✅ DEPLOY_UPDATE_QUICKCONTACTS.md
+     → Guida COMPLETA passo-passo per il deploy
+
+  ✅ LEGGIMI_DEPLOY.txt (questo file)
+     → Riepilogo veloce
+
+═══════════════════════════════════════════════════════════════
+
+🚀 QUICK START
+
+1. Leggi DEPLOY_UPDATE_QUICKCONTACTS.md per istruzioni complete
+
+2. Fai BACKUP di database e file
+
+3. Carica i 2 archivi sul server via FTP
+
+4. Estrai via SSH o manualmente
+
+5. Esegui migration database
+
+6. Testa il funzionamento
+
+═══════════════════════════════════════════════════════════════
+
+✨ NUOVE FUNZIONALITÀ
+
+✅ Quick Contacts
+   - Pulsanti flottanti WhatsApp e Telefono
+   - Configurabili per ogni pagina
+   - Personalizzabili (colori, messaggi, numeri)
+
+✅ Protezione Pagine Pubblicate
+   - Le pagine pubblicate non possono essere eliminate
+   - Messaggio di avviso automatico
+
+✅ Device Preview Migliorato
+   - Frame realistici per Tablet (768x1024)
+   - Frame realistici per Mobile (390x844)
+   - Scroll interno per simulare esperienza reale
+
+✅ Standalone Renderer
+   - Sistema di rendering PHP autonomo
+   - Per deployment su siti esterni
+
+═══════════════════════════════════════════════════════════════
+
+📂 STRUTTURA ARCHIVI
+
+Backend Update (16 KB):
+  backend/src/Controllers/PageController.php
+  backend/src/Models/Page.php
+  backend/database/migrations/add_quick_contacts.php (NUOVO)
+  backend/standalone-renderer/BlockRenderer.php (NUOVO)
+  backend/.env.example (NUOVO)
+
+Frontend Dist (329 KB):
+  index.html
+  assets/
+    - index-*.css
+    - index-*.js
+
+═══════════════════════════════════════════════════════════════
+
+⚠️  IMPORTANTE
+
+PRIMA DI PROCEDERE:
+
+1. ✅ Fai backup del database
+2. ✅ Fai backup dei file attuali
+3. ✅ Leggi la guida completa in DEPLOY_UPDATE_QUICKCONTACTS.md
+4. ✅ Testa su ambiente di staging se disponibile
+
+═══════════════════════════════════════════════════════════════
+
+📋 CHECKLIST VELOCE
+
+□ Backup database fatto
+□ Backup file fatto
+□ Backend uploadato
+□ Frontend uploadato
+□ Migration eseguita
+□ Permessi verificati
+□ Test funzionamento OK
+
+═══════════════════════════════════════════════════════════════
+
+🔗 LINK UTILI
+
+App in produzione: https://edysma.net/ELPB/
+API Backend: https://edysma.net/ELPB/backend/public/api
+
+═══════════════════════════════════════════════════════════════
+
+🆘 Hai problemi?
+
+Consulta DEPLOY_UPDATE_QUICKCONTACTS.md sezione "Troubleshooting"
+
+═══════════════════════════════════════════════════════════════
+
+Buon Deploy! 🚀

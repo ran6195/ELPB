@@ -1,0 +1,158 @@
+# ========================================================
+# Landing Page Builder - Root .htaccess
+# URL Rewriting Configuration
+# ========================================================
+#
+# Questo file abilita URL puliti tipo:
+# https://ilprodotto.it/pagina-test-1
+# invece di:
+# https://ilprodotto.it/standalone-renderer/page.php?slug=pagina-test-1
+#
+# ISTRUZIONI INSTALLAZIONE:
+# 1. Rinomina questo file in ".htaccess" (rimuovi .txt)
+# 2. Caricalo nella ROOT del tuo sito web
+# 3. BACKUP del tuo .htaccess esistente (se presente)!
+# 4. Adatta le directory da escludere in base al tuo sito
+#
+# ========================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ========================================================
+    # CONFIGURAZIONE BASE PATH
+    # ========================================================
+    # Se il sito è nella root del dominio:
+    RewriteBase /
+
+    # Se il sito è in una sottodirectory, modifica qui:
+    # Esempio: https://tuodominio.com/sito/
+    # RewriteBase /sito/
+
+
+    # ========================================================
+    # ESCLUSIONI - Directory e file da NON reindirizzare
+    # ========================================================
+
+    # Escludi la directory standalone-renderer stessa
+    RewriteCond %{REQUEST_URI} ^/standalone-renderer/ [NC]
+    RewriteRule ^ - [L]
+
+    # Escludi file e directory reali (immagini, CSS, JS, ecc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # ⚠️ IMPORTANTE: Aggiungi qui altre directory del tuo sito
+    # Esempi comuni (decommentare se necessario):
+
+    # WordPress
+    # RewriteCond %{REQUEST_URI} ^/wp-admin/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/wp-includes/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/wp-content/ [NC]
+    # RewriteRule ^ - [L]
+
+    # Joomla
+    # RewriteCond %{REQUEST_URI} ^/administrator/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/components/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/modules/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/plugins/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/templates/ [NC]
+    # RewriteRule ^ - [L]
+
+    # Directory comuni da escludere
+    # RewriteCond %{REQUEST_URI} ^/admin/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/api/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/assets/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/images/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/uploads/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/css/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} ^/js/ [NC]
+    # RewriteRule ^ - [L]
+
+
+    # ========================================================
+    # URL REWRITING per Landing Pages
+    # ========================================================
+
+    # Reindirizza tutto il resto a standalone-renderer/page.php
+    # Cattura lo slug dalla URL e passalo come parametro
+    RewriteRule ^([a-zA-Z0-9\-]+)/?$ standalone-renderer/page.php?slug=$1 [L,QSA]
+
+    # Nota:
+    # - ^([a-zA-Z0-9\-]+)/?$ = cattura slug alfanumerico con trattini
+    # - L = Last rule (ferma il processing delle regole successive)
+    # - QSA = Query String Append (mantiene parametri GET esistenti)
+
+</IfModule>
+
+
+# ========================================================
+# SICUREZZA
+# ========================================================
+
+# Disabilita directory listing
+Options -Indexes
+
+# Proteggi file .htaccess
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Proteggi file .env e config
+<FilesMatch "^(\\.env|\\.env\\..*|config\\.php)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Blocca accesso a file di backup
+<FilesMatch "\\.(bak|backup|old|orig|save|swp|tmp|~)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+
+# ========================================================
+# PERFORMANCE
+# ========================================================
+
+# Abilita compressione GZIP
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
+</IfModule>
+
+# Cache headers per risorse statiche
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>
+
+
+# ========================================================
+# HEADER HTTP
+# ========================================================
+
+# Previeni clickjacking
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+
+# ========================================================
+# ERRORI PERSONALIZZATI (opzionale)
+# ========================================================
+
+# Puoi personalizzare le pagine di errore
+# ErrorDocument 404 /404.html
+# ErrorDocument 500 /500.html

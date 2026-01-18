@@ -143,15 +143,50 @@ function renderPage($page) {
     $fontFamily = $customStyles['fontFamily'] ?? '';
     $roundedCorners = $customStyles['roundedCorners'] ?? true;
 
+    // Raccogli tutti i font unici usati nei blocchi
+    $blocks = $page['blocks'] ?? [];
+    $allFonts = [];
+
+    // Aggiungi font globale della pagina se presente
+    if (!empty($fontFamily)) {
+        $allFonts[$fontFamily] = true;
+    }
+
+    // Raccogli font da ogni blocco
+    foreach ($blocks as $block) {
+        $blockFontFamily = $block['styles']['fontFamily'] ?? '';
+        if (!empty($blockFontFamily)) {
+            $allFonts[$blockFontFamily] = true;
+        }
+    }
+
+    // Converti in array di font unici
+    $uniqueFonts = array_keys($allFonts);
+
     // Meta tags
     $metaTitle = htmlspecialchars($page['meta_title'] ?? $page['title'] ?? 'Landing Page');
     $metaDescription = htmlspecialchars($page['meta_description'] ?? '');
+
+    // Google Tag Manager
+    $trackingSettings = $page['tracking_settings'] ?? [];
+    $gtmEnabled = $trackingSettings['gtm_enabled'] ?? false;
+    $gtmId = $trackingSettings['gtm_id'] ?? '';
 
     // Inizia output
     ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <?php if ($gtmEnabled && !empty($gtmId)): ?>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','<?php echo htmlspecialchars($gtmId); ?>');</script>
+    <!-- End Google Tag Manager -->
+    <?php endif; ?>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $metaTitle; ?></title>
@@ -165,9 +200,11 @@ function renderPage($page) {
     <!-- Swiper CSS per slider -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-    <!-- Google Fonts -->
-    <?php if ($fontFamily): ?>
-    <link href="https://fonts.googleapis.com/css2?family=<?php echo urlencode($fontFamily); ?>:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Carica tutti i font unici usati nella pagina e nei blocchi -->
+    <?php if (!empty($uniqueFonts)): ?>
+        <?php foreach ($uniqueFonts as $font): ?>
+    <link href="https://fonts.googleapis.com/css2?family=<?php echo urlencode($font); ?>:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <?php endforeach; ?>
     <?php endif; ?>
 
     <style>
@@ -194,6 +231,13 @@ function renderPage($page) {
     <?php endif; ?>
 </head>
 <body>
+    <?php if ($gtmEnabled && !empty($gtmId)): ?>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?php echo htmlspecialchars($gtmId); ?>"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <?php endif; ?>
+
     <?php
     // Renderizza tutti i blocchi
     foreach ($blocks as $block) {

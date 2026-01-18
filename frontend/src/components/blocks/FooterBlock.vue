@@ -1,6 +1,6 @@
 <template>
-  <footer>
-    <div :class="['max-w-7xl mx-auto px-6 py-12', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
+  <footer :class="footerWrapperClass" :style="footerWrapperStyle">
+    <div :class="['px-6 py-12', containerClass, roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <div class="grid md:grid-cols-3 gap-8">
         <!-- Colonna 1: Info azienda -->
         <div>
@@ -108,11 +108,57 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
+// Gestisci fullWidth (default true per retrocompatibilità)
+const fullWidth = computed(() => {
+  return props.block.content.fullWidth !== false // true se undefined o true
+})
+
+// Classi per il wrapper esterno (footer tag)
+const footerWrapperClass = computed(() => {
+  if (!fullWidth.value) {
+    // Se NON fullWidth, applica larghezza limitata al wrapper
+    return 'max-w-7xl mx-auto'
+  }
+  return '' // FullWidth: nessuna classe di limitazione
+})
+
+// Stili per il wrapper esterno (solo se fullWidth)
+const footerWrapperStyle = computed(() => {
+  if (fullWidth.value) {
+    const styles = props.block.styles || {}
+    return {
+      backgroundColor: styles.backgroundColor || '#1F2937',
+      color: styles.textColor || '#FFFFFF'
+    }
+  }
+  return {} // Se non fullWidth, gli stili sono sul div interno
+})
+
+// Classi per il container interno
+const containerClass = computed(() => {
+  if (fullWidth.value) {
+    // Se fullWidth, il contenuto è limitato ma lo sfondo si estende
+    return 'max-w-7xl mx-auto'
+  }
+  return '' // Se non fullWidth, la larghezza è già limitata dal wrapper
+})
+
+// Stili per il div interno
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}
+
+  if (!fullWidth.value) {
+    // Se NON fullWidth, applica gli stili al div interno
+    return {
+      backgroundColor: styles.backgroundColor || '#1F2937',
+      color: styles.textColor || '#FFFFFF',
+      padding: styles.padding || undefined,
+      fontFamily: styles.fontFamily || undefined
+    }
+  }
+
+  // Se fullWidth, solo padding e font (colori sono sul wrapper)
   return {
-    backgroundColor: styles.backgroundColor || '#1F2937', // gray-900 di default
-    color: styles.textColor || '#FFFFFF', // bianco di default
     padding: styles.padding || undefined,
     fontFamily: styles.fontFamily || undefined
   }

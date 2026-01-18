@@ -58,41 +58,6 @@
           </label>
         </div>
 
-        <!-- Richiesta Appuntamento -->
-        <div v-if="block.content.enableAppointment" class="form-field space-y-3">
-          <label class="flex items-start space-x-2">
-            <input
-              type="checkbox"
-              v-model="appointmentRequested"
-              class="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-            />
-            <span class="text-sm text-gray-700">
-              {{ block.content.appointmentLabel || 'Richiedi un appuntamento' }}
-            </span>
-          </label>
-
-          <!-- Date and Time Picker (shown when appointment is requested) -->
-          <div v-if="appointmentRequested" class="ml-6 space-y-3">
-            <div>
-              <label for="appointmentDatetime" class="block text-sm font-medium text-gray-700 mb-2">
-                Data e ora preferita
-                <span class="text-red-500">*</span>
-              </label>
-              <input
-                id="appointmentDatetime"
-                type="datetime-local"
-                v-model="appointmentDatetime"
-                :required="appointmentRequested"
-                :min="minDateTime"
-                :class="['w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', roundedCorners ? 'rounded-lg' : '']"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                Seleziona la data e l'ora in cui preferisci essere ricontattato
-              </p>
-            </div>
-          </div>
-        </div>
-
         <!-- Google reCAPTCHA v2 -->
         <div v-if="recaptchaSiteKey" class="form-field">
           <div ref="recaptchaElement" class="g-recaptcha"></div>
@@ -104,7 +69,8 @@
         <button
           type="submit"
           :disabled="submitting || !canSubmit"
-          :class="['w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed', roundedCorners ? 'rounded-lg' : '']"
+          :style="buttonStyles"
+          class="w-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ submitting ? 'Invio in corso...' : block.content.buttonText }}
         </button>
@@ -158,13 +124,45 @@ const blockStyles = computed(() => {
   }
 })
 
+const buttonStyles = computed(() => {
+  const btnStyle = props.block.content.buttonStyle || {
+    backgroundColor: '#4F46E5',
+    textColor: '#FFFFFF',
+    fontSize: '16px',
+    padding: '12px 32px',
+    borderRadius: '8px',
+    borderWidth: '0px',
+    borderColor: 'transparent',
+    borderStyle: 'solid',
+    shadow: 'md'
+  }
+
+  const shadowMap = {
+    none: 'none',
+    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+  }
+
+  return {
+    backgroundColor: btnStyle.backgroundColor,
+    color: btnStyle.textColor,
+    fontSize: btnStyle.fontSize,
+    padding: btnStyle.padding,
+    borderRadius: btnStyle.borderRadius,
+    borderWidth: btnStyle.borderWidth,
+    borderColor: btnStyle.borderColor,
+    borderStyle: btnStyle.borderStyle,
+    boxShadow: shadowMap[btnStyle.shadow] || shadowMap.md
+  }
+})
+
 const formData = reactive({})
 const submitting = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 const privacyAccepted = ref(false)
-const appointmentRequested = ref(false)
-const appointmentDatetime = ref('')
 const recaptchaToken = ref('')
 const recaptchaError = ref('')
 const recaptchaElement = ref(null)
@@ -176,13 +174,6 @@ const recaptchaSiteKey = computed(() => {
     return props.page.recaptcha_settings.site_key || ''
   }
   return ''
-})
-
-// Minimum datetime (now + 1 hour)
-const minDateTime = computed(() => {
-  const now = new Date()
-  now.setHours(now.getHours() + 1)
-  return now.toISOString().slice(0, 16)
 })
 
 const canSubmit = computed(() => {
@@ -294,8 +285,6 @@ const submitForm = async () => {
       page_id: pageStore.currentPage?.id,
       privacy_accepted: privacyAccepted.value,
       recaptcha_token: recaptchaToken.value,
-      appointment_requested: appointmentRequested.value,
-      appointment_datetime: appointmentRequested.value ? appointmentDatetime.value : null,
       ...formData
     })
 

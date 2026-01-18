@@ -2,513 +2,357 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📝 File Modificati (Ultima Sessione - 2025-12-29)
+## 📝 Modifiche Recenti
 
-### Fix Immagini Blocchi Two-Column
-- **Problema risolto**: I blocchi `two-column-text-image` e `two-column-image-text` non visualizzavano le immagini nei renderer standalone e Joomla
-- **Causa**: I renderer cercavano `content['imageUrl']` invece di `content['image']` (usato dai componenti Vue)
+### Sessione 2026-01-17
 
-### File Modificati
-- `standalone-renderer/BlockRenderer.php` - Cambiato `$imageUrl` → `$image` nei metodi:
-  - `renderTwocolumntextimage()` (righe 761, 775)
-  - `renderTwocolumnimagetext()` (righe 790, 800)
-- `backend/standalone-renderer/BlockRenderer.php` - Stesse modifiche:
-  - `renderTwocolumntextimage()` (righe 752, 766)
-  - `renderTwocolumnimagetext()` (righe 781, 791)
-- `joomla-component/com_landingpages/site/helpers/blockrenderer.php` - Stesse modifiche:
-  - `renderTwocolumntextimage()` (righe 781, 795)
-  - `renderTwocolumnimagetext()` (righe 810, 820)
-- `joomla-update-slider-font/blockrenderer.php` - Stesse modifiche per compatibilità
+**Fix Slug Duplicati e Soft Delete**
+- Risolto errore "Duplicate entry for key 'pages_slug_unique'" quando si creano/duplicano pagine
+- **Problema**: Il database ha constraint UNIQUE sullo slug che vale anche per pagine soft-deleted, ma Eloquent con SoftDeletes esclude le pagine cancellate dalle query normali
+- **Soluzione**: Usare `withTrashed()` per verificare unicità slug anche tra pagine archiviate
+- Lo slug iniziale ora è impostato a 'nuova-pagina' invece di stringa vuota
+- Il backend aggiunge automaticamente un contatore se lo slug esiste già (nuova-pagina-1, nuova-pagina-2, etc.)
+- File modificati:
+  - `frontend/src/views/PageEditor.vue` (riga 484: `slug: 'nuova-pagina'`)
+  - `backend/src/Controllers/PageController.php`:
+    - Metodo `store()` (riga 87: `Page::withTrashed()->where('slug', $slug)->exists()`)
+    - Metodo `update()` (righe 155-165: validazione slug con `withTrashed()` e esclusione pagina corrente)
+    - Metodo `duplicate()` (riga 316: `Page::withTrashed()->where('slug', $slug)->exists()`)
+    - Aggiunto try-catch per errori dettagliati (righe 74-127)
 
-### File Creati per Deploy
-- `DEPLOY_FIX_TWOCOLUMN.md` - Guida completa per deploy fix su tutti gli ambienti
-- `standalone-renderer-fix-twocolumn.zip` (13K) - Renderer aggiornato per ilprodotto.it, primehome.it, infortunisticaveneta.it
-- `joomla-landingpages-v2.0.1-fix-twocolumn.zip` (14M) - Componente Joomla v2.0.1 per edysma.net
+**Nuovo Blocco Social Media**
+- Creato nuovo blocco "Social Media" per raggruppare link ai profili social
+- Piattaforme supportate: Facebook, Instagram, X (Twitter), LinkedIn, YouTube
+- Due stili icone disponibili:
+  - **Colorate (Standard)**: icone con colori brand ufficiali (Facebook blu, Instagram gradient, etc.)
+  - **Monocromatiche**: icone monocromatiche che ereditano il colore dal testo del blocco
+- Personalizzazioni disponibili:
+  - Dimensione icone: 24-96px (default: 48px)
+  - Spaziatura tra icone: 8-64px (default: 16px)
+  - Sfondo bottoni: colore personalizzabile o trasparente
+  - Curvatura bordi: 0-50px (0=squadrato, 50=rotondo)
+  - Ombra: nessuna, piccola, media, grande, extra grande
+  - Bordo: spessore, colore, stile (solido/tratteggiato/punteggiato)
+- Layout centrato con icone responsive
+- File creati/modificati:
+  - **Frontend**: `SocialBlock.vue` (nuovo componente con SVG icons inline)
+  - **Editor**: `BlockEditor.vue` (righe 1173-1348: configurazione completa social block, riga 1940: aggiunto 'social' a blockTypeNames)
+  - **PageEditor**:
+    - Aggiunto blocco social ai blockTypes (riga 551)
+    - Import SocialBlock component (riga 472)
+    - Mapping in getBlockComponent (riga 1017)
+    - Default content per social block (righe 965-980)
+  - **Renderer Standalone**: `BlockRenderer.php` (righe 1565-1716: metodo renderSocial con SVG inline)
+  - **Renderer Joomla**: `blockrenderer.php` (righe 1592-1743: metodo renderSocial statico)
+- SVG icons inline sia nel componente Vue che nei renderer PHP per rendering identico
+- Supporto completo per hover effect (opacity: 0.8)
+- Links aprono in nuova tab con `target="_blank" rel="noopener noreferrer"` per sicurezza
+- Nascosta sezione "Colore Testo" nelle impostazioni (blocco senza testo, solo icone)
+- File modificato per UI: `BlockEditor.vue` (riga 1834: condizione aggiornata a `v-if="block.type !== 'video' && block.type !== 'social'"`)
 
-### Componente Joomla
-- `joomla-component/com_landingpages/landingpages.xml` - Aggiornato a versione 2.0.1 con descrizione fix
+**UX Editor - Chiusura Reciproca Pannelli**
+- Implementata chiusura automatica tra pannello impostazioni pagina e pannello impostazioni blocco
+- Quando si apre "Impostazioni pagina", il blocco selezionato viene deselezionato
+- Quando si seleziona un blocco, il pannello "Impostazioni pagina" si chiude automaticamente
+- File modificato: `frontend/src/views/PageEditor.vue` (righe 22, 1007)
 
----
+**Uniformazione Nomi Blocchi in Italiano**
+- I nomi dei blocchi nel pannello destro (impostazioni) ora sono in italiano come nel pannello sinistro
+- Aggiunta mappatura `blockTypeNames` con traduzioni per tutti i 15 tipi blocco
+- Computed property `blockTypeName` per mostrare il nome tradotto
+- Blocco "features" rinominato "Vantaggi" per coerenza
+- Blocco "services-grid" rinominato "Griglia Servizi" (era "Servizi Grid") per coerenza tra pannelli
+- File modificati: `BlockEditor.vue` (righe 7, 1733, 1748-1769), `PageEditor.vue` (riga 544)
 
-## 📝 Sessione Precedente (2025-12-23)
+**Upload Video e Fix Swiper**
+- Creato endpoint dedicato `/api/upload/video` per upload video (separato da `/api/upload/image`)
+- Supporto formati: MP4, MOV, AVI, MPEG, WebM (fino a 100MB)
+- Directory upload: `backend/public/uploads/videos/`
+- Validazione frontend: controllo dimensione file (max 100MB) e tipo file prima dell'upload
+- Messaggi errore dettagliati per problemi upload (dimensione, formato, limiti PHP)
+- Configurazione PHP: file `.user.ini` con limiti aumentati (upload_max_filesize: 100M, post_max_size: 110M)
+- Documentazione: `UPLOAD_VIDEO_CONFIG.md` con istruzioni per configurare limiti PHP
+- Fix warning Swiper: loop mode disabilitato automaticamente quando slide < (slidesPerView * 2)
+- File modificati:
+  - Backend: `UploadController.php` (nuovo metodo `uploadVideo`), `index.php` (riga 87)
+  - Frontend: `BlockEditor.vue` (metodo `handleVideoUpload` righe 1938-1978), `SliderBlock.vue` (computed `loopEnabled`)
+  - Config: `backend/public/.user.ini` (nuovo), `UPLOAD_VIDEO_CONFIG.md` (nuovo)
 
-### Nuove Funzionalità
-- **Homepage standalone per test**: Pagina web semplice per testare landing pages in ambiente standalone
-- **Fix font family slider Joomla**: Il font della pagina ora viene applicato correttamente agli elementi di testo dello slider
+**Unificazione Pulsanti Dashboard**
+- Rimosso pulsante "Vedi" (pagina pubblica) dalla dashboard
+- Mantenuto solo pulsante "Anteprima" che funziona per tutte le pagine (pubblicate e non)
+- Layout semplificato: Anteprima + Duplica (affiancati), Elimina (full width sotto)
+- File modificato: `PageList.vue` (righe 132-152, rimossa funzione `viewPublicPage`)
 
-### File Creati
-- `index.html` - Homepage standalone con:
-  - Descrizione del progetto Landing Page Builder
-  - Campo di testo per inserire slug e navigare verso landing pages
-  - Link all'editor principale (https://edysma.net/ELPB)
-  - Design responsive con Tailwind CSS
-- `DEPLOY_ILPRODOTTO.md` - Guida per deploy su ilprodotto.it
-- `DEPLOY_DUPLICATE_FIX.md` - Guida per caricare fix funzione duplicate su edysma.net
-- `deploy-duplicate-fix.zip` - Archivio con file backend da aggiornare per abilitare duplicazione pagine
-- `joomla-slider-font-fix.zip` - Archivio con fix font slider per componente Joomla
+**Eliminazione Pagine Pubblicate con Opzione**
+- Quando si elimina una pagina pubblicata, viene chiesto all'utente se vuole togliere la pubblicazione
+- Dialog: "Questa pagina è pubblicata. Vuoi toglierla dalla pubblicazione ed eliminarla?"
+- Se l'utente conferma: la pagina viene prima tolta dalla pubblicazione, poi eliminata
+- Se l'utente annulla: l'operazione viene interrotta
+- Rimosso controllo backend che impediva eliminazione pagine pubblicate (ora gestito dal frontend)
+- File modificati:
+  - Frontend: `PageList.vue` (metodo `deletePage` righe 201-240)
+  - Backend: `PageController.php` (rimosso controllo righe 192-196)
 
-### File Modificati - Componente Joomla
-- `joomla-component/com_landingpages/site/helpers/blockrenderer.php` - Aggiunto supporto font family globale:
-  - Proprietà statica `$fontFamily`
-  - Metodo `setFontFamily()` per impostare il font
-  - Metodo `getFontFamilyStyle()` per ottenere lo stile CSS
-  - Applicato font a titolo e testi dello slider
-- `joomla-component/com_landingpages/site/views/page/tmpl/default.php` - Imposta font family nel renderer prima di renderizzare blocchi
+**Soft Delete - Archiviazione Pagine**
+- Implementato soft delete per conservare storico pagine eliminate
+- Le pagine eliminate NON vengono rimosse dal database, ma archiviate (campo `deleted_at`)
+- Trait `SoftDeletes` di Eloquent gestisce automaticamente l'esclusione dalle query normali
+- Vantaggi: recupero errori, storico completo, audit trail, relazioni preservate
+- Metodi disponibili: `restore()` per ripristinare, `forceDelete()` per eliminazione definitiva
+- Query normali escludono automaticamente pagine archiviate
+- Documentazione completa in `SOFT_DELETE_PAGES.md` con esempi endpoint opzionali per gestire archivio
+- File modificati/creati:
+  - Migration: `add_soft_delete_to_pages.php` (aggiunge campo `deleted_at`)
+  - Model: `Page.php` (trait SoftDeletes, cast deleted_at)
+  - Documentazione: `SOFT_DELETE_PAGES.md`
 
-### File Modificati - Standalone Renderer
-- `standalone-renderer/.env` - Creato da .env.example, configurato per API su edysma.net
+**Sezione Archivio - UI Gestione Pagine Eliminate**
+- Nuova sezione completa per visualizzare e ripristinare pagine archiviate
+- Endpoint backend: `GET /api/pages/archived` (lista pagine archiviate), `POST /api/pages/{id}/restore` (ripristino)
+- Permessi: ogni utente vede solo le proprie pagine archiviate (filtro per ruolo come pagine attive)
+- Store: nuove funzioni `fetchArchivedPages()` e `restorePage()` in pageStore
+- Vista: `ArchivedPages.vue` con grid card pagine eliminate, badge "Archiviata", pulsante "Ripristina"
+- Informazioni mostrate: titolo, slug, data eliminazione, proprietario, azienda, stato pubblicazione
+- Navigazione: pulsante "Archivio" nell'header di PageList (icona archivio + testo)
+- Route: `/archived` con protezione autenticazione
+- Ripristino: conferma utente, pagina torna nella lista attive
+- File modificati/creati:
+  - Backend: `PageController.php` (metodi `archived()` e `restore()`), `index.php` (route righe 79, 83)
+  - Store: `pageStore.js` (stato `archivedPages`, azioni archivio)
+  - Vista: `ArchivedPages.vue` (nuova)
+  - Router: `index.js` (import e route `/archived`)
+  - Navigazione: `PageList.vue` (pulsante Archivio nell'header)
 
----
+**Pulizia UI Blocco Video**
+- Rimossa sezione "Colore Testo" dagli stili del blocco Video (non ha testo da personalizzare)
+- Condizione `v-if="block.type !== 'video'"` aggiunta alla sezione Colore Testo negli stili comuni
+- File modificato: `BlockEditor.vue` (riga 1657)
 
-## 📝 Sessione Precedente (2025-12-19)
+### Sessione 2026-01-16
 
-### Nuove Funzionalità
-- **Protezione eliminazione pagine pubblicate**: Le pagine pubblicate non possono essere eliminate senza prima rimuovere la pubblicazione
-- **Device preview con maschera**: Visualizzazione tablet e mobile con frame realistico e scroll interno
-- **Componente Joomla aggiornato**: Aggiunto blocco Map e social media buttons nel Header
+**Mobile Responsiveness Completo**
+- Tutti i blocchi (ServicesGrid, Features, TwoColumn) ottimizzati per mobile
+- Pattern: `grid-cols-1` mobile → `md:grid-cols-2/3` desktop
+- Classi responsive: padding `px-4 sm:px-6`, font size `text-2xl sm:text-3xl`, gap `gap-6 md:gap-8`
+- File modificati: `ServicesGridBlock.vue`, `FeaturesBlock.vue`, `TwoColumnTextImage.vue`, `TwoColumnImageText.vue`, renderer PHP (standalone e Joomla)
 
-### File Modificati - Main App
-- `backend/src/Controllers/PageController.php` - Aggiunto controllo eliminazione pagine pubblicate
-- `frontend/src/views/PageList.vue` - Controllo preventivo stato pubblicazione prima del dialog di conferma
-- `frontend/src/views/PageEditor.vue` - Implementate maschere device per tablet (768x1024) e mobile (390x844)
+**Fix Viewport Preview Editor**
+- Problema: Classi Tailwind responsive basate su window width, non container width
+- Soluzione: CSS custom con classi `.viewport-mobile` e `.viewport-tablet` in `PageEditor.vue` (righe 1105-1132)
+- Uso di `:deep()` per penetrare nei componenti figli e forzare `grid-template-columns: repeat(1, minmax(0, 1fr))`
 
-### File Modificati - Componente Joomla
-- `joomla-component/com_landingpages/site/helpers/blockrenderer.php` - Aggiornato con:
-  - Nuovo blocco Map (Google Maps con contact info)
-  - Header block aggiornato con social media buttons (Facebook, Instagram, X/Twitter)
-  - Fix bug Footer block (inizializzazione variabile)
+**Rimozione Funzionalità Appuntamento**
+- Rimossa richiesta appuntamento dai form (funzionalità non utilizzata)
+- File modificati: `FormBlock.vue`, `BlockEditor.vue`, `PageEditor.vue`
+- Impatto: nessuna modifica ai renderer PHP
 
-### File Creati
-- `backend/.env.example` - Template configurazione backend
-- `CHECKLIST_DEPLOY.md` - Checklist dettagliata per il deploy
-- `DEPLOY_PRONTO.md` - Guida rapida deploy su edysma.net/ELPB/
-- `frontend/dist/.htaccess` - Configurazione Apache per Vue Router in produzione (con fix MIME type)
-- `RISOLUZIONE_ERRORE_MIME.md` - Guida risoluzione errori MIME type JavaScript
-- `SOLUZIONE_ALTERNATIVA.md` - Soluzioni alternative per configurazione Apache
-- `CHECKLIST_POST_DEPLOY.md` - Checklist post-deploy e sicurezza
+**Piano Email Alerts**
+- Documento creato: `PIANO_EMAIL_ALERTS.md` (pianificazione completa, implementazione NON ancora avviata)
+- Servizio raccomandato: PHPMailer con SMTP
+- Configurazione: campo JSON `email_settings` nella tabella `pages`
 
-### Build e Deploy
-- Frontend buildato in `frontend/dist/` per produzione
-- Configurazione pronta per deploy su `https://edysma.net/ELPB/`
-- **✅ DEPLOY COMPLETATO CON SUCCESSO** - App online su https://edysma.net/ELPB/
+### Sessione 2026-01-15
 
-### Fix Applicati
-- `.htaccess` aggiornato per escludere esplicitamente directory `assets/` e file statici dal rewrite
-- Aggiunto `AddType application/javascript .js` per forzare MIME type corretto
-- Risolto errore "Expected a JavaScript module script but the server responded with MIME type text/html"
+**Google Tag Manager Integration**
+- Campo `tracking_settings` JSON nella tabella `pages` (migration: `add_tracking_settings.php`)
+- UI: nuova sezione GTM in `PageSettings.vue`
+- Renderer: snippet GTM automatici in `<head>` e `<body>` (standalone-renderer/page.php e Joomla component)
+- File modificati: `Page.php`, `PageController.php`, renderer standalone e Joomla (v2.0.7)
+
+**Form Button Customization**
+- Stili completamente personalizzabili per bottone submit (come Hero button)
+- Computed `buttonStyles` in `FormBlock.vue`, sezione UI in `BlockEditor.vue`
+- Supporto in renderer PHP (standalone e Joomla)
+- Stili: backgroundColor, textColor, fontSize, padding, borderRadius, borderWidth, borderColor, borderStyle, shadow
+
+### Sessione 2026-01-14
+
+**Fix Rendering Stili**
+- Fix `fontFamily` e `buttonStyle` in renderer standalone e Joomla
+- File: `BlockRenderer.php` (metodi `getBlockStyle()`, `renderHero()`), versione Joomla 2.0.3
+
+**Fix Google Fonts Blocchi**
+- Raccolta automatica font unici da tutti i blocchi e caricamento multiplo nel HEAD
+- File: `standalone-renderer/page.php`, `joomla-component/.../default.php`, versione Joomla 2.0.4
+
+**URL Rewriting**
+- Configurazione Apache mod_rewrite per URL puliti: `/standalone-renderer/page.php?slug=test` → `/test`
+- File creati: `root-htaccess-urlrewrite.txt`, `.htaccess-root-clean`, `GUIDA_URL_REWRITING.md`, `test-url-rewriting.php`
+
+**Footer fullWidth Option**
+- Toggle "Larghezza Completa" per footer (default: true per retrocompatibilità)
+- File: `FooterBlock.vue`, `BlockEditor.vue`, `PageEditor.vue`, renderer PHP, versione Joomla 2.0.5
+
+**Fix Permessi 403**
+- Script `fix-permissions.sh` per correggere permessi file dopo upload FTP/SFTP
+- Guide: `FIX_403_STANDALONE.md`, `SOLUZIONE_RAPIDA_403.txt`
+
+## 📝 Storico Modifiche (Dicembre 2025 - Gennaio 2026)
+
+**2026-01-13**: Guide deployment (`GUIDA_DEPLOYMENT.md`, `DEPLOYMENT_CHECKLIST.md`), script creazione utente FM Marketing, rimosse credenziali test da Login.vue
+
+**2025-12-29**: Fix immagini blocchi two-column (cambio `imageUrl` → `image` nei renderer), versione Joomla 2.0.1, guide deploy
+
+**2025-12-23**: Homepage standalone (`index.html`), fix font slider Joomla, creazione `.env` standalone renderer
+
+**2025-12-19**: Protezione eliminazione pagine pubblicate, device preview con maschera (tablet/mobile), blocco Map e social media buttons in Header (Joomla), deploy produzione su https://edysma.net/ELPB/, fix MIME type JavaScript
 
 ## Project Overview
 
-Landing Page Builder is a full-stack drag-and-drop application for creating landing pages with multi-tenant authentication. The project is split into two separate applications:
+**Landing Page Builder** - Full-stack drag-and-drop application per landing pages con autenticazione multi-tenant.
 
-- **Backend**: PHP REST API built with Slim Framework 4 and Eloquent ORM
-- **Frontend**: Vue 3 SPA with Vite, using Composition API, Pinia, and TailwindCSS
+### Stack Tecnologico
+- **Backend**: PHP REST API (Slim Framework 4 + Eloquent ORM)
+- **Frontend**: Vue 3 SPA (Vite, Composition API, Pinia, TailwindCSS)
+- **Database**: MySQL con tabelle: users, companies, pages, blocks, leads
 
-## Development Commands
-
-### Backend (PHP)
-
-Navigate to `backend/` directory for all backend commands.
-
-```bash
-# Install dependencies
-composer install
-
-# Run database migrations (creates database and tables)
-php database/migrations/create_tables.php
-php database/migrations/create_auth_tables.php
-php database/migrations/add_appointment_fields.php
-php database/migrations/add_missing_leads_fields.php
-php database/migrations/add_recaptcha_settings.php
-
-# Start development server
-php -S localhost:8000 -t public
-```
-
-The API runs on `http://localhost:8000` and serves routes under `/api/*`.
-
-### Frontend (Vue)
-
-Navigate to `frontend/` directory for all frontend commands.
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server (runs on http://localhost:3000)
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-### Deployment
-
-Use the automated deployment script from the project root:
-
-```bash
-# Build frontend, install backend dependencies, run migrations
-./scripts/deploy.sh
-```
-
-For complete deployment instructions, see `DEPLOY.md`.
-
-## Architecture
-
-### Backend Architecture
+### Architettura Backend
 
 **Entry Point**: `backend/public/index.php`
-- Bootstraps Slim Framework
-- Loads environment variables from `.env`
-- Initializes Eloquent ORM via `config/database.php`
-- Defines REST API routes with authentication middleware
-- Configures CORS middleware to allow frontend requests
-- Sets BASE_PATH for subfolder deployments (e.g., `/ELPB/backend/public`)
-
-**Database Connection**:
-- Uses Illuminate Database (Eloquent ORM standalone) configured in `config/database.php`
-- Connection settings pulled from `.env` file (defaults to localhost MySQL)
-- Database name: `landing_page_builder`
+- Slim Framework, Eloquent ORM, CORS middleware, JWT authentication
 
 **Models** (`backend/src/Models/`):
-- `User`: User accounts with three roles (admin, company, user)
-- `Company`: Organizations that group users
-- `Page`: Landing pages with meta fields, user/company ownership
-- `Block`: Page building blocks with JSON fields (content, styles, position)
-- `Lead`: Form submissions from landing pages
+- `User` (3 ruoli: admin, company, user) → belongsTo Company, hasMany Page
+- `Company` → hasMany User, hasMany Page
+- `Page` (meta fields, tracking_settings JSON) → belongsTo User/Company, hasMany Block
+- `Block` (content/styles JSON) → belongsTo Page (cascade delete)
+- `Lead` → belongsTo Page (set null on delete)
 
-**Relationships**:
-- `User` belongsTo `Company`, hasMany `Page`
-- `Company` hasMany `User`, hasMany `Page`
-- `Page` belongsTo `User`, belongsTo `Company`, hasMany `Block`
-- `Block` belongsTo `Page` (cascade delete)
-- `Lead` belongsTo `Page` (set null on delete)
-
-**Controllers** (`backend/src/Controllers/`):
-- `AuthController`: Login, register, user/company management, role-based operations
-- `PageController`: Full CRUD for pages, includes `showBySlug()` for public page rendering, `duplicate()` for page cloning, `reassignPage()` for changing page ownership
-- `LeadController`: Handles form submissions and lead management (admin only)
-- `UploadController`: Handles image uploads to `public/uploads/images/`
-- `DebugController`: Database connection testing (remove in production)
-
-**Middleware** (`backend/src/Middleware/`):
-- `AuthMiddleware`: JWT token validation, attaches user to request
-
-**Utils** (`backend/src/Utils/`):
-- `JWTHandler`: JWT token generation and validation using firebase/php-jwt
+**Controllers**:
+- `AuthController`: Login, register, gestione utenti/aziende
+- `PageController`: CRUD pagine, `showBySlug()` pubblico, `duplicate()`, `reassignPage()`
+- `LeadController`: Gestione lead (admin only)
+- `UploadController`: Upload immagini in `public/uploads/images/`
 
 **Key Routes**:
+- Public: `POST /api/auth/login`, `GET /api/page/{slug}`, `POST /api/leads`
+- Protected: `GET /api/pages`, `POST /api/pages`, `PUT /api/pages/{id}`, `POST /api/pages/{id}/duplicate`
+- Admin: `GET /api/auth/companies`, `GET /api/leads`, gestione utenti/aziende
+- Company Manager: gestione utenti azienda, reassign pagine
 
-*Public (no auth required)*:
-- `POST /api/auth/login` - Login
-- `POST /api/auth/register` - Register new user
-- `GET /api/page/{slug}` - Get published page by slug (public viewing)
-- `POST /api/leads` - Submit form lead (public form submission)
+**Authentication**: JWT (7 giorni, `Authorization: Bearer <token>`), secret in `.env` come `JWT_SECRET`
 
-*Protected (requires authentication)*:
-- `GET /api/auth/me` - Get current user info
-- `GET /api/pages` - List pages (filtered by role/permissions)
-- `GET /api/pages/{id}` - Get page with blocks
-- `POST /api/pages` - Create page (auto-generates unique slug, sets user_id and company_id)
-- `POST /api/pages/{id}/duplicate` - Duplicate existing page
-- `PUT /api/pages/{id}` - Update page and all blocks
-- `DELETE /api/pages/{id}` - Delete page (cascade deletes blocks)
-- `POST /api/upload/image` - Upload image
-
-*Admin Only*:
-- `GET /api/auth/companies` - List all companies
-- `GET /api/auth/users` - List all users
-- `POST /api/admin/companies` - Create company (auto-creates company manager)
-- `DELETE /api/admin/companies/{id}` - Delete company
-- `PUT /api/admin/users/{id}` - Update user
-- `DELETE /api/admin/users/{id}` - Delete user
-- `GET /api/leads` - List all leads
-- `DELETE /api/leads/{id}` - Delete lead
-
-*Company Manager Only*:
-- `POST /api/company/users` - Create user within company
-- `DELETE /api/company/users/{id}` - Delete user from company (prevents deletion if user has pages)
-- `GET /api/company/users-with-pages` - Get users with page count
-- `PUT /api/company/pages/{id}/reassign` - Reassign page to different user
-
-### Authentication System
-
-**Three-Tier Permission System**:
-1. **Admin**: Full access to all pages, users, and companies
-2. **Company**: Company managers can manage users and pages within their company
-3. **User**: Regular users can only manage their own pages
-
-**JWT Implementation**:
-- Token generated on login with 7-day expiration
-- Token includes: user id, email, role, company_id
-- Secret key configured in `.env` as `JWT_SECRET`
-- Token sent as `Authorization: Bearer <token>` header
-- AuthMiddleware validates token on protected routes
-
-**Permission Methods** (User model):
-- `canViewPage($page)` - Check if user can view page
-- `canEditPage($page)` - Check if user can edit page
-- `isAdmin()`, `isCompany()`, `isUser()` - Role checks
-
-### Frontend Architecture
+### Architettura Frontend
 
 **Entry Point**: `frontend/src/main.js`
-- Bootstraps Vue 3 application
-- Initializes Pinia stores (authStore, pageStore)
-- Configures Vue Router with authentication guards
-- Sets up axios interceptors for JWT token injection
+- Vue 3 + Pinia stores (authStore, pageStore) + Vue Router
 
 **Router** (`frontend/src/router/index.js`):
-- `/login` - Login view (guest only)
-- `/register` - Register view (guest only)
-- `/` - PageList (dashboard, requires auth)
-- `/admin` - AdminPanel (requires admin role)
-- `/company` - CompanyPanel (requires company role)
-- `/editor/:id?` - PageEditor (drag-drop builder, requires auth)
-- `/preview/:id` - PagePreview (preview page, requires auth)
-- `/p/:slug` - PublicPage (public landing page, no auth)
-- `/thank-you` - ThankYouPage (form submission confirmation, no auth)
+- `/login`, `/register` (guest only)
+- `/` (dashboard), `/admin` (admin), `/company` (company manager)
+- `/editor/:id?` (drag-drop builder), `/preview/:id`
+- `/p/:slug` (public page), `/thank-you` (form confirmation)
 
-**Navigation Guards**:
-- `requiresAuth`: Redirects to login if not authenticated
-- `requiresAdmin`: Restricts access to admin users only
-- `requiresCompany`: Restricts access to company managers only
-- `requiresGuest`: Redirects to home if already authenticated
+**Navigation Guards**: requiresAuth, requiresAdmin, requiresCompany, requiresGuest
 
-**State Management**:
+**Stores**:
+- `authStore`: autenticazione, token, user info, axios interceptor
+- `pageStore`: CRUD pagine, `submitLead()`, `duplicatePage()`
 
-*authStore* (`frontend/src/stores/authStore.js`):
-- Handles authentication state (user, token, role)
-- Login/logout actions
-- Token persistence in localStorage
-- Axios interceptor setup for automatic token injection
-- User info retrieval
-
-*pageStore* (`frontend/src/stores/pageStore.js`):
-- Centralized Pinia store for all page operations
-- API calls to backend using axios
-- Base API URL: `http://localhost:8000/api` (configurable via VITE_API_URL)
-- Handles CRUD operations, loading states, and error handling
-- `submitLead()` action for form submissions
-- `duplicatePage()` action for page cloning
-
-**Views**:
-- `Login.vue` - Login form with email/password
-- `Register.vue` - Registration form
-- `PageList.vue` - Dashboard grid showing all pages (filtered by role) with edit/delete/preview/duplicate actions
-- `AdminPanel.vue` - Admin interface for managing users and companies
-- `CompanyPanel.vue` - Company manager interface for managing company users and reassigning pages
-- `PageEditor.vue` - Main editor with 3-panel layout (blocks sidebar, canvas, properties panel)
-- `PagePreview.vue` - Read-only preview of page
-- `PublicPage.vue` - Public-facing page renderer (fetches by slug, only shows published pages)
-- `ThankYouPage.vue` - Confirmation page after form submission
-
-**Block System**:
-Located in `frontend/src/components/blocks/`. Each block is a Vue component that renders content from the `block.content` JSON object.
-
-Available block types (15 total):
-- `hero` - Hero section with title, subtitle, CTA button (HeroBlock.vue)
-- `header` - Page header with logo, navigation menu, social media buttons (HeaderBlock.vue)
-- `text` - Simple text block with title and rich text content using TipTap (TextBlock.vue)
-- `two-column-text-image` - Text left, image right (TwoColumnTextImage.vue)
-- `two-column-image-text` - Image left, text right (TwoColumnImageText.vue)
-- `form` - Lead capture form with configurable fields, appointment fields, reCAPTCHA v2 (FormBlock.vue)
-- `cta` - Call-to-action section with title, subtitle, button (CtaBlock.vue)
-- `features` - Features grid with icons and descriptions (FeaturesBlock.vue)
-- `services-grid` - Services grid with images and descriptions (ServicesGridBlock.vue)
-- `slider` - Image slider/carousel with Swiper.js (SliderBlock.vue)
-- `image-slide` - Image grid with text overlays (ImageSlideBlock.vue)
-- `video` - Embedded video player (VideoBlock.vue)
-- `video-info` - Video with text description (VideoInfoBlock.vue)
-- `map` - Google Maps embed with customizable location (MapBlock.vue)
-- `footer` - Footer with company info, links, contacts (FooterBlock.vue)
+**Block System** (15 tipi):
+- `hero`, `header`, `text`, `two-column-text-image`, `two-column-image-text`
+- `form` (reCAPTCHA v2), `cta`, `features`, `services-grid`
+- `slider` (Swiper.js), `image-slide`, `video`, `video-info`, `map`, `footer`
 
 **Block Structure**:
 ```javascript
 {
-  id: number,           // Unique identifier
-  type: string,         // Block type (hero, text, form, etc)
-  content: object,      // JSON content specific to block type
-  styles: object,       // JSON with backgroundColor, textColor, padding, roundedCorners
-  position: object,     // JSON with layout info (currently unused)
-  order: number         // Display order (updated on drag-drop)
+  id: number,
+  type: string,
+  content: object,      // JSON specifico per tipo blocco
+  styles: object,       // backgroundColor, textColor, padding, roundedCorners, fontFamily
+  position: object,     // layout (non usato)
+  order: number         // ordine visualizzazione (drag-drop)
 }
 ```
 
 **Editor Components**:
-- `BlockEditor.vue` - Right panel for editing block properties (shows when block selected)
-- `PageSettings.vue` - Right panel for editing page metadata (slug, SEO fields, publish status, custom styles, reCAPTCHA settings)
+- `BlockEditor.vue`: pannello destro proprietà blocco
+- `PageSettings.vue`: pannello destro metadata pagina (slug, SEO, publish, tracking_settings, recaptcha_settings)
 
-**Drag and Drop**:
-- Uses `vuedraggable` library (wraps SortableJS)
-- Applied to blocks in PageEditor.vue
-- Updates `order` field on blocks after drag operations
-- Footer block is always forced to bottom position
+**Features**:
+- Drag & drop (vuedraggable/SortableJS)
+- Inline editing (contenteditable, TipTap per rich text)
+- Device preview (desktop/tablet/mobile con CSS custom per viewport)
+- Image uploads (multipart/form-data)
+- reCAPTCHA v2 integration
+- GTM integration
 
-**Content Editing**:
-- Blocks support `contenteditable` for inline text editing when in editor mode
-- Rich text blocks use TipTap editor for formatting (bold, italic, underline, links, alignment)
-- Block components receive `:editable="true"` prop in editor
-- Changes reflected immediately in page.blocks array (Vue reactivity)
+### Database Schema
 
-**Page Customization**:
-- Custom page-level CSS in PageSettings
-- Rounded corners toggle (applied to all blocks)
-- Background colors and text colors per block
-- Padding control per block
+**pages** table:
+- `id`, `title`, `slug` (unique)
+- `meta_title`, `meta_description`, `is_published`
+- `styles` JSON (custom CSS)
+- `tracking_settings` JSON (`{ gtm_enabled, gtm_id }`)
+- `recaptcha_settings` JSON (`{ enabled, site_key, secret_key }`)
+- `user_id` FK, `company_id` FK (nullable)
 
-**reCAPTCHA Integration**:
-- Google reCAPTCHA v2 for form spam protection
-- Configurable per page in PageSettings
-- Site key and secret key stored in page's recaptcha_settings JSON field
-- Frontend renders reCAPTCHA widget in FormBlock when enabled
-- Backend validates reCAPTCHA response before accepting lead submission
+**blocks** table:
+- `id`, `page_id` FK (cascade delete)
+- `type`, `content` JSON, `styles` JSON, `position` JSON, `order`
 
-## Database Schema
+**leads** table:
+- `id`, `page_id` FK (set null)
+- `name`, `email`, `phone`, `message`
+- `appointment_date`, `appointment_time`, `metadata` JSON
 
-### `users` table
-- `id` - Primary key
-- `name` - User name
-- `email` - Email (unique)
-- `password` - Hashed password
-- `role` - Enum: 'admin', 'company', 'user'
-- `company_id` - Foreign key to companies (nullable for admin)
-- `created_at`, `updated_at` - Timestamps
+### Development Commands
 
-### `companies` table
-- `id` - Primary key
-- `name` - Company name
-- `created_at`, `updated_at` - Timestamps
+**Backend** (da `backend/`):
+```bash
+composer install
+php database/migrations/create_tables.php
+php database/migrations/create_auth_tables.php
+php database/migrations/add_tracking_settings.php
+php -S localhost:8000 -t public
+```
 
-### `pages` table
-- `id` - Primary key
-- `title` - Page title shown in editor
-- `slug` - URL-friendly identifier (auto-generated from title, must be unique)
-- `meta_title` - SEO meta title
-- `meta_description` - SEO meta description
-- `is_published` - Boolean, only published pages accessible via public URL
-- `styles` - JSON field for custom CSS
-- `recaptcha_settings` - JSON field with reCAPTCHA configuration (enabled, site_key, secret_key)
-- `user_id` - Foreign key to users (required, cascade delete)
-- `company_id` - Foreign key to companies (nullable, cascade delete)
-- `created_at`, `updated_at` - Timestamps
+**Frontend** (da `frontend/`):
+```bash
+npm install
+npm run dev          # http://localhost:3000
+npm run build        # produzione
+```
 
-### `blocks` table
-- `id` - Primary key
-- `page_id` - Foreign key to pages (cascade delete)
-- `type` - Block type string
-- `content` - JSON field with block-specific data
-- `styles` - JSON field with backgroundColor, textColor, padding, roundedCorners
-- `position` - JSON field for layout (currently unused)
-- `order` - Integer for display order
-- `created_at`, `updated_at` - Timestamps
+### Key Patterns
 
-### `leads` table
-- `id` - Primary key
-- `page_id` - Foreign key to pages (set null on delete)
-- `name` - Lead name (nullable)
-- `email` - Lead email (required)
-- `phone` - Lead phone (nullable)
-- `message` - Lead message (nullable)
-- `appointment_date` - Appointment date (nullable)
-- `appointment_time` - Appointment time (nullable)
-- `metadata` - JSON field for extra form data
-- `created_at`, `updated_at` - Timestamps
+- **JSON Storage**: contenuti/stili blocchi flessibili
+- **Cascade Deletes**: eliminazione pagina → eliminazione blocchi automatica
+- **Multi-tenant**: pagine scoped a user/company con RBAC
+- **JWT Auth**: stateless con role/company info
+- **Component Reuse**: stesso componente blocco in editor/preview/public
+- **Eloquent**: eager loading `->with('blocks')` per evitare N+1 queries
+- **Slug Generation**: auto da title, backend garantisce unicità
 
-## Development Workflow
+### Deployment
 
-### Adding New Block Types
+- Frontend: `npm run build`, deploy `frontend/dist/`
+- Backend: configurare `.env` (DB, JWT_SECRET, BASE_PATH)
+- Migrations: eseguire in ordine
+- Permissions: `755` o `775` su `backend/public/uploads/`
+- Apache: configurare per Vue Router (SPA) + API routes
+- URL Rewriting: `.htaccess` root per URL puliti (opzionale)
 
-1. Create new Vue component in `frontend/src/components/blocks/`
-2. Add block type to `blockTypes` array in PageEditor.vue
-3. Add default content structure in `getDefaultContent()` function
-4. Map component in `getBlockComponent()` function
-5. Block content structure should match what the component expects in props
-6. Handle `:editable` prop for editor mode vs. public view
-7. Apply rounded corners conditionally based on `styles.roundedCorners`
+### Renderer Pubblici
 
-### Updating Page Content
+**Standalone Renderer** (`standalone-renderer/`):
+- `page.php`: rendering pubblico pagine
+- `BlockRenderer.php`: rendering blocchi PHP
+- `.env`: configurazione API endpoint
 
-When updating a page via API, the backend deletes ALL existing blocks and recreates them from the payload. This means:
-- Block IDs are regenerated on each save
-- Frontend generates temporary IDs (using `Date.now()`) for new blocks
-- On save, blocks are sent as array in page payload
-- Backend creates new block records with proper IDs
+**Joomla Component** (`joomla-component/com_landingpages/`):
+- Versione attuale: 2.0.7
+- `site/helpers/blockrenderer.php`: rendering blocchi
+- `site/views/page/tmpl/default.php`: template pagina
 
-### Authentication Flow
+**Sincronizzazione**: renderer PHP sincronizzati con componenti Vue per stessi stili/funzionalità
 
-1. User logs in via `/login`
-2. Backend validates credentials, generates JWT token
-3. Token stored in localStorage via authStore
-4. Axios interceptor automatically adds token to all requests
-5. AuthMiddleware validates token on protected routes
-6. User info loaded on app initialization from `/api/auth/me`
+### Troubleshooting
 
-### Permission Checking
-
-Pages are filtered on the backend based on user role:
-- Admin sees all pages
-- Company manager sees all pages in their company
-- Regular user sees only their own pages
-
-Frontend should not assume permissions - always rely on backend filtering.
-
-### Slug Generation
-
-Slugs are auto-generated from page title in PageEditor.vue:
-- Converts to lowercase
-- Replaces non-alphanumeric with hyphens
-- Backend ensures uniqueness by appending counter if slug exists
-
-### Image Uploads
-
-Images are uploaded to `backend/public/uploads/images/` via `POST /api/upload/image`:
-- Accepts multipart/form-data with `image` field
-- Validates file type (JPEG, PNG, GIF, WebP)
-- Generates unique filename with timestamp
-- Returns full URL path for use in blocks
-
-### Page Duplication
-
-Pages can be duplicated via `POST /api/pages/{id}/duplicate`:
-- Creates new page with "Copy of" prefix
-- Copies all blocks with new IDs
-- Generates unique slug
-- Sets same user_id and company_id as original
-- Marks as unpublished by default
-
-## Key Patterns
-
-- **JSON Storage**: Block content/styles stored as JSON in database, allows flexible schema per block type
-- **Cascade Deletes**: Deleting a page automatically deletes all blocks (database constraint)
-- **Multi-tenant**: Pages are scoped to users and companies, with role-based access control
-- **JWT Auth**: Stateless authentication using JWT tokens with role and company information
-- **Optimistic Updates**: Frontend updates local state before API confirmation for better UX
-- **Component Reuse**: Same block components used in editor, preview, and public views with different props
-- **Eloquent Relationships**: Always eager load blocks with `->with('blocks')` to avoid N+1 queries
-- **Router Guards**: Authentication and authorization enforced at router level
-- **Axios Interceptors**: JWT token automatically injected into all API requests
-
-## Deployment Notes
-
-- Frontend must be built before deployment: `npm run build`
-- Backend `.env` must be configured with production database credentials and JWT_SECRET
-- BASE_PATH must match server subfolder (e.g., `/ELPB/backend/public`)
-- VITE_API_URL must point to production API endpoint
-- Apache/Nginx must be configured for Vue Router (SPA) and API routes
-- Run all migrations in order when setting up new database
-- Set proper file permissions on `backend/public/uploads/` (755 or 775)
-- Generate strong JWT_SECRET using `openssl rand -base64 64`
-- Remove or protect debug routes in production (`/api/debug/*`)
-
-## Common Issues
-
-See `TROUBLESHOOTING.md` for detailed troubleshooting guide including:
-- Slider rendering issues
-- Image upload problems
-- Database connection errors
-- JWT authentication issues
-- CORS configuration
+Guide disponibili:
+- `FIX_403_STANDALONE.md` - Risoluzione errori permessi
+- `GUIDA_URL_REWRITING.md` - Configurazione URL rewriting
+- `DEPLOY_*.md` - Guide deployment specifiche
+- `PIANO_EMAIL_ALERTS.md` - Piano implementazione email alerts

@@ -1,0 +1,168 @@
+╔══════════════════════════════════════════════════════════════════╗
+║          URL REWRITING - QUICK START GUIDE                       ║
+║          Landing Page Builder                                    ║
+╚══════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────┐
+│ OBIETTIVO                                                        │
+└──────────────────────────────────────────────────────────────────┘
+
+DA:  https://ilprodotto.it/standalone-renderer/page.php?slug=test
+A:   https://ilprodotto.it/test
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ INSTALLAZIONE RAPIDA (3 STEP)                                   │
+└──────────────────────────────────────────────────────────────────┘
+
+1. BACKUP .htaccess esistente (se presente)
+   ────────────────────────────────────────
+   cd /home/tuosito/public_html
+   cp .htaccess .htaccess.backup-$(date +%Y%m%d)
+
+
+2. CARICA .htaccess nella ROOT del sito
+   ────────────────────────────────────────
+   - Rinomina: .htaccess-root-clean → .htaccess
+   - Carica nella root via FTP/SSH
+   - Permessi: chmod 644 .htaccess
+
+
+3. TEST
+   ────────────────────────────────────────
+   https://tuosito.it/pagina-test-1
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ CONTENUTO .htaccess MINIMO                                       │
+└──────────────────────────────────────────────────────────────────┘
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Escludi standalone-renderer directory
+    RewriteCond %{REQUEST_URI} ^/standalone-renderer/ [NC]
+    RewriteRule ^ - [L]
+
+    # Escludi file e directory reali
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Reindirizza slug a standalone-renderer
+    RewriteRule ^([a-zA-Z0-9\-]+)/?$ standalone-renderer/page.php?slug=$1 [L,QSA]
+</IfModule>
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ VERIFICA FUNZIONAMENTO                                           │
+└──────────────────────────────────────────────────────────────────┘
+
+✓ Test 1: URL pulito funziona
+  https://tuosito.it/slug-pagina
+
+✓ Test 2: URL vecchio funziona ancora
+  https://tuosito.it/standalone-renderer/page.php?slug=slug-pagina
+
+✓ Test 3: File reali serviti normalmente
+  https://tuosito.it/favicon.ico
+  https://tuosito.it/images/logo.png
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                  │
+└──────────────────────────────────────────────────────────────────┘
+
+Errore 500:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+mod_rewrite non attivo:
+  apache2ctl -M | grep rewrite
+  sudo a2enmod rewrite
+  sudo systemctl restart apache2
+
+Sintassi errata:
+  tail -f /var/log/apache2/error.log
+
+
+Errore 404 su URL puliti:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+.htaccess non caricato:
+  ls -la /home/tuosito/public_html/.htaccess
+  chmod 644 .htaccess
+
+RewriteEngine non attivo:
+  Verifica nel .htaccess:
+  RewriteEngine On  ← deve essere presente
+
+
+Loop di redirect:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Conflitto con .htaccess standalone-renderer:
+  Verifica standalone-renderer/.htaccess:
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ ESCLUDERE ALTRE DIRECTORY                                        │
+└──────────────────────────────────────────────────────────────────┘
+
+Aggiungi PRIMA della regola principale:
+
+# Escludi directory /shop
+RewriteCond %{REQUEST_URI} ^/shop/ [NC]
+RewriteRule ^ - [L]
+
+# Escludi directory /blog
+RewriteCond %{REQUEST_URI} ^/blog/ [NC]
+RewriteRule ^ - [L]
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ SCRIPT DI TEST                                                   │
+└──────────────────────────────────────────────────────────────────┘
+
+Carica test-url-rewriting.php nella root:
+https://tuosito.it/test-url-rewriting.php
+
+Verifica:
+✓ mod_rewrite attivo
+✓ .htaccess presente
+✓ Regole configurate
+✓ Standalone renderer installato
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ ROLLBACK                                                         │
+└──────────────────────────────────────────────────────────────────┘
+
+cd /home/tuosito/public_html
+cp .htaccess.backup-20260114 .htaccess
+sudo systemctl reload apache2
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ VANTAGGI URL REWRITING                                           │
+└──────────────────────────────────────────────────────────────────┘
+
+✓ SEO: URL puliti meglio indicizzati da Google
+✓ UX: URL leggibili e facili da condividere
+✓ Branding: URL professionali
+✓ Sicurezza: Nasconde struttura interna
+
+
+┌──────────────────────────────────────────────────────────────────┐
+│ FILE DI RIFERIMENTO                                              │
+└──────────────────────────────────────────────────────────────────┘
+
+📄 GUIDA_URL_REWRITING.md           - Guida completa con tutti i dettagli
+📄 root-htaccess-urlrewrite.txt     - .htaccess commentato
+📄 .htaccess-root-clean             - .htaccess minimale pronto all'uso
+📄 test-url-rewriting.php           - Script PHP di test
+📄 URL_REWRITING_QUICKSTART.txt     - Questo file (quick reference)
+
+
+╔══════════════════════════════════════════════════════════════════╗
+║ Landing Page Builder - URL Rewriting v1.0 - 2026-01-14          ║
+╚══════════════════════════════════════════════════════════════════╝

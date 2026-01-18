@@ -4,7 +4,7 @@
       <h4 class="text-xs font-semibold text-gray-500 uppercase mb-3 tracking-wide">
         Tipo Blocco
       </h4>
-      <p class="text-sm text-gray-900 capitalize font-medium">{{ block.type }}</p>
+      <p class="text-sm text-gray-900 font-medium">{{ blockTypeName }}</p>
     </div>
 
     <!-- Hero Block Editor -->
@@ -544,6 +544,154 @@
         />
       </div>
 
+      <!-- Stile Pulsante -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stile Pulsante</h5>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.buttonStyle.backgroundColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.buttonStyle.backgroundColor"
+                type="text"
+                placeholder="#4F46E5"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Testo</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.buttonStyle.textColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.buttonStyle.textColor"
+                type="text"
+                placeholder="#FFFFFF"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Testo</label>
+            <select
+              v-model="localBlock.content.buttonStyle.fontSize"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="12px">Piccolo (12px)</option>
+              <option value="14px">Normale (14px)</option>
+              <option value="16px">Medio (16px)</option>
+              <option value="18px">Grande (18px)</option>
+              <option value="20px">Extra Large (20px)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Padding</label>
+            <select
+              v-model="localBlock.content.buttonStyle.padding"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="8px 16px">Compatto (8px 16px)</option>
+              <option value="10px 24px">Piccolo (10px 24px)</option>
+              <option value="12px 32px">Medio (12px 32px)</option>
+              <option value="16px 40px">Grande (16px 40px)</option>
+              <option value="20px 48px">Extra Large (20px 48px)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Arrotondamento Angoli</label>
+            <select
+              v-model="localBlock.content.buttonStyle.borderRadius"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="0px">Nessuno (Rettangolare)</option>
+              <option value="4px">Leggero (4px)</option>
+              <option value="8px">Medio (8px)</option>
+              <option value="12px">Arrotondato (12px)</option>
+              <option value="16px">Molto Arrotondato (16px)</option>
+              <option value="9999px">Pillola (Completamente arrotondato)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Ombra</label>
+            <select
+              v-model="localBlock.content.buttonStyle.shadow"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="none">Nessuna</option>
+              <option value="sm">Piccola</option>
+              <option value="md">Media</option>
+              <option value="lg">Grande</option>
+              <option value="xl">Extra Large</option>
+            </select>
+          </div>
+
+          <!-- Bordo -->
+          <div class="border-t border-gray-200 pt-3">
+            <h6 class="text-xs font-medium text-gray-700 mb-3">Bordo (Opzionale)</h6>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Bordo</label>
+                <select
+                  v-model="localBlock.content.buttonStyle.borderWidth"
+                  class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+                >
+                  <option value="0px">Nessuno</option>
+                  <option value="1px">1px</option>
+                  <option value="2px">2px</option>
+                  <option value="3px">3px</option>
+                  <option value="4px">4px</option>
+                </select>
+              </div>
+
+              <div v-if="localBlock.content.buttonStyle.borderWidth !== '0px'">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Colore Bordo</label>
+                <div class="flex items-center gap-3">
+                  <input
+                    v-model="localBlock.content.buttonStyle.borderColor"
+                    type="color"
+                    class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+                  />
+                  <input
+                    v-model="localBlock.content.buttonStyle.borderColor"
+                    type="text"
+                    placeholder="#000000"
+                    class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+                  />
+                </div>
+              </div>
+
+              <div v-if="localBlock.content.buttonStyle.borderWidth !== '0px'">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Stile Bordo</label>
+                <select
+                  v-model="localBlock.content.buttonStyle.borderStyle"
+                  class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+                >
+                  <option value="solid">Solido</option>
+                  <option value="dashed">Tratteggiato</option>
+                  <option value="dotted">Punteggiato</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="border-t border-gray-200 pt-4">
         <h5 class="text-xs font-semibold text-gray-700 mb-3">Privacy Policy</h5>
         <div class="space-y-3">
@@ -602,34 +750,6 @@
           <p class="text-xs text-gray-500 mt-1">
             Dopo l'invio del form, l'utente verrà reindirizzato a questo URL. Lascia vuoto per usare la pagina di ringraziamento standard.
           </p>
-        </div>
-      </div>
-
-      <div class="border-t border-gray-200 pt-4">
-        <h5 class="text-xs font-semibold text-gray-700 mb-3">Richiesta Appuntamento</h5>
-        <div class="space-y-3">
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              v-model="localBlock.content.enableAppointment"
-              id="enableAppointment"
-              class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-            />
-            <label for="enableAppointment" class="ml-2 text-sm text-gray-700">
-              Abilita richiesta appuntamento
-            </label>
-          </div>
-          <div v-if="localBlock.content.enableAppointment" class="space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">Etichetta Checkbox Appuntamento</label>
-              <input
-                v-model="localBlock.content.appointmentLabel"
-                type="text"
-                placeholder="Richiedi un appuntamento"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1050,8 +1170,208 @@
       </div>
     </div>
 
+    <!-- Social Block Editor -->
+    <div v-else-if="block.type === 'social'" class="space-y-5">
+      <!-- Link Social -->
+      <div class="border-b border-gray-200 pb-4">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Link Social Media
+        </h4>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Facebook URL</label>
+            <input
+              v-model="localBlock.content.facebookUrl"
+              type="url"
+              placeholder="https://facebook.com/tuapagina"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Instagram URL</label>
+            <input
+              v-model="localBlock.content.instagramUrl"
+              type="url"
+              placeholder="https://instagram.com/tuapagina"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">X (Twitter) URL</label>
+            <input
+              v-model="localBlock.content.xUrl"
+              type="url"
+              placeholder="https://x.com/tuoaccount"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">LinkedIn URL</label>
+            <input
+              v-model="localBlock.content.linkedinUrl"
+              type="url"
+              placeholder="https://linkedin.com/company/tuaazienda"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">YouTube URL</label>
+            <input
+              v-model="localBlock.content.youtubeUrl"
+              type="url"
+              placeholder="https://youtube.com/@tuocanale"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Stile Icone -->
+      <div class="border-b border-gray-200 pb-4">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Stile Icone
+        </h4>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Tipo Icone</label>
+            <select
+              v-model="localBlock.content.iconStyle"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="colored">Colorate (Standard)</option>
+              <option value="monochrome">Monocromatiche</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Icone (px)</label>
+            <input
+              v-model.number="localBlock.content.buttonSize"
+              type="number"
+              min="24"
+              max="96"
+              step="4"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+            <p class="text-xs text-gray-500 mt-1">Consigliato: 32-64px</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Spaziatura tra Icone (px)</label>
+            <input
+              v-model.number="localBlock.content.buttonSpacing"
+              type="number"
+              min="8"
+              max="64"
+              step="4"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenitore -->
+      <div class="border-b border-gray-200 pb-4">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Stile Contenitore
+        </h4>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Sfondo Bottoni</label>
+            <input
+              v-model="localBlock.content.buttonBackground"
+              type="color"
+              class="w-full h-10 px-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none"
+            />
+            <p class="text-xs text-gray-500 mt-1">Trasparente se vuoi solo le icone</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Curvatura Bordi (px)</label>
+            <input
+              v-model.number="localBlock.content.borderRadius"
+              type="number"
+              min="0"
+              max="50"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+            <p class="text-xs text-gray-500 mt-1">0 = squadrato, 50 = rotondo</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Ombra</label>
+            <select
+              v-model="localBlock.content.shadow"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="none">Nessuna</option>
+              <option value="sm">Piccola</option>
+              <option value="md">Media</option>
+              <option value="lg">Grande</option>
+              <option value="xl">Extra Grande</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Spessore Bordo (px)</label>
+            <input
+              v-model.number="localBlock.content.borderWidth"
+              type="number"
+              min="0"
+              max="4"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Bordo</label>
+            <input
+              v-model="localBlock.content.borderColor"
+              type="color"
+              class="w-full h-10 px-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Stile Bordo</label>
+            <select
+              v-model="localBlock.content.borderStyle"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="solid">Solido</option>
+              <option value="dashed">Tratteggiato</option>
+              <option value="dotted">Punteggiato</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer Block Editor -->
     <div v-else-if="block.type === 'footer'" class="space-y-5">
+      <!-- Opzioni Layout -->
+      <div class="border-b border-gray-200 pb-4">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Layout
+        </h4>
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Larghezza Completa</label>
+            <p class="text-xs text-gray-500 mt-1">
+              Lo sfondo si estende a tutta la larghezza della pagina
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="localBlock.content.fullWidth"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+          </label>
+        </div>
+      </div>
+
       <!-- Sezione La Tua Azienda -->
       <div class="border-b border-gray-200 pb-4">
         <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
@@ -1510,7 +1830,8 @@
         </div>
       </div>
 
-      <div>
+      <!-- Colore Testo (nascosto per blocchi senza testo) -->
+      <div v-if="block.type !== 'video' && block.type !== 'social'">
         <label class="block text-xs font-medium text-gray-700 mb-3">Colore Testo</label>
 
         <!-- Preset colori testo -->
@@ -1587,7 +1908,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import RichTextEditor from './RichTextEditor.vue'
 import apiClient from '../api/axios'
 import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
@@ -1600,6 +1921,31 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+// Mappatura nomi blocchi in italiano
+const blockTypeNames = {
+  'header': 'Intestazione',
+  'hero': 'Hero',
+  'image-slide': 'Diapositiva Immagine',
+  'video': 'Video',
+  'text': 'Testo',
+  'features': 'Vantaggi',
+  'services-grid': 'Griglia Servizi',
+  'cta': 'Call to Action',
+  'two-column-text-image': 'Due Colonne (Testo-Immagine)',
+  'two-column-image-text': 'Due Colonne (Immagine-Testo)',
+  'video-info': 'Video + Info',
+  'slider': 'Slider',
+  'map': 'Mappa Google',
+  'social': 'Social Media',
+  'form': 'Form',
+  'footer': 'Footer'
+}
+
+// Nome blocco tradotto
+const blockTypeName = computed(() => {
+  return blockTypeNames[props.block.type] || props.block.type
+})
 
 // Inizializza localBlock con styles se non esistono
 const initBlock = (block) => {
@@ -1771,11 +2117,27 @@ const handleImageUpload = async (event) => {
 const handleVideoUpload = async (event) => {
   const file = event.target.files[0]
   if (file) {
+    // Validazione dimensione file (max 100MB)
+    const maxSize = 100 * 1024 * 1024 // 100MB in bytes
+    if (file.size > maxSize) {
+      alert('Il file è troppo grande. Dimensione massima: 100MB')
+      event.target.value = '' // Reset input
+      return
+    }
+
+    // Validazione tipo file
+    const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Tipo file non supportato. Usa MP4, MOV, AVI o WebM')
+      event.target.value = '' // Reset input
+      return
+    }
+
     const formData = new FormData()
-    formData.append('image', file) // Uso 'image' come chiave per compatibilità con l'endpoint esistente
+    formData.append('video', file)
 
     try {
-      const response = await apiClient.post('/upload/image', formData, {
+      const response = await apiClient.post('/upload/video', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -1787,7 +2149,8 @@ const handleVideoUpload = async (event) => {
         alert('Errore durante il caricamento del video: ' + (response.data.error || 'Errore sconosciuto'))
       }
     } catch (error) {
-      alert('Errore durante il caricamento del video')
+      const errorMessage = error.response?.data?.error || 'Errore durante il caricamento del video'
+      alert(errorMessage)
       console.error(error)
     }
   }
