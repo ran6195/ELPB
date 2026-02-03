@@ -6,25 +6,25 @@
 
     # ⚠️ IMPORTANTE: Modifica RewriteBase in base alla tua directory
     #
-    # Se i file sono nella root del dominio:
+    # Se i file sono nella root del dominio (es. ilprodotto.it):
     # RewriteBase /
     #
-    # Se i file sono in una sottodirectory, usa il path completo:
-    # Esempio per https://tuodominio.com/testLPSA/
-    # RewriteBase /testLPSA/
-    #
-    # Esempio per https://tuodominio.com/landing/
-    # RewriteBase /landing/
+    # Se i file sono in una sottodirectory (es. edysma.net/ELPB/standalone-renderer/):
+    # RewriteBase /ELPB/standalone-renderer/
 
     RewriteBase /
 
     # Se il file o directory esiste, servilo direttamente
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-    # Altrimenti reindirizza a page.php passando lo slug come query string
-    # Nota: Usa query string invece di PATH_INFO per compatibilità con PHP-FPM
-    # Se ottieni "No input file specified", questa è la configurazione corretta
+    # Routing per pagine legali: /legal/{slug}/{type}
+    # IMPORTANTE: Questa regola DEVE essere PRIMA della regola catch-all
+    # Usa query string per compatibilità con PHP-FPM (PATH_INFO non supportato)
+    RewriteRule ^legal/([a-z0-9-]+)/(privacy|condizioni|cookies)$ legal-pages.php?slug=$1&type=$2 [L,QSA]
+
+    # Catch-all: tutto il resto va a page.php come slug
     RewriteRule ^(.+)$ page.php?slug=$1 [L,QSA]
 </IfModule>
 

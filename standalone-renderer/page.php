@@ -132,16 +132,20 @@ function renderPage($page) {
         return ($a['order'] ?? 0) - ($b['order'] ?? 0);
     });
 
-    // Initialize renderer with API URL and page ID
+    // Initialize renderer with API URL, page ID and slug
     $apiUrl = $_ENV['API_BASE_URL'] ?? 'http://localhost:8000/api';
     $pageId = $page['id'] ?? 0;
-    $renderer = new BlockRenderer($apiUrl, $pageId);
+    $pageSlug = $page['slug'] ?? '';
+    $hasLegalInfo = !empty($page['legal_info']) && is_array($page['legal_info']) && count($page['legal_info']) > 0;
+    $legalBaseUrl = $_ENV['LEGAL_BASE_URL'] ?? ''; // Base URL per pagine legali (opzionale, per renderer remoti)
+    $renderer = new BlockRenderer($apiUrl, $pageId, $pageSlug, $hasLegalInfo, $legalBaseUrl);
 
     $customStyles = $page['styles'] ?? [];
     $pageBackgroundColor = $customStyles['backgroundColor'] ?? '#FFFFFF';
     $blockGap = $customStyles['blockGap'] ?? 0;
     $fontFamily = $customStyles['fontFamily'] ?? '';
     $roundedCorners = $customStyles['roundedCorners'] ?? true;
+    $containerWidth = $customStyles['containerWidth'] ?? 'max-w-7xl';
 
     // Raccogli tutti i font unici usati nei blocchi
     $blocks = $page['blocks'] ?? [];
@@ -193,6 +197,7 @@ function renderPage($page) {
     <?php if ($metaDescription): ?>
     <meta name="description" content="<?php echo $metaDescription; ?>">
     <?php endif; ?>
+    <meta name="robots" content="noindex">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -206,6 +211,9 @@ function renderPage($page) {
     <link href="https://fonts.googleapis.com/css2?family=<?php echo urlencode($font); ?>:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <?php endforeach; ?>
     <?php endif; ?>
+
+    <!-- Cookie Consent CSS -->
+    <link href="/cookieconsent/cookieconsent.css" rel="stylesheet" />
 
     <style>
         body {
@@ -222,6 +230,84 @@ function renderPage($page) {
         .block-container:last-child {
             margin-bottom: 0;
         }
+        /* Stili per heading - semibold di default */
+        h1, h2, h3 {
+            font-weight: 600;
+        }
+        /* Grassetto normale per paragrafi e liste */
+        p strong, p b,
+        li strong, li b {
+            font-weight: 700 !important;
+        }
+        /* Grassetto extra per heading */
+        h1 strong, h1 b,
+        h2 strong, h2 b,
+        h3 strong, h3 b {
+            font-weight: 900 !important;
+        }
+        /* Assicura che grassetto generico funzioni */
+        strong, b {
+            font-weight: 700 !important;
+        }
+        em, i {
+            font-style: italic !important;
+        }
+        u {
+            text-decoration: underline !important;
+        }
+        s, del {
+            text-decoration: line-through !important;
+        }
+        blockquote {
+            border-left: 4px solid #d1d5db;
+            padding-left: 1em;
+            margin-left: 0;
+            margin-bottom: 1em;
+            font-style: italic;
+            color: #6b7280;
+        }
+        pre.ql-syntax {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1em;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            margin-bottom: 1em;
+            font-family: 'Courier New', monospace;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875em;
+        }
+        /* Allineamento testo Quill */
+        .ql-align-center {
+            text-align: center !important;
+        }
+        .ql-align-right {
+            text-align: right !important;
+        }
+        .ql-align-justify {
+            text-align: justify !important;
+        }
+        /* Container width override - sovrascrive max-w-7xl nei blocchi */
+        .container-width-max-w-4xl .max-w-7xl {
+            max-width: 56rem !important; /* 896px */
+        }
+        .container-width-max-w-5xl .max-w-7xl {
+            max-width: 64rem !important; /* 1024px */
+        }
+        .container-width-max-w-6xl .max-w-7xl {
+            max-width: 72rem !important; /* 1152px */
+        }
+        .container-width-max-w-7xl .max-w-7xl {
+            max-width: 80rem !important; /* 1280px - default */
+        }
+        .container-width-max-w-full .max-w-7xl {
+            max-width: 100% !important;
+        }
     </style>
 
     <?php if (!empty($page['styles']['custom_css'])): ?>
@@ -230,7 +316,7 @@ function renderPage($page) {
     </style>
     <?php endif; ?>
 </head>
-<body>
+<body class="container-width-<?php echo htmlspecialchars($containerWidth); ?>">
     <?php if ($gtmEnabled && !empty($gtmId)): ?>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?php echo htmlspecialchars($gtmId); ?>"
@@ -264,33 +350,60 @@ function renderPage($page) {
     <!-- Script per inizializzare gli slider -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Swiper === 'undefined') {
+                console.error('Swiper library not loaded');
+                return;
+            }
+
             // Inizializza tutti gli Swiper
             document.querySelectorAll('.swiper').forEach(function(swiperEl) {
                 const sliderId = swiperEl.getAttribute('id');
                 if (!sliderId) return;
 
-                // Ottieni le configurazioni dall'elemento
-                const autoplay = swiperEl.dataset.autoplay === 'true';
+                // Ottieni le configurazioni dai data attributes
                 const loop = swiperEl.dataset.loop === 'true';
-                const speed = parseInt(swiperEl.dataset.speed) || 300;
+                const autoplay = swiperEl.dataset.autoplay === 'true';
                 const delay = parseInt(swiperEl.dataset.delay) || 3000;
+                const slidesPerView = parseInt(swiperEl.dataset.slidesPerView) || 3;
+                const slideGap = parseInt(swiperEl.dataset.slideGap) || 20;
+                const showNavigation = swiperEl.dataset.showNavigation === 'true';
+                const showPagination = swiperEl.dataset.showPagination === 'true';
 
-                new Swiper('#' + sliderId, {
+                // Configurazione Swiper
+                const config = {
+                    slidesPerView: 1,
+                    spaceBetween: slideGap,
                     loop: loop,
                     autoplay: autoplay ? {
                         delay: delay,
-                        disableOnInteraction: false,
+                        disableOnInteraction: false
                     } : false,
-                    speed: speed,
-                    pagination: {
-                        el: '#' + sliderId + ' .swiper-pagination',
-                        clickable: true,
-                    },
-                    navigation: {
-                        nextEl: '#' + sliderId + ' .swiper-button-next',
-                        prevEl: '#' + sliderId + ' .swiper-button-prev',
-                    },
-                });
+                    breakpoints: {
+                        768: {
+                            slidesPerView: slidesPerView,
+                            spaceBetween: slideGap
+                        }
+                    }
+                };
+
+                // Aggiungi navigazione se abilitata
+                if (showNavigation) {
+                    config.navigation = {
+                        nextEl: '#' + sliderId + '-next',
+                        prevEl: '#' + sliderId + '-prev'
+                    };
+                }
+
+                // Aggiungi paginazione se abilitata
+                if (showPagination) {
+                    config.pagination = {
+                        el: '#' + sliderId + '-pagination',
+                        clickable: true
+                    };
+                }
+
+                // Inizializza Swiper
+                new Swiper('#' + sliderId, config);
             });
         });
     </script>
