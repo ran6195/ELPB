@@ -412,9 +412,211 @@ function renderPage($page) {
     <?php
 }
 
+/**
+ * Renderizza la thank-you page con header e footer della landing page originale
+ */
+function renderThankYouPage($page) {
+    if (!$page) {
+        // Fallback: pagina statica semplice senza header/footer
+        ?>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Grazie per averci contattato</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center px-4">
+        <div class="max-w-md w-full text-center">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full">
+                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Grazie per averci contattato!</h1>
+            <p class="text-lg text-gray-600 mb-8">La tua richiesta è stata inviata con successo. Ti risponderemo al più presto.</p>
+            <button onclick="window.history.back()" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors">Torna indietro</button>
+        </div>
+    </div>
+</body>
+</html>
+        <?php
+        return;
+    }
+
+    $blocks = $page['blocks'] ?? [];
+    usort($blocks, function($a, $b) {
+        return ($a['order'] ?? 0) - ($b['order'] ?? 0);
+    });
+
+    $apiUrl = $_ENV['API_BASE_URL'] ?? 'http://localhost:8000/api';
+    $pageId = $page['id'] ?? 0;
+    $pageSlug = $page['slug'] ?? '';
+    $hasLegalInfo = !empty($page['legal_info']) && is_array($page['legal_info']) && count($page['legal_info']) > 0;
+    $legalBaseUrl = $_ENV['LEGAL_BASE_URL'] ?? '';
+    $renderer = new BlockRenderer($apiUrl, $pageId, $pageSlug, $hasLegalInfo, $legalBaseUrl);
+
+    $customStyles = $page['styles'] ?? [];
+    $fontFamily = $customStyles['fontFamily'] ?? '';
+    $containerWidth = $customStyles['containerWidth'] ?? 'max-w-7xl';
+
+    // Trova header e footer
+    $headerBlock = null;
+    $footerBlock = null;
+    foreach ($blocks as $block) {
+        if ($block['type'] === 'header') {
+            $headerBlock = $block;
+        }
+        if ($block['type'] === 'footer' || $block['type'] === 'legal-footer') {
+            $footerBlock = $block;
+        }
+    }
+
+    // Raccogli font
+    $allFonts = [];
+    if (!empty($fontFamily)) {
+        $allFonts[$fontFamily] = true;
+    }
+    foreach ($blocks as $block) {
+        if (!empty($block['styles']['fontFamily'])) {
+            $allFonts[$block['styles']['fontFamily']] = true;
+        }
+    }
+    $uniqueFonts = array_keys($allFonts);
+
+    $siteTitle = $page['title'] ?? '';
+    $pageTitle = $siteTitle ? 'Grazie - ' . htmlspecialchars($siteTitle) : 'Grazie per averci contattato';
+
+    // GTM
+    $trackingSettings = $page['tracking_settings'] ?? [];
+    $gtmEnabled = $trackingSettings['gtm_enabled'] ?? false;
+    $gtmId = $trackingSettings['gtm_id'] ?? '';
+
+    ?>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <?php if ($gtmEnabled && !empty($gtmId)): ?>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','<?php echo htmlspecialchars($gtmId); ?>');</script>
+    <!-- End Google Tag Manager -->
+    <?php endif; ?>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title><?php echo $pageTitle; ?></title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+    <?php if (!empty($uniqueFonts)): ?>
+        <?php foreach ($uniqueFonts as $font): ?>
+    <link href="https://fonts.googleapis.com/css2?family=<?php echo urlencode($font); ?>:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            <?php if ($fontFamily): ?>
+            font-family: '<?php echo htmlspecialchars($fontFamily); ?>', sans-serif;
+            <?php endif; ?>
+        }
+        .container-width-max-w-4xl .max-w-7xl { max-width: 56rem !important; }
+        .container-width-max-w-5xl .max-w-7xl { max-width: 64rem !important; }
+        .container-width-max-w-6xl .max-w-7xl { max-width: 72rem !important; }
+        .container-width-max-w-7xl .max-w-7xl { max-width: 80rem !important; }
+        .container-width-max-w-full .max-w-7xl { max-width: 100% !important; }
+    </style>
+</head>
+<body class="container-width-<?php echo htmlspecialchars($containerWidth); ?>">
+    <?php if ($gtmEnabled && !empty($gtmId)): ?>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?php echo htmlspecialchars($gtmId); ?>"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <?php endif; ?>
+
+    <?php if ($headerBlock): ?>
+        <div class="block-container"><?php echo $renderer->render($headerBlock); ?></div>
+    <?php endif; ?>
+
+    <main class="py-20 px-4">
+        <div class="max-w-md w-full text-center mx-auto">
+            <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full">
+                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Grazie per averci contattato!</h1>
+            <p class="text-lg text-gray-600 mb-8">La tua richiesta è stata inviata con successo. Ti risponderemo al più presto.</p>
+            <button onclick="window.history.back()" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors">Torna indietro</button>
+        </div>
+    </main>
+
+    <?php if ($footerBlock): ?>
+        <div class="block-container"><?php echo $renderer->render($footerBlock); ?></div>
+    <?php endif; ?>
+
+    <!-- URL cosmetico: mostra /{slug}/thank-you nella barra del browser -->
+    <script>
+        (function() {
+            var slug = '<?php echo htmlspecialchars($pageSlug, ENT_QUOTES); ?>';
+            if (slug && window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', '/' + slug + '/thank-you');
+            }
+        })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.swiper').forEach(function(swiperEl) {
+                const sliderId = swiperEl.getAttribute('id');
+                if (!sliderId) return;
+                const loop = swiperEl.dataset.loop === 'true';
+                const autoplay = swiperEl.dataset.autoplay === 'true';
+                const delay = parseInt(swiperEl.dataset.delay) || 3000;
+                const slidesPerView = parseInt(swiperEl.dataset.slidesPerView) || 3;
+                const slideGap = parseInt(swiperEl.dataset.slideGap) || 20;
+                const showNavigation = swiperEl.dataset.showNavigation === 'true';
+                const showPagination = swiperEl.dataset.showPagination === 'true';
+                const config = {
+                    slidesPerView: 1, spaceBetween: slideGap, loop: loop,
+                    autoplay: autoplay ? { delay: delay, disableOnInteraction: false } : false,
+                    breakpoints: { 768: { slidesPerView: slidesPerView, spaceBetween: slideGap } }
+                };
+                if (showNavigation) config.navigation = { nextEl: '#' + sliderId + '-next', prevEl: '#' + sliderId + '-prev' };
+                if (showPagination) config.pagination = { el: '#' + sliderId + '-pagination', clickable: true };
+                new Swiper('#' + sliderId, config);
+            });
+        });
+    </script>
+</body>
+</html>
+    <?php
+}
+
 // Main execution
 try {
     loadEnv();
+
+    // Check per thank-you page mode (via query string ?_mode=thankyou)
+    if (isset($_GET['_mode']) && $_GET['_mode'] === 'thankyou') {
+        $slug = isset($_GET['slug']) ? sanitizeSlug($_GET['slug']) : '';
+        $page = !empty($slug) ? fetchPage($slug) : null;
+        renderThankYouPage($page);
+        exit;
+    }
 
     $slug = getSlug();
 

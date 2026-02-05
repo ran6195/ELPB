@@ -21,6 +21,8 @@ class Page extends Model
         'recaptcha_settings',
         'tracking_settings',
         'quick_contacts',
+        'legal_info',
+        'notification_settings',
         'company_id',
         'user_id'
     ];
@@ -31,6 +33,8 @@ class Page extends Model
         'recaptcha_settings' => 'array',
         'tracking_settings' => 'array',
         'quick_contacts' => 'array',
+        'legal_info' => 'array',
+        'notification_settings' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime'

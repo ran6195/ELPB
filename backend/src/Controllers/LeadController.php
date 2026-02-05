@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\Lead;
 use App\Models\Page;
+use App\Services\EmailService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -81,19 +82,10 @@ class LeadController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
 
-        // Validate privacy acceptance
-        if (empty($data['privacy_accepted']) || $data['privacy_accepted'] !== true) {
-            $response->getBody()->write(json_encode(['error' => 'Privacy policy acceptance is required']));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
-
         // Get page and verify reCAPTCHA if enabled
-        $pagePublished = false;
         if (!empty($data['page_id'])) {
             $page = Page::find($data['page_id']);
             if ($page) {
-                $pagePublished = $page->is_published;
-
                 // Verify reCAPTCHA if enabled
                 if ($page->recaptcha_settings &&
                     isset($page->recaptcha_settings['enabled']) &&
@@ -128,12 +120,39 @@ class LeadController
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'message' => $data['message'] ?? null,
-            'privacy_accepted' => $data['privacy_accepted'] ?? false,
-            'page_published' => $pagePublished,
-            'appointment_requested' => $data['appointment_requested'] ?? false,
-            'appointment_datetime' => $data['appointment_datetime'] ?? null,
             'metadata' => $data['metadata'] ?? []
         ]);
+
+        // Invia notifica email (non bloccante)
+        try {
+            if (empty($lead->page_id)) {
+                error_log("LeadController: Lead #{$lead->id} non ha page_id, skip notifica email");
+            } else {
+                $page = Page::with('user', 'company')->find($lead->page_id);
+
+                if (!$page) {
+                    error_log("LeadController: Pagina #{$lead->page_id} non trovata per lead #{$lead->id}");
+                } elseif (empty($page->notification_settings)) {
+                    error_log("LeadController: Notifiche non configurate per pagina #{$page->id} (slug: {$page->slug})");
+                } elseif (empty($page->notification_settings['enabled'])) {
+                    error_log("LeadController: Notifiche disabilitate per pagina #{$page->id} (slug: {$page->slug})");
+                } else {
+                    error_log("LeadController: Invio notifica email per lead #{$lead->id} pagina #{$page->id} (slug: {$page->slug})");
+                    $emailService = new EmailService();
+                    $result = $emailService->sendLeadNotification($lead, $page);
+
+                    if ($result) {
+                        error_log("LeadController: Email notifica lead #{$lead->id} inviata con successo");
+                    } else {
+                        error_log("LeadController: Email notifica lead #{$lead->id} FALLITA (controlla log EmailService)");
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Log errore ma non bloccare risposta
+            error_log("LeadController: Errore invio email notifica lead #{$lead->id}: " . $e->getMessage());
+            error_log("LeadController: Stack trace: " . $e->getTraceAsString());
+        }
 
         $response->getBody()->write(json_encode([
             'message' => 'Lead saved successfully',

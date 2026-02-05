@@ -20,13 +20,49 @@
     <!-- Slug URL -->
     <div>
       <label class="block text-xs font-medium text-gray-700 mb-2">Slug URL</label>
-      <input
-        v-model="localPage.slug"
-        type="text"
-        placeholder="es: homepage, chi-siamo, contatti"
-        class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
-      />
-      <p class="text-xs text-gray-500 mt-1">URL: /{{ localPage.slug }}</p>
+      <div class="relative">
+        <input
+          v-model="localPage.slug"
+          type="text"
+          placeholder="es: homepage, chi-siamo, contatti"
+          :class="[
+            'w-full px-3 py-2.5 pr-10 border rounded-lg focus:ring-2 transition-all outline-none text-sm font-mono',
+            slugStatus.checking ? 'border-gray-300 focus:border-gray-400 focus:ring-gray-200' : '',
+            slugStatus.available === true ? 'border-green-500 focus:border-green-500 focus:ring-green-200' : '',
+            slugStatus.available === false ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : '',
+            !slugStatus.checking && slugStatus.available === null ? 'border-gray-300 focus:border-primary-500 focus:ring-primary-200' : ''
+          ]"
+        />
+        <!-- Icona stato -->
+        <div class="absolute right-3 top-1/2 -translate-y-1/2">
+          <!-- Checking spinner -->
+          <svg v-if="slugStatus.checking" class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <!-- Available check -->
+          <svg v-else-if="slugStatus.available === true" class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <!-- Not available X -->
+          <svg v-else-if="slugStatus.available === false" class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </div>
+      </div>
+      <!-- Messaggio di stato -->
+      <p
+        :class="[
+          'text-xs mt-1',
+          slugStatus.checking ? 'text-gray-500' : '',
+          slugStatus.available === true ? 'text-green-600' : '',
+          slugStatus.available === false ? 'text-red-600' : '',
+          !slugStatus.checking && slugStatus.available === null ? 'text-gray-500' : ''
+        ]"
+      >
+        <span v-if="slugStatus.message">{{ slugStatus.message }}</span>
+        <span v-else>URL: /{{ localPage.slug }}</span>
+      </p>
     </div>
 
     <!-- Stili Pagina -->
@@ -91,6 +127,22 @@
           <option value="Ubuntu">Ubuntu</option>
         </select>
         <p class="text-xs text-gray-500 mt-1">Font da Google Fonts applicato a tutta la pagina</p>
+      </div>
+
+      <!-- Container Width -->
+      <div class="mb-5">
+        <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Contenuto</label>
+        <select
+          v-model="containerWidth"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="max-w-4xl">Piccola (896px)</option>
+          <option value="max-w-5xl">Media (1024px)</option>
+          <option value="max-w-6xl">Grande (1152px)</option>
+          <option value="max-w-7xl">Extra Grande (1280px)</option>
+          <option value="max-w-full">Tutta Larghezza</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Larghezza massima del contenuto dei blocchi (default: Extra Grande)</p>
       </div>
 
       <!-- Rounded Corners -->
@@ -321,6 +373,38 @@
             ></textarea>
           </div>
 
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p class="text-xs font-medium text-gray-700">Mostra Testo</p>
+              <p class="text-xs text-gray-500 mt-0.5">Visualizza etichetta accanto all'icona</p>
+            </div>
+            <button
+              @click="whatsappShowText = !whatsappShowText"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                whatsappShowText ? 'bg-green-600' : 'bg-gray-200'
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                  whatsappShowText ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+          </div>
+
+          <div v-if="whatsappShowText">
+            <label class="block text-xs font-medium text-gray-700 mb-2">Testo Pulsante</label>
+            <input
+              v-model="whatsappText"
+              type="text"
+              placeholder="es: WhatsApp, Scrivici, Chatta"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+            <p class="text-xs text-gray-500 mt-1">Breve etichetta da mostrare accanto all'icona</p>
+          </div>
+
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo</label>
             <div class="flex items-center gap-3">
@@ -376,6 +460,38 @@
             <p class="text-xs text-gray-500 mt-1">Con prefisso internazionale (+39 per Italia)</p>
           </div>
 
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p class="text-xs font-medium text-gray-700">Mostra Testo</p>
+              <p class="text-xs text-gray-500 mt-0.5">Visualizza etichetta accanto all'icona</p>
+            </div>
+            <button
+              @click="phoneShowText = !phoneShowText"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                phoneShowText ? 'bg-blue-600' : 'bg-gray-200'
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                  phoneShowText ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+          </div>
+
+          <div v-if="phoneShowText">
+            <label class="block text-xs font-medium text-gray-700 mb-2">Testo Pulsante</label>
+            <input
+              v-model="phoneText"
+              type="text"
+              placeholder="es: Chiama, Telefono, Chiamaci"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+            <p class="text-xs text-gray-500 mt-1">Breve etichetta da mostrare accanto all'icona</p>
+          </div>
+
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo</label>
             <div class="flex items-center gap-3">
@@ -425,11 +541,90 @@
       </div>
     </div>
 
+    <!-- Notifiche Email -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h4 class="text-sm font-semibold text-gray-800">📧 Notifiche Email</h4>
+          <p class="text-xs text-gray-500 mt-1">Ricevi un'email quando qualcuno compila il form</p>
+        </div>
+        <button
+          @click="toggleNotifications"
+          :class="[
+            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+            notificationSettings.enabled ? 'bg-primary-600' : 'bg-gray-200'
+          ]"
+        >
+          <span
+            :class="[
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              notificationSettings.enabled ? 'translate-x-6' : 'translate-x-1'
+            ]"
+          />
+        </button>
+      </div>
+
+      <div v-if="notificationSettings.enabled" class="space-y-4 mt-4 pt-4 border-t border-gray-200">
+        <!-- Email proprietario (automatica) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">
+            Email proprietario pagina
+          </label>
+          <input
+            type="email"
+            :value="currentUserEmail"
+            disabled
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
+          />
+          <p class="text-xs text-gray-500 mt-1">
+            ✓ Riceverai sempre notifiche a questo indirizzo
+          </p>
+        </div>
+
+        <!-- Email aggiuntive -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">
+            Email aggiuntive (opzionale)
+          </label>
+          <textarea
+            v-model="notificationSettings.additional_emails"
+            placeholder="email1@example.com, email2@example.com"
+            rows="2"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm resize-none"
+          ></textarea>
+          <p class="text-xs text-gray-500 mt-1">
+            Separare con virgola per inviare a più destinatari
+          </p>
+        </div>
+
+        <!-- Pulsante salva -->
+        <button
+          @click="saveNotificationSettings"
+          :disabled="savingNotifications"
+          class="w-full bg-primary-600 text-white px-4 py-2.5 rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span v-if="savingNotifications">Salvataggio...</span>
+          <span v-else>Salva impostazioni notifiche</span>
+        </button>
+
+        <!-- Messaggio successo/errore -->
+        <div v-if="notificationMessage.text" :class="[
+          'p-3 rounded-lg text-sm',
+          notificationMessage.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        ]">
+          {{ notificationMessage.text }}
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { usePageStore } from '../stores/pageStore'
+
+const pageStore = usePageStore()
 
 const props = defineProps({
   page: {
@@ -445,7 +640,15 @@ const localPage = ref({
   styles: props.page.styles || { backgroundColor: '#FFFFFF', blockGap: 15 }
 })
 
+// Stato per validazione slug
+const slugStatus = ref({
+  checking: false,
+  available: null,
+  message: ''
+})
+
 let updateTimeout = null
+let slugCheckTimeout = null
 
 // Aggiorna localPage solo quando cambia l'ID della pagina (non il contenuto)
 watch(() => props.page.id, () => {
@@ -464,6 +667,60 @@ watch(localPage, () => {
     emit('update', localPage.value)
   }, 300) // 300ms debounce
 }, { deep: true })
+
+// Watcher per validazione slug con debounce
+watch(() => localPage.value.slug, async (newSlug) => {
+  // Clear timeout precedente
+  if (slugCheckTimeout) clearTimeout(slugCheckTimeout)
+
+  // Se lo slug è vuoto, non fare il check
+  if (!newSlug || newSlug.trim() === '') {
+    slugStatus.value = {
+      checking: false,
+      available: false,
+      message: 'Lo slug non può essere vuoto'
+    }
+    return
+  }
+
+  // Validazione formato: solo lettere, numeri e trattini
+  const slugRegex = /^[a-zA-Z0-9-]+$/
+  if (!slugRegex.test(newSlug)) {
+    slugStatus.value = {
+      checking: false,
+      available: false,
+      message: 'Lo slug può contenere solo lettere, numeri e trattini'
+    }
+    return
+  }
+
+  // Imposta stato "verifica in corso"
+  slugStatus.value = {
+    checking: true,
+    available: null,
+    message: 'Verifica in corso...'
+  }
+
+  // Debounce di 500ms
+  slugCheckTimeout = setTimeout(async () => {
+    // Verifica che lo slug non sia cambiato nel frattempo
+    const currentSlug = localPage.value.slug
+    if (!currentSlug || currentSlug.trim() === '' || currentSlug !== newSlug) {
+      return
+    }
+
+    const result = await pageStore.checkSlug(currentSlug, localPage.value.id)
+
+    // Verifica di nuovo che lo slug non sia cambiato dopo la chiamata API
+    if (localPage.value.slug === currentSlug) {
+      slugStatus.value = {
+        checking: false,
+        available: result.available,
+        message: result.message
+      }
+    }
+  }, 500)
+})
 
 const pageBackgroundColor = computed({
   get() {
@@ -510,6 +767,18 @@ const roundedCorners = computed({
       localPage.value.styles = {}
     }
     localPage.value.styles.roundedCorners = value
+  }
+})
+
+const containerWidth = computed({
+  get() {
+    return localPage.value.styles?.containerWidth || 'max-w-7xl'
+  },
+  set(value) {
+    if (!localPage.value.styles) {
+      localPage.value.styles = {}
+    }
+    localPage.value.styles.containerWidth = value
   }
 })
 
@@ -647,6 +916,36 @@ const whatsappColor = computed({
   }
 })
 
+const whatsappShowText = computed({
+  get() {
+    return localPage.value.quickContacts?.whatsapp?.showText ?? false
+  },
+  set(value) {
+    if (!localPage.value.quickContacts) {
+      localPage.value.quickContacts = { whatsapp: {}, phone: {} }
+    }
+    if (!localPage.value.quickContacts.whatsapp) {
+      localPage.value.quickContacts.whatsapp = {}
+    }
+    localPage.value.quickContacts.whatsapp.showText = value
+  }
+})
+
+const whatsappText = computed({
+  get() {
+    return localPage.value.quickContacts?.whatsapp?.text || 'WhatsApp'
+  },
+  set(value) {
+    if (!localPage.value.quickContacts) {
+      localPage.value.quickContacts = { whatsapp: {}, phone: {} }
+    }
+    if (!localPage.value.quickContacts.whatsapp) {
+      localPage.value.quickContacts.whatsapp = {}
+    }
+    localPage.value.quickContacts.whatsapp.text = value
+  }
+})
+
 // Quick Contacts - Phone
 const phoneEnabled = computed({
   get() {
@@ -695,4 +994,91 @@ const phoneColor = computed({
     localPage.value.quickContacts.phone.style.backgroundColor = value
   }
 })
+
+const phoneShowText = computed({
+  get() {
+    return localPage.value.quickContacts?.phone?.showText ?? false
+  },
+  set(value) {
+    if (!localPage.value.quickContacts) {
+      localPage.value.quickContacts = { whatsapp: {}, phone: {} }
+    }
+    if (!localPage.value.quickContacts.phone) {
+      localPage.value.quickContacts.phone = {}
+    }
+    localPage.value.quickContacts.phone.showText = value
+  }
+})
+
+const phoneText = computed({
+  get() {
+    return localPage.value.quickContacts?.phone?.text || 'Chiama'
+  },
+  set(value) {
+    if (!localPage.value.quickContacts) {
+      localPage.value.quickContacts = { whatsapp: {}, phone: {} }
+    }
+    if (!localPage.value.quickContacts.phone) {
+      localPage.value.quickContacts.phone = {}
+    }
+    localPage.value.quickContacts.phone.text = value
+  }
+})
+
+// ========================================
+// NOTIFICHE EMAIL
+// ========================================
+
+const notificationSettings = ref({
+  enabled: props.page.notification_settings?.enabled || false,
+  additional_emails: props.page.notification_settings?.additional_emails || ''
+})
+
+const savingNotifications = ref(false)
+const notificationMessage = ref({ text: '', type: '' })
+
+// Computed per email utente corrente
+const currentUserEmail = computed(() => {
+  return pageStore.currentUser?.email || 'Non disponibile'
+})
+
+// Aggiorna settings quando cambia la pagina
+watch(() => props.page.notification_settings, (newSettings) => {
+  if (newSettings) {
+    notificationSettings.value = {
+      enabled: newSettings.enabled || false,
+      additional_emails: newSettings.additional_emails || ''
+    }
+  }
+}, { deep: true })
+
+function toggleNotifications() {
+  notificationSettings.value.enabled = !notificationSettings.value.enabled
+}
+
+async function saveNotificationSettings() {
+  savingNotifications.value = true
+  notificationMessage.value = { text: '', type: '' }
+
+  try {
+    await pageStore.updateNotificationSettings(props.page.id, notificationSettings.value)
+
+    notificationMessage.value = {
+      text: 'Impostazioni notifiche salvate con successo!',
+      type: 'success'
+    }
+
+    // Nascondi messaggio dopo 3 secondi
+    setTimeout(() => {
+      notificationMessage.value = { text: '', type: '' }
+    }, 3000)
+  } catch (error) {
+    notificationMessage.value = {
+      text: error.message || 'Errore durante il salvataggio delle impostazioni',
+      type: 'error'
+    }
+  } finally {
+    savingNotifications.value = false
+  }
+}
 </script>

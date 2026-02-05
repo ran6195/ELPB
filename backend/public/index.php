@@ -38,7 +38,8 @@ $app->add(function (Request $request, $handler) {
     return $response
         ->withHeader('Access-Control-Allow-Origin', '*')
         ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+        ->withHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 });
 
 // Handle OPTIONS requests
@@ -81,6 +82,14 @@ $app->get('/api/pages/{id}', '\App\Controllers\PageController:show')->add(AuthMi
 $app->post('/api/pages', '\App\Controllers\PageController:store')->add(AuthMiddleware::class);
 $app->post('/api/pages/{id}/duplicate', '\App\Controllers\PageController:duplicate')->add(AuthMiddleware::class);
 $app->post('/api/pages/{id}/restore', '\App\Controllers\PageController:restore')->add(AuthMiddleware::class);
+$app->post('/api/pages/check-slug', '\App\Controllers\PageController:checkSlug')->add(AuthMiddleware::class);
+$app->delete('/api/pages/{id}/force', '\App\Controllers\PageController:forceDelete')->add(AuthMiddleware::class);
+$app->get('/api/pages/{id}/export', '\App\Controllers\PageController:export')->add(AuthMiddleware::class);
+$app->post('/api/pages/import', '\App\Controllers\PageController:import')->add(AuthMiddleware::class);
+$app->put('/api/pages/{id}/legal-info', '\App\Controllers\PageController:updateLegalInfo')->add(AuthMiddleware::class);
+$app->post('/api/pages/{id}/legal-info', '\App\Controllers\PageController:updateLegalInfo')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
+$app->put('/api/pages/{id}/notification-settings', '\App\Controllers\PageController:updateNotificationSettings')->add(AuthMiddleware::class);
+$app->post('/api/pages/{id}/notification-settings', '\App\Controllers\PageController:updateNotificationSettings')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
 $app->put('/api/pages/{id}', '\App\Controllers\PageController:update')->add(AuthMiddleware::class);
 $app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(AuthMiddleware::class);
 
@@ -95,6 +104,11 @@ $app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(A
 // ===== PUBLIC ROUTES (accessibili senza auth) =====
 // Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti
 $app->get('/api/page/{slug}', '\App\Controllers\PageController:showBySlug');
+
+// Legal pages routes (public - accessibili a tutti)
+$app->get('/legal/{slug}/privacy', '\App\Controllers\LegalPagesController:privacy');
+$app->get('/legal/{slug}/condizioni', '\App\Controllers\LegalPagesController:terms');
+$app->get('/legal/{slug}/cookies', '\App\Controllers\LegalPagesController:cookies');
 
 // Leads routes - Form submission pubblica
 $app->post('/api/leads', '\App\Controllers\LeadController:store');

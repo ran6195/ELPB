@@ -8,17 +8,26 @@ class BlockRenderer
     private $roundedCorners = true;
     private $apiUrl = '';
     private $pageId = 0;
+    private $pageSlug = '';
+    private $hasLegalInfo = false;
+    private $legalBaseUrl = '';
 
     /**
      * Constructor
      *
-     * @param   string  $apiUrl  API base URL for form submissions
-     * @param   int     $pageId  Page ID for form submissions
+     * @param   string  $apiUrl         API base URL for form submissions
+     * @param   int     $pageId         Page ID for form submissions
+     * @param   string  $pageSlug       Page slug for legal pages links
+     * @param   bool    $hasLegalInfo   Whether page has legal info data
+     * @param   string  $legalBaseUrl   Base URL for legal pages (optional, for backend context)
      */
-    public function __construct($apiUrl = '', $pageId = 0)
+    public function __construct($apiUrl = '', $pageId = 0, $pageSlug = '', $hasLegalInfo = false, $legalBaseUrl = '')
     {
         $this->apiUrl = $apiUrl;
         $this->pageId = $pageId;
+        $this->pageSlug = $pageSlug;
+        $this->hasLegalInfo = $hasLegalInfo;
+        $this->legalBaseUrl = $legalBaseUrl;
     }
 
     /**
@@ -100,6 +109,7 @@ class BlockRenderer
         $menuLinks = $content['menuLinks'] ?? [];
         $socialLinks = $content['socialLinks'] ?? [];
         $socialButtonStyle = $content['socialButtonStyle'] ?? [];
+        $iconStyle = $content['iconStyle'] ?? 'monochrome';
         $roundedClass = $this->getRoundedClass();
 
         $blockStyle = $this->getBlockStyle($styles);
@@ -167,7 +177,17 @@ HTML;
             // Facebook
             if (!empty($socialLinks['facebook'])) {
                 $fbUrl = htmlspecialchars($socialLinks['facebook']);
-                $html .= <<<HTML
+                if ($iconStyle === 'colored') {
+                    $html .= <<<HTML
+
+                <a href="{$fbUrl}" target="_blank" rel="noopener noreferrer" class="social-button transition-all hover:opacity-80" style="{$socialStyle}">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
+                    </svg>
+                </a>
+HTML;
+                } else {
+                    $html .= <<<HTML
 
                 <a href="{$fbUrl}" target="_blank" rel="noopener noreferrer" class="social-button transition-all hover:opacity-80" style="{$socialStyle}">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -175,12 +195,30 @@ HTML;
                     </svg>
                 </a>
 HTML;
+                }
             }
 
             // Instagram
             if (!empty($socialLinks['instagram'])) {
                 $igUrl = htmlspecialchars($socialLinks['instagram']);
-                $html .= <<<HTML
+                if ($iconStyle === 'colored') {
+                    $html .= <<<HTML
+
+                <a href="{$igUrl}" target="_blank" rel="noopener noreferrer" class="social-button transition-all hover:opacity-80" style="{$socialStyle}">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                            <linearGradient id="instagram-gradient-header-php" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#FD5949;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#D6249F;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#285AEB;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" fill="url(#instagram-gradient-header-php)"/>
+                    </svg>
+                </a>
+HTML;
+                } else {
+                    $html .= <<<HTML
 
                 <a href="{$igUrl}" target="_blank" rel="noopener noreferrer" class="social-button transition-all hover:opacity-80" style="{$socialStyle}">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -188,15 +226,17 @@ HTML;
                     </svg>
                 </a>
 HTML;
+                }
             }
 
             // X (Twitter)
             if (!empty($socialLinks['twitter'])) {
                 $twUrl = htmlspecialchars($socialLinks['twitter']);
+                $xFill = ($iconStyle === 'colored') ? '#000000' : 'currentColor';
                 $html .= <<<HTML
 
                 <a href="{$twUrl}" target="_blank" rel="noopener noreferrer" class="social-button transition-all hover:opacity-80" style="{$socialStyle}">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="{$xFill}">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                     </svg>
                 </a>
@@ -247,18 +287,18 @@ HTML;
         $html = <<<HTML
 <div class="image-slide-block">
     <div class="{$wrapperClass}">
-        <div class="relative w-full overflow-hidden {$roundedClass}" style="height: {$height}; min-height: {$height};">
+        <div class="relative w-full overflow-hidden {$roundedClass}">
 HTML;
 
         if (!empty($image)) {
             $html .= <<<HTML
 
-            <img src="{$image}" alt="{$alt}" class="w-full h-full object-cover">
+            <img src="{$image}" alt="{$alt}" class="w-full h-auto">
 HTML;
         } else {
             $html .= <<<HTML
 
-            <div class="w-full h-full flex items-center justify-center bg-gray-200">
+            <div class="w-full flex items-center justify-center bg-gray-200 py-24">
                 <div class="text-center text-gray-400">
                     <p class="text-lg font-medium">Carica un'immagine</p>
                 </div>
@@ -516,6 +556,33 @@ HTML;
     }
 
     /**
+     * Get icon path for features block
+     */
+    protected function getFeatureIconPath($iconName)
+    {
+        $icons = [
+            'check' => 'M5 13l4 4L19 7',
+            'star' => 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z',
+            'bolt' => 'M13 10V3L4 14h7v7l9-11h-7z',
+            'shield' => 'M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+            'rocket' => 'M15.632 3.368a8 8 0 00-11.264 0l-1.414 1.415a2 2 0 000 2.828l2.829 2.829-3.536 3.535a2 2 0 002.829 2.828l3.535-3.535 2.828 2.829a2 2 0 002.829 0l1.414-1.415a8 8 0 000-11.264l-1.414-1.414zM9 11a2 2 0 114 0 2 2 0 01-4 0z M7 21h10',
+            'heart' => 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+            'lightbulb' => 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+            'chart' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+            'clock' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+            'globe' => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+            'users' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+            'cog' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+            'gift' => 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7',
+            'trophy' => 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z',
+            'sparkles' => 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+            'thumbup' => 'M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5'
+        ];
+
+        return $icons[$iconName] ?? $icons['check'];
+    }
+
+    /**
      * Render Features block (3-column grid)
      */
     protected function renderFeatures($content, $styles, $block)
@@ -525,36 +592,66 @@ HTML;
         $roundedClass = $this->getRoundedClass();
         $blockStyle = $this->getBlockStyle($styles);
 
+        // Custom colors
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $featureTitleColor = htmlspecialchars($content['featureTitleColor'] ?? '');
+        $featureTextColor = htmlspecialchars($content['featureTextColor'] ?? '#6B7280');
+
+        // Icon styling
+        $iconShape = $content['iconShape'] ?? 'circle';
+        $iconShapeMap = [
+            'circle' => 'rounded-full',
+            'square' => 'rounded-none',
+            'rounded' => 'rounded-lg'
+        ];
+        $iconShapeClass = $iconShapeMap[$iconShape] ?? 'rounded-full';
+        $iconColor = htmlspecialchars($content['iconColor'] ?? '#2563EB');
+        $iconBackgroundColor = htmlspecialchars($content['iconBackgroundColor'] ?? '#DBEAFE');
+
+        // Columns configuration
+        $columns = $content['columns'] ?? 3;
+        $columnsClass = $columns === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3';
+
+        // Fallback to block text color if custom colors not set
+        $defaultTextColor = $styles['textColor'] ?? '';
+        $titleStyle = !empty($titleColor) ? "color: {$titleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
+        $featureTitleStyle = !empty($featureTitleColor) ? "color: {$featureTitleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
+
         $html = <<<HTML
 <div class="features-block">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 {$roundedClass}" {$blockStyle}>
 HTML;
 
         if (!empty($title)) {
+            $titleStyleAttr = !empty($titleStyle) ? "style=\"{$titleStyle}\"" : '';
             $html .= <<<HTML
 
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12" {$titleStyleAttr}>{$title}</h2>
 HTML;
         }
 
-        $html .= '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">';
+        $html .= "<div class=\"grid grid-cols-1 {$columnsClass} gap-6 md:gap-8\">";
+
+        $featureTitleStyleAttr = !empty($featureTitleStyle) ? "style=\"{$featureTitleStyle}\"" : '';
 
         foreach ($features as $feature) {
             $featureTitle = htmlspecialchars($feature['title'] ?? '');
             $featureDesc = htmlspecialchars($feature['description'] ?? '');
+            $iconName = $feature['icon'] ?? 'check';
+            $iconPath = $this->getFeatureIconPath($iconName);
 
             $html .= <<<HTML
 
             <div class="text-center">
                 <div class="flex justify-center mb-4">
-                    <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    <div class="w-16 h-16 {$iconShapeClass} flex items-center justify-center" style="background-color: {$iconBackgroundColor};">
+                        <svg class="w-8 h-8" style="color: {$iconColor};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{$iconPath}"/>
                         </svg>
                     </div>
                 </div>
-                <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{$featureTitle}</h3>
-                <p class="text-sm sm:text-base text-gray-600 leading-relaxed">{$featureDesc}</p>
+                <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3" {$featureTitleStyleAttr}>{$featureTitle}</h3>
+                <p class="text-sm sm:text-base leading-relaxed" style="color: {$featureTextColor};">{$featureDesc}</p>
             </div>
 HTML;
         }
@@ -643,29 +740,58 @@ HTML;
     protected function renderCta($content, $styles, $block)
     {
         $title = htmlspecialchars($content['title'] ?? 'Pronto per iniziare?');
-        $description = htmlspecialchars($content['description'] ?? '');
+        $description = $content['description'] ?? ''; // Allow HTML from rich text editor
         $buttonText = htmlspecialchars($content['buttonText'] ?? 'Inizia ora');
         $buttonLink = htmlspecialchars($content['buttonLink'] ?? '#');
         $secondaryText = htmlspecialchars($content['secondaryText'] ?? '');
         $roundedClass = $this->getRoundedClass();
         $blockStyle = $this->getBlockStyle($styles);
 
+        // Button styles
+        $buttonStyle = $content['buttonStyle'] ?? [];
+        $buttonBg = htmlspecialchars($buttonStyle['backgroundColor'] ?? '#4F46E5');
+        $buttonColor = htmlspecialchars($buttonStyle['textColor'] ?? '#FFFFFF');
+        $buttonFontSize = htmlspecialchars($buttonStyle['fontSize'] ?? '18px');
+        $buttonPadding = htmlspecialchars($buttonStyle['padding'] ?? '16px 32px');
+        $buttonRadius = htmlspecialchars($buttonStyle['borderRadius'] ?? '8px');
+        $buttonBorderWidth = htmlspecialchars($buttonStyle['borderWidth'] ?? '0px');
+        $buttonBorderColor = htmlspecialchars($buttonStyle['borderColor'] ?? 'transparent');
+        $buttonBorderStyle = htmlspecialchars($buttonStyle['borderStyle'] ?? 'solid');
+        $buttonShadow = $buttonStyle['shadow'] ?? 'lg';
+
+        $shadowMap = [
+            'none' => 'none',
+            'sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            'xl' => '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        ];
+        $boxShadow = $shadowMap[$buttonShadow] ?? $shadowMap['lg'];
+
+        $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
+
         $html = <<<HTML
 <div class="cta-block">
     <div class="max-w-7xl mx-auto px-6 py-16 text-center {$roundedClass}" {$blockStyle}>
+HTML;
+
+        if (!empty($title)) {
+            $html .= <<<HTML
+
         <h2 class="text-3xl md:text-4xl font-bold mb-6">{$title}</h2>
 HTML;
+        }
 
         if (!empty($description)) {
             $html .= <<<HTML
 
-        <p class="text-lg md:text-xl text-gray-600 mb-8">{$description}</p>
+        <div class="text-lg prose max-w-none mx-auto mb-8">{$description}</div>
 HTML;
         }
 
         $html .= <<<HTML
 
-        <a href="{$buttonLink}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold transition-colors shadow-lg hover:shadow-xl {$roundedClass}">
+        <a href="{$buttonLink}" class="inline-block font-semibold transition-colors" style="{$buttonStyles}">
             {$buttonText}
         </a>
 HTML;
@@ -691,6 +817,7 @@ HTML;
         $buttonText = htmlspecialchars($content['buttonText'] ?? 'Call to Action');
         $buttonLink = htmlspecialchars($content['buttonLink'] ?? '#');
         $backgroundImage = htmlspecialchars($content['backgroundImage'] ?? '');
+        $height = htmlspecialchars($content['height'] ?? '400px');
         $roundedClass = $this->getRoundedClass();
 
         // Build inline styles
@@ -719,8 +846,8 @@ HTML;
             $inlineStyles[] = 'background-position: center';
         }
 
-        // Always add min-height
-        $inlineStyles[] = 'min-height: 400px';
+        // Add min-height
+        $inlineStyles[] = 'min-height: ' . $height;
 
         $styleAttr = !empty($inlineStyles) ? 'style="' . implode('; ', $inlineStyles) . '"' : '';
 
@@ -765,18 +892,24 @@ HTML;
      */
     protected function renderText($content, $styles, $block)
     {
-        $title = htmlspecialchars($content['title'] ?? 'Title');
+        $title = htmlspecialchars($content['title'] ?? '');
         // Don't escape HTML in text content - it contains formatted HTML
         $text = $content['text'] ?? '<p>Text content</p>';
+        $lineHeight = htmlspecialchars($content['lineHeight'] ?? '1.625');
         $roundedClass = $this->getRoundedClass();
 
         $blockStyle = $this->getBlockStyle($styles);
 
+        $titleHtml = '';
+        if (!empty($title)) {
+            $titleHtml = "<h2 class=\"text-3xl font-bold mb-4\">{$title}</h2>";
+        }
+
         return <<<HTML
 <div class="text-block">
     <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
-        <h2 class="text-3xl font-bold mb-4">{$title}</h2>
-        <div class="text-lg leading-relaxed prose max-w-none">{$text}</div>
+        {$titleHtml}
+        <div class="text-lg prose max-w-none" style="line-height: {$lineHeight};">{$text}</div>
     </div>
 </div>
 HTML;
@@ -915,14 +1048,29 @@ HTML;
     protected function renderForm($content, $styles, $block)
     {
         $title = htmlspecialchars($content['title'] ?? 'Contattaci');
+        $caption = htmlspecialchars($content['caption'] ?? '');
         $fields = $content['fields'] ?? [];
+        $textareaPlaceholder = htmlspecialchars($content['textareaPlaceholder'] ?? 'Scrivi qui il tuo messaggio...');
         $buttonText = htmlspecialchars($content['buttonText'] ?? 'Invia');
+        $buttonLayout = $content['buttonLayout'] ?? 'full';
         $showPrivacy = $content['showPrivacy'] ?? true;
         $privacyLink = htmlspecialchars($content['privacyLink'] ?? '/privacy-policy');
         $privacyTextColor = htmlspecialchars($content['privacyTextColor'] ?? '#374151');
         $recaptchaSiteKey = htmlspecialchars($content['recaptchaSiteKey'] ?? '');
         $thankYouUrl = htmlspecialchars($content['thankYouUrl'] ?? '');
         $roundedClass = $this->getRoundedClass();
+
+        // Field border radius
+        $fieldBorderRadius = $content['fieldBorderRadius'] ?? 'lg';
+        $radiusMap = [
+            'none' => '',
+            'sm' => 'rounded',
+            'md' => 'rounded-md',
+            'lg' => 'rounded-lg',
+            'xl' => 'rounded-xl',
+            'full' => 'rounded-2xl'
+        ];
+        $fieldRoundedClass = $radiusMap[$fieldBorderRadius] ?? 'rounded-lg';
 
         // Use API URL and page ID from constructor
         $apiUrl = $this->apiUrl;
@@ -955,40 +1103,76 @@ HTML;
 
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
+        // Separa campi input dai textarea
+        $inputFields = [];
+        $textareaFields = [];
+        foreach ($fields as $field) {
+            if (($field['type'] ?? 'text') === 'textarea') {
+                $textareaFields[] = $field;
+            } else {
+                $inputFields[] = $field;
+            }
+        }
+
+        $captionHtml = '';
+        if (!empty($caption)) {
+            $captionHtml = "<p class=\"text-center text-gray-600 mb-8 max-w-2xl mx-auto\">{$caption}</p>";
+        }
+
         $html = <<<HTML
 <section class="form-block py-12 px-4" {$blockStyle}>
     <div class="container mx-auto max-w-2xl">
-        <h2 class="text-3xl font-bold mb-8 text-center">{$title}</h2>
+        <h2 class="text-3xl font-bold mb-2 text-center">{$title}</h2>
+        {$captionHtml}
+        <p class="text-sm text-gray-500 mb-4 text-center">
+            <span class="text-red-500">*</span> Campi obbligatori
+        </p>
         <form id="{$formId}" class="landing-page-form space-y-4" method="post" action="">
             <input type="hidden" name="page_id" value="{$pageId}">
+            <input type="hidden" name="page_slug" value="{$this->pageSlug}">
             <input type="hidden" name="thank_you_url" value="{$thankYouUrl}">
+
+            <!-- Campi input su 2 colonne -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 HTML;
 
-        // Render dynamic fields
-        foreach ($fields as $field) {
+        // Render input fields
+        foreach ($inputFields as $field) {
             $fieldName = htmlspecialchars($field['name'] ?? '');
             $fieldLabel = htmlspecialchars($field['label'] ?? '');
             $fieldType = htmlspecialchars($field['type'] ?? 'text');
             $fieldRequired = !empty($field['required']) ? 'required' : '';
-            $requiredMark = !empty($field['required']) ? '<span class="text-red-500">*</span>' : '';
+            $requiredMark = !empty($field['required']) ? ' *' : '';
+            $placeholder = $fieldLabel . $requiredMark;
 
-            if ($fieldType === 'textarea') {
-                $html .= <<<HTML
+            $html .= <<<HTML
 
-            <div class="form-field">
-                <label for="{$fieldName}" class="block text-sm font-medium mb-2">{$fieldLabel} {$requiredMark}</label>
-                <textarea id="{$fieldName}" name="{$fieldName}" rows="4" class="w-full px-3 py-2 border border-gray-300 {$roundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" {$fieldRequired}></textarea>
+                <div class="form-field">
+                    <input id="{$fieldName}" type="{$fieldType}" name="{$fieldName}" placeholder="{$placeholder}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" {$fieldRequired}>
+                </div>
+HTML;
+        }
+
+        $html .= <<<HTML
+
             </div>
 HTML;
-            } else {
-                $html .= <<<HTML
+
+        // Render textarea fields
+        foreach ($textareaFields as $field) {
+            $fieldName = htmlspecialchars($field['name'] ?? '');
+            $fieldLabel = htmlspecialchars($field['label'] ?? '');
+            $fieldRequired = !empty($field['required']) ? 'required' : '';
+            $requiredMark = !empty($field['required']) ? ' *' : '';
+            // Usa il placeholder personalizzato se disponibile, altrimenti usa label + required mark
+            $placeholder = !empty($textareaPlaceholder) ? $textareaPlaceholder : ($fieldLabel . $requiredMark);
+
+            $html .= <<<HTML
 
             <div class="form-field">
-                <label for="{$fieldName}" class="block text-sm font-medium mb-2">{$fieldLabel} {$requiredMark}</label>
-                <input id="{$fieldName}" type="{$fieldType}" name="{$fieldName}" class="w-full px-3 py-2 border border-gray-300 {$roundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" {$fieldRequired}>
+                <textarea id="{$fieldName}" name="{$fieldName}" rows="4" placeholder="{$placeholder}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" {$fieldRequired}></textarea>
             </div>
 HTML;
-            }
         }
 
         // Privacy checkbox
@@ -1000,7 +1184,7 @@ HTML;
                     <input type="checkbox" name="privacy_accepted" required class="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
                     <span class="text-sm" style="color: {$privacyTextColor};">
                         Accetto la
-                        <a href="{$privacyLink}" target="_blank" class="text-primary-600 hover:text-primary-800 underline">
+                        <a href="{$privacyLink}" target="_blank" class="hover:underline">
                             privacy policy e il trattamento dei dati
                         </a>
                         <span class="text-red-500">*</span>
@@ -1021,11 +1205,17 @@ HTML;
 HTML;
         }
 
+        // Button wrapper based on layout
+        $buttonWrapperClass = $buttonLayout === 'centered' ? 'flex justify-center' : '';
+        $buttonClass = $buttonLayout === 'centered' ? 'font-medium transition-colors' : 'w-full font-medium transition-colors';
+
         $html .= <<<HTML
 
-            <button type="submit" class="w-full font-medium transition-colors" style="{$buttonStyles}">
-                {$buttonText}
-            </button>
+            <div class="{$buttonWrapperClass}">
+                <button type="submit" class="{$buttonClass}" style="{$buttonStyles}">
+                    {$buttonText}
+                </button>
+            </div>
 
             <div id="{$formId}-message" class="hidden mt-4 p-4 rounded"></div>
         </form>
@@ -1089,11 +1279,13 @@ HTML;
                 if (thankYouUrl && thankYouUrl.trim() !== '') {
                     window.location.href = thankYouUrl;
                 } else {
-                    // Default thank you message
-                    showMessage('Grazie! La tua richiesta è stata inviata con successo.', 'success');
-                    form.reset();
-                    if (window.grecaptcha) {
-                        grecaptcha.reset();
+                    // Redirect to thank you page: /{slug}?_mode=thankyou (replaceState in page.php mostra /{slug}/thank-you)
+                    const pageSlug = form.querySelector('input[name="page_slug"]')?.value || '';
+                    if (pageSlug) {
+                        window.location.href = '/' + encodeURIComponent(pageSlug) + '?_mode=thankyou';
+                    } else {
+                        const currentPath = window.location.pathname;
+                        window.location.href = currentPath + (currentPath.includes('?') ? '&' : '?') + '_mode=thankyou';
                     }
                 }
             } else {
@@ -1168,8 +1360,8 @@ HTML;
 <!-- Swiper CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
 
-<section class="slider-block py-12 px-4" {$blockStyle}>
-    <div class="max-w-7xl mx-auto">
+<div class="slider-block">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 {$roundedClass}" {$blockStyle}>
 HTML;
 
         if (!empty($title)) {
@@ -1179,10 +1371,23 @@ HTML;
 HTML;
         }
 
+        // Prepare data attributes for Swiper configuration
+        $loopAttr = $loop ? 'true' : 'false';
+        $autoplayAttr = $autoplay ? 'true' : 'false';
+        $showNavAttr = $showNavigation ? 'true' : 'false';
+        $showPagAttr = $showPagination ? 'true' : 'false';
+
         $html .= <<<HTML
 
         <div class="relative">
-            <div class="swiper" id="{$sliderId}">
+            <div class="swiper" id="{$sliderId}"
+                data-loop="{$loopAttr}"
+                data-autoplay="{$autoplayAttr}"
+                data-delay="{$autoplayDelay}"
+                data-slides-per-view="{$slidesPerViewDesktop}"
+                data-slide-gap="{$slideGap}"
+                data-show-navigation="{$showNavAttr}"
+                data-show-pagination="{$showPagAttr}">
                 <div class="swiper-wrapper">
 HTML;
 
@@ -1249,42 +1454,7 @@ HTML;
         }
 
         $html .= '</div>'; // Close relative
-        $html .= '</div></section>'; // Close max-w-7xl and slider-block
-
-        // Initialize Swiper - convert PHP booleans to JavaScript strings
-        $loopJs = $loop ? 'true' : 'false';
-        $autoplayConfig = $autoplay ? "{delay: {$autoplayDelay}, disableOnInteraction: false}" : 'false';
-        $navigationConfig = $showNavigation ? "{nextEl: '#{$sliderId}-next', prevEl: '#{$sliderId}-prev'}" : 'false';
-        $paginationConfig = $showPagination ? "{clickable: true, el: '#{$sliderId}-pagination'}" : 'false';
-
-        $html .= <<<HTML
-
-<!-- Swiper JS -->
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<script>
-(function() {
-    if (typeof Swiper === 'undefined') {
-        console.error('Swiper library not loaded');
-        return;
-    }
-
-    const swiper = new Swiper('#{$sliderId}', {
-        slidesPerView: 1,
-        spaceBetween: {$slideGap},
-        loop: {$loopJs},
-        autoplay: {$autoplayConfig},
-        navigation: {$navigationConfig},
-        pagination: {$paginationConfig},
-        breakpoints: {
-            768: {
-                slidesPerView: {$slidesPerViewDesktop},
-                spaceBetween: {$slideGap}
-            }
-        }
-    });
-})();
-</script>
-HTML;
+        $html .= '</div></div>'; // Close max-w-7xl and slider-block
 
         return $html;
     }
@@ -1439,12 +1609,14 @@ HTML;
             $color = $style['color'] ?? '#FFFFFF';
             $bottom = $style['bottom'] ?? '20px';
             $right = $style['right'] ?? '20px';
-            $width = $style['width'] ?? '60px';
+            $width = $showText ? 'auto' : ($style['width'] ?? '60px');
             $height = $style['height'] ?? '60px';
-            $borderRadius = $style['borderRadius'] ?? '50%';
+            $borderRadius = $showText ? '30px' : ($style['borderRadius'] ?? '50%');
             $fontSize = $style['fontSize'] ?? '24px';
+            $paddingLeft = $showText ? '16px' : '0';
+            $paddingRight = $showText ? '20px' : '0';
 
-            $buttonStyle = "background-color: {$bgColor}; color: {$color}; bottom: {$bottom}; right: {$right}; width: {$width}; height: {$height}; border-radius: {$borderRadius}; font-size: {$fontSize};";
+            $buttonStyle = "background-color: {$bgColor}; color: {$color}; bottom: {$bottom}; right: {$right}; width: {$width}; height: {$height}; border-radius: {$borderRadius}; font-size: {$fontSize}; padding-left: {$paddingLeft}; padding-right: {$paddingRight};";
 
             $html .= <<<HTML
 <a href="{$link}" target="_blank" rel="noopener noreferrer"
@@ -1475,12 +1647,14 @@ HTML;
             $color = $style['color'] ?? '#FFFFFF';
             $bottom = $style['bottom'] ?? '20px';
             $left = $style['left'] ?? '20px';
-            $width = $style['width'] ?? '60px';
+            $width = $showText ? 'auto' : ($style['width'] ?? '60px');
             $height = $style['height'] ?? '60px';
-            $borderRadius = $style['borderRadius'] ?? '50%';
+            $borderRadius = $showText ? '30px' : ($style['borderRadius'] ?? '50%');
             $fontSize = $style['fontSize'] ?? '24px';
+            $paddingLeft = $showText ? '16px' : '0';
+            $paddingRight = $showText ? '20px' : '0';
 
-            $buttonStyle = "background-color: {$bgColor}; color: {$color}; bottom: {$bottom}; left: {$left}; width: {$width}; height: {$height}; border-radius: {$borderRadius}; font-size: {$fontSize};";
+            $buttonStyle = "background-color: {$bgColor}; color: {$color}; bottom: {$bottom}; left: {$left}; width: {$width}; height: {$height}; border-radius: {$borderRadius}; font-size: {$fontSize}; padding-left: {$paddingLeft}; padding-right: {$paddingRight};";
 
             $html .= <<<HTML
 <a href="{$link}"
@@ -1823,6 +1997,129 @@ HTML;
 
         $html .= '</div>'; // Close inner div
         $html .= '</footer>';
+
+        return $html;
+    }
+
+    /**
+     * Render Legal Footer block
+     */
+    protected function renderLegalfooter($content, $styles, $block)
+    {
+        // Genera link dinamici solo se ci sono dati legali
+        // SEMPRE usa i link calcolati dinamicamente, ignora quelli salvati nel content
+        if ($this->hasLegalInfo && !empty($this->pageSlug)) {
+            // Se legalBaseUrl è specificato (chiamato da backend), usa URL assoluti
+            // Altrimenti usa URL relativi (renderer standalone)
+            $baseUrl = !empty($this->legalBaseUrl) ? $this->legalBaseUrl : '';
+
+            // Debug log
+            error_log("BlockRenderer: Generating legal links with baseUrl='$baseUrl' and slug='{$this->pageSlug}'");
+
+            $legalLinks = [
+                ['text' => 'Privacy', 'url' => $baseUrl . '/legal/' . $this->pageSlug . '/privacy', 'isCookiePreference' => false],
+                ['text' => "Condizioni d'uso", 'url' => $baseUrl . '/legal/' . $this->pageSlug . '/condizioni', 'isCookiePreference' => false],
+                ['text' => 'Cookies', 'url' => $baseUrl . '/legal/' . $this->pageSlug . '/cookies', 'isCookiePreference' => false],
+                ['text' => 'Preferenze cookies', 'url' => '#', 'isCookiePreference' => true]
+            ];
+        } else {
+            // Nessun dato legale, usa link placeholder
+            $legalLinks = [
+                ['text' => 'Privacy', 'url' => '#', 'isCookiePreference' => false],
+                ['text' => "Condizioni d'uso", 'url' => '#', 'isCookiePreference' => false],
+                ['text' => 'Cookies', 'url' => '#', 'isCookiePreference' => false],
+                ['text' => 'Preferenze cookies', 'url' => '#', 'isCookiePreference' => true]
+            ];
+        }
+
+        $legalText = $content['legalText'] ?? 'ARAN CUCINE PALERMO - VIALE LAZIO, 124/126 90144 PALERMO (PA), <a href="mailto:info@arancucinepalermo.it">info@arancucinepalermo.it</a>, <a href="tel:+390915142890">091 514 289</a><br>è un\'iniziativa INTERLINEA SRL, VIALE AIACE, 138 90151 PALERMO - P.IVA e C.F: 05472210821 - Tutti i diritti riservati - sito realizzato da <a href="https://www.edysma.com/dachi.php?mit=arancucinepalermo" target="_blank">EDYSMA</a> e <a href="https://www.fm-marketing.it/" target="_blank">FM MARKETING</a> in conformità agli standards di accessibilità e di Responsive Web Design (RWD)';
+
+        $roundedClass = $this->getRoundedClass();
+
+        // Gestisci fullWidth (default true)
+        $fullWidth = !isset($content['fullWidth']) || $content['fullWidth'] === true;
+
+        // Stili di default
+        $defaultBgColor = '#F3F4F6'; // gray-100
+        $defaultTextColor = '#6B7280'; // gray-500
+
+        if ($fullWidth) {
+            // FullWidth: stili sul wrapper esterno, contenuto limitato
+            $wrapperStyle = 'style="';
+            $wrapperStyle .= 'background-color: ' . ($styles['backgroundColor'] ?? $defaultBgColor) . '; ';
+            $wrapperStyle .= 'color: ' . ($styles['textColor'] ?? $defaultTextColor) . ';';
+            $wrapperStyle .= '"';
+
+            $containerClass = 'max-w-7xl mx-auto';
+
+            // Stili interni: solo padding e font
+            $innerStyles = [];
+            if (!empty($styles['padding'])) {
+                $innerStyles[] = 'padding: ' . $styles['padding'];
+            }
+            if (!empty($styles['fontFamily'])) {
+                $innerStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+            }
+            $innerStyle = !empty($innerStyles) ? 'style="' . implode('; ', $innerStyles) . '"' : '';
+        } else {
+            // NON fullWidth: wrapper limitato, stili sul div interno
+            $wrapperClass = 'max-w-7xl mx-auto';
+            $wrapperStyle = '';
+            $containerClass = '';
+
+            // Tutti gli stili sul div interno
+            $innerStyles = [];
+            $innerStyles[] = 'background-color: ' . ($styles['backgroundColor'] ?? $defaultBgColor);
+            $innerStyles[] = 'color: ' . ($styles['textColor'] ?? $defaultTextColor);
+            if (!empty($styles['padding'])) {
+                $innerStyles[] = 'padding: ' . $styles['padding'];
+            }
+            if (!empty($styles['fontFamily'])) {
+                $innerStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+            }
+            $innerStyle = 'style="' . implode('; ', $innerStyles) . '"';
+        }
+
+        $footerClass = $fullWidth ? '' : $wrapperClass;
+        $linkColor = $styles['linkColor'] ?? $styles['textColor'] ?? $defaultTextColor;
+
+        $html = '<footer class="footer"';
+        if (!empty($footerClass)) {
+            $html .= ' class="' . $footerClass . '"';
+        }
+        if (!empty($wrapperStyle)) {
+            $html .= ' ' . $wrapperStyle;
+        }
+        $html .= '>';
+
+        $html .= '<div class="px-6 py-4 ' . $containerClass . ' ' . $roundedClass . '" ' . $innerStyle . '>';
+        $html .= '<div class="text-center">';
+
+        // Lista link legali
+        $html .= '<ul class="list-none mb-2" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem 1.5rem;">';
+        foreach ($legalLinks as $link) {
+            $linkText = htmlspecialchars($link['text'] ?? '');
+            $linkUrl = htmlspecialchars($link['url'] ?? '#');
+            $ccClass = ($link['isCookiePreference'] ?? false) ? ' cc-show' : '';
+            $html .= '<li style="display: inline-block;">';
+            $html .= '<a href="' . $linkUrl . '" class="hover-underline' . $ccClass . '" style="color: ' . $linkColor . '; transition: all 0.2s;">' . $linkText . '</a>';
+            $html .= '</li>';
+        }
+        $html .= '</ul>';
+
+        // Testo legale (HTML non escapato)
+        $html .= '<div class="text-xs" style="line-height: 1.375; color: ' . ($styles['textColor'] ?? $defaultTextColor) . ';">';
+        $html .= $legalText;
+        $html .= '</div>';
+
+        $html .= '</div>'; // Close text-center
+        $html .= '</div>'; // Close inner div
+        $html .= '</footer>';
+
+        // Aggiungi stile hover inline
+        $html .= '<style>';
+        $html .= '.hover-underline:hover { text-decoration: underline; }';
+        $html .= '</style>';
 
         return $html;
     }
