@@ -51,6 +51,9 @@ standalone-renderer/test-*.php
 standalone-renderer/debug-*.php
 standalone-renderer/check-*.php
 
+# SQL scripts manuali
+MIGRATION_SQL_MANUAL.sql
+
 # Temporary files
 *.tmp
 *.temp
