@@ -32,14 +32,23 @@ yarn-error.log*
 
 # Archives
 *.zip
+*.tar.gz
 Archivio*.zip
 
 # User uploads
-./backend/public/uploads/
+backend/public/uploads/
 
 # External components (Joomla)
 com_landingpages/
 joomla-component/
+
+# Debug/diagnostic scripts (non committare)
+standalone-renderer/debug-api.php
+backend/check_published_pages.php
+backend/test-*.php
+standalone-renderer/test-*.php
+standalone-renderer/debug-*.php
+standalone-renderer/check-*.php
 
 # Temporary files
 *.tmp

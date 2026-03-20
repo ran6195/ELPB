@@ -105,16 +105,7 @@ $app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(A
 // Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti
 $app->get('/api/page/{slug}', '\App\Controllers\PageController:showBySlug');
 
-// Legal pages routes (public - accessibili a tutti)
-$app->get('/legal/{slug}/privacy', '\App\Controllers\LegalPagesController:privacy');
-$app->get('/legal/{slug}/condizioni', '\App\Controllers\LegalPagesController:terms');
-$app->get('/legal/{slug}/cookies', '\App\Controllers\LegalPagesController:cookies');
-
 // Leads routes - Form submission pubblica
 $app->post('/api/leads', '\App\Controllers\LeadController:store');
-
-// Debug routes (rimuovere in produzione dopo il debug)
-$app->get('/api/debug/database', '\App\Controllers\DebugController:checkDatabase');
-$app->post('/api/debug/test-update', '\App\Controllers\DebugController:testUpdate');
 
 $app->run();
