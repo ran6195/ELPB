@@ -59,7 +59,7 @@ const emit = defineEmits(['update'])
 const combinedStyles = computed(() => {
   const blockStyles = props.block.styles || {}
   const styles = {
-    minHeight: '400px'
+    minHeight: props.block.content.height || '400px'
   }
 
   // Aggiungi stili del blocco

@@ -3,6 +3,7 @@
     <div :class="['max-w-7xl mx-auto px-6 py-16 text-center', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <!-- Titolo -->
       <h2
+        v-if="block.content.title"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
         class="text-3xl md:text-4xl font-bold mb-6 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
@@ -11,19 +12,17 @@
       </h2>
 
       <!-- Descrizione -->
-      <p
+      <div
         v-if="block.content.description"
-        :contenteditable="editable"
-        @blur="updateContent('description', $event.target.innerText)"
-        class="text-lg md:text-xl text-gray-600 mb-8 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
-      >
-        {{ block.content.description }}
-      </p>
+        class="text-lg prose max-w-none mx-auto mb-8"
+        v-html="block.content.description"
+      ></div>
 
       <!-- Pulsante CTA -->
       <a
         :href="block.content.buttonLink || '#'"
-        :class="['inline-block bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 text-lg font-semibold transition-colors shadow-lg hover:shadow-xl', roundedCorners ? 'rounded-lg' : '']"
+        :style="buttonStyles"
+        class="inline-block font-semibold transition-colors"
       >
         <span
           :contenteditable="editable"
@@ -74,6 +73,40 @@ const blockStyles = computed(() => {
     color: styles.textColor || 'inherit',
     padding: styles.padding || undefined,
     fontFamily: styles.fontFamily || undefined
+  }
+})
+
+const buttonStyles = computed(() => {
+  const btnStyle = props.block.content.buttonStyle || {
+    backgroundColor: '#4F46E5',
+    textColor: '#FFFFFF',
+    fontSize: '18px',
+    padding: '16px 32px',
+    borderRadius: '8px',
+    borderWidth: '0px',
+    borderColor: 'transparent',
+    borderStyle: 'solid',
+    shadow: 'lg'
+  }
+
+  const shadowMap = {
+    none: 'none',
+    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+  }
+
+  return {
+    backgroundColor: btnStyle.backgroundColor,
+    color: btnStyle.textColor,
+    fontSize: btnStyle.fontSize,
+    padding: btnStyle.padding,
+    borderRadius: btnStyle.borderRadius,
+    borderWidth: btnStyle.borderWidth,
+    borderColor: btnStyle.borderColor,
+    borderStyle: btnStyle.borderStyle,
+    boxShadow: shadowMap[btnStyle.shadow] || shadowMap.lg
   }
 })
 

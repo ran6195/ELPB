@@ -1,17 +1,17 @@
 <template>
-  <section
-    :class="[
-      'slider-block py-16 px-4',
-      roundedCorners ? 'rounded-lg' : ''
-    ]"
-    :style="{
-      backgroundColor: block.styles?.backgroundColor || '#f9fafb',
-      color: block.styles?.textColor || '#1f2937',
-      padding: block.styles?.padding || '4rem 1rem',
-      fontFamily: block.styles?.fontFamily || undefined
-    }"
-  >
-    <div class="container mx-auto max-w-7xl">
+  <div class="slider-block">
+    <div
+      :class="[
+        'max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16',
+        roundedCorners ? 'rounded-lg' : ''
+      ]"
+      :style="{
+        backgroundColor: block.styles?.backgroundColor || '#f9fafb',
+        color: block.styles?.textColor || '#1f2937',
+        padding: block.styles?.padding || undefined,
+        fontFamily: block.styles?.fontFamily || undefined
+      }"
+    >
       <!-- Title (optional) -->
       <h2
         v-if="block.content.title"
@@ -151,7 +151,7 @@
         </button>
       </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup>

@@ -14,19 +14,11 @@ class Lead extends Model
         'email',
         'phone',
         'message',
-        'privacy_accepted',
-        'page_published',
-        'appointment_requested',
-        'appointment_datetime',
         'metadata'
     ];
 
     protected $casts = [
         'metadata' => 'array',
-        'privacy_accepted' => 'boolean',
-        'page_published' => 'boolean',
-        'appointment_requested' => 'boolean',
-        'appointment_datetime' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];

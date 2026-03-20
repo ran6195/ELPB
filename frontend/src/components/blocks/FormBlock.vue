@@ -1,38 +1,51 @@
 <template>
   <div class="form-block">
     <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
-      <h2 class="text-3xl font-bold mb-8 text-center">
+      <h2 class="text-3xl font-bold mb-2 text-center">
         {{ block.content.title }}
       </h2>
 
+      <p v-if="block.content.caption" class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">
+        {{ block.content.caption }}
+      </p>
+
+      <p class="text-sm text-gray-500 mb-4 text-center">
+        <span class="text-red-500">*</span> Campi obbligatori
+      </p>
+
       <form @submit.prevent="submitForm" class="space-y-4">
+        <!-- Campi input su 2 colonne -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            v-for="field in inputFields"
+            :key="field.name"
+            class="form-field"
+          >
+            <input
+              :id="field.name"
+              :type="field.type"
+              v-model="formData[field.name]"
+              :required="field.required"
+              :placeholder="field.label + (field.required ? ' *' : '')"
+              :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
+            />
+          </div>
+        </div>
+
+        <!-- Campi textarea a tutta larghezza -->
         <div
-          v-for="field in block.content.fields"
+          v-for="field in textareaFields"
           :key="field.name"
           class="form-field"
         >
-          <label :for="field.name" class="block text-sm font-medium mb-2">
-            {{ field.label }}
-            <span v-if="field.required" class="text-red-500">*</span>
-          </label>
-
           <textarea
-            v-if="field.type === 'textarea'"
             :id="field.name"
             v-model="formData[field.name]"
             :required="field.required"
+            :placeholder="block.content.textareaPlaceholder || (field.label + (field.required ? ' *' : ''))"
             rows="4"
-            :class="['w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', roundedCorners ? 'rounded-lg' : '']"
+            :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
           ></textarea>
-
-          <input
-            v-else
-            :id="field.name"
-            :type="field.type"
-            v-model="formData[field.name]"
-            :required="field.required"
-            :class="['w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', roundedCorners ? 'rounded-lg' : '']"
-          />
         </div>
 
         <!-- Privacy Checkbox -->
@@ -49,7 +62,7 @@
               <a
                 :href="block.content.privacyLink || '#'"
                 target="_blank"
-                class="text-primary-600 hover:text-primary-800 underline"
+                class="hover:underline"
               >
                 privacy policy e il trattamento dei dati
               </a>
@@ -66,14 +79,19 @@
           </p>
         </div>
 
-        <button
-          type="submit"
-          :disabled="submitting || !canSubmit"
-          :style="buttonStyles"
-          class="w-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ submitting ? 'Invio in corso...' : block.content.buttonText }}
-        </button>
+        <div :class="block.content.buttonLayout === 'centered' ? 'flex justify-center' : ''">
+          <button
+            type="submit"
+            :disabled="submitting || !canSubmit"
+            :style="buttonStyles"
+            :class="[
+              'font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+              block.content.buttonLayout === 'centered' ? '' : 'w-full'
+            ]"
+          >
+            {{ submitting ? 'Invio in corso...' : block.content.buttonText }}
+          </button>
+        </div>
 
         <div v-if="successMessage" :class="['bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm', roundedCorners ? 'rounded-lg' : '']">
           {{ successMessage }}
@@ -156,6 +174,29 @@ const buttonStyles = computed(() => {
     borderStyle: btnStyle.borderStyle,
     boxShadow: shadowMap[btnStyle.shadow] || shadowMap.md
   }
+})
+
+// Border radius per i campi
+const fieldBorderRadiusClass = computed(() => {
+  const radiusMap = {
+    'none': '',
+    'sm': 'rounded',
+    'md': 'rounded-md',
+    'lg': 'rounded-lg',
+    'xl': 'rounded-xl',
+    'full': 'rounded-2xl'
+  }
+  const radius = props.block.content.fieldBorderRadius || 'lg'
+  return radiusMap[radius] || 'rounded-lg'
+})
+
+// Separa campi input (text, email, tel, etc.) dai textarea
+const inputFields = computed(() => {
+  return (props.block.content.fields || []).filter(field => field.type !== 'textarea')
+})
+
+const textareaFields = computed(() => {
+  return (props.block.content.fields || []).filter(field => field.type === 'textarea')
 })
 
 const formData = reactive({})

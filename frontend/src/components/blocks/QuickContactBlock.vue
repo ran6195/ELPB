@@ -80,30 +80,38 @@ const phoneLink = computed(() => {
 // WhatsApp button style
 const whatsappStyle = computed(() => {
   const style = props.block.content.whatsapp?.style || {}
+  const showText = props.block.content.whatsapp?.showText ?? false
+
   return {
     backgroundColor: style.backgroundColor || '#25D366',
     color: style.color || '#FFFFFF',
     bottom: style.bottom || '20px',
     right: style.right || '20px',
-    width: style.width || '60px',
+    width: showText ? 'auto' : (style.width || '60px'),
     height: style.height || '60px',
-    borderRadius: style.borderRadius || '50%',
-    fontSize: style.fontSize || '24px'
+    borderRadius: showText ? '30px' : (style.borderRadius || '50%'),
+    fontSize: style.fontSize || '24px',
+    paddingLeft: showText ? '16px' : '0',
+    paddingRight: showText ? '20px' : '0'
   }
 })
 
 // Phone button style
 const phoneStyle = computed(() => {
   const style = props.block.content.phone?.style || {}
+  const showText = props.block.content.phone?.showText ?? false
+
   return {
     backgroundColor: style.backgroundColor || '#007BFF',
     color: style.color || '#FFFFFF',
     bottom: style.bottom || '20px',
     left: style.left || '20px',
-    width: style.width || '60px',
+    width: showText ? 'auto' : (style.width || '60px'),
     height: style.height || '60px',
-    borderRadius: style.borderRadius || '50%',
-    fontSize: style.fontSize || '24px'
+    borderRadius: showText ? '30px' : (style.borderRadius || '50%'),
+    fontSize: style.fontSize || '24px',
+    paddingLeft: showText ? '16px' : '0',
+    paddingRight: showText ? '20px' : '0'
   }
 })
 

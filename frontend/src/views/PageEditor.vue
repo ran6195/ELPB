@@ -19,6 +19,18 @@
         </div>
         <div class="flex gap-3 items-center">
           <button
+            v-if="page.id"
+            @click="openPreview"
+            class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors border border-gray-300 flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            Anteprima
+          </button>
+
+          <button
             @click="showSettings = !showSettings; selectedBlockIndex = null"
             class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-medium transition-colors border border-gray-300"
           >
@@ -160,6 +172,7 @@
         <div
           v-if="viewMode === 'desktop'"
           class="w-full transition-all duration-300"
+          :class="`container-width-${page.styles?.containerWidth || 'max-w-7xl'}`"
           :style="{
             backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
             fontFamily: page.styles?.fontFamily || 'inherit',
@@ -241,6 +254,7 @@
             <!-- Screen area con scroll interno -->
             <div
               class="bg-white rounded-2xl overflow-y-auto viewport-tablet"
+              :class="`container-width-${page.styles?.containerWidth || 'max-w-7xl'}`"
               style="height: 1024px"
               :style="{
                 backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
@@ -326,6 +340,7 @@
             <!-- Screen area con scroll interno -->
             <div
               class="bg-white rounded-[2.5rem] overflow-y-auto relative viewport-mobile"
+              :class="`container-width-${page.styles?.containerWidth || 'max-w-7xl'}`"
               style="height: 844px"
               :style="{
                 backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
@@ -464,6 +479,7 @@ import TwoColumnImageText from '../components/blocks/TwoColumnImageText.vue'
 import VideoBlock from '../components/blocks/VideoBlock.vue'
 import VideoInfoBlock from '../components/blocks/VideoInfoBlock.vue'
 import FooterBlock from '../components/blocks/FooterBlock.vue'
+import LegalFooterBlock from '../components/blocks/LegalFooterBlock.vue'
 import FeaturesBlock from '../components/blocks/FeaturesBlock.vue'
 import ServicesGridBlock from '../components/blocks/ServicesGridBlock.vue'
 import CtaBlock from '../components/blocks/CtaBlock.vue'
@@ -485,7 +501,7 @@ const page = ref({
   meta_title: '',
   meta_description: '',
   is_published: false,
-  styles: { backgroundColor: '#FFFFFF', blockGap: 15, fontFamily: '', roundedCorners: true },
+  styles: { backgroundColor: '#FFFFFF', blockGap: 15, fontFamily: '', roundedCorners: true, containerWidth: 'max-w-7xl' },
   blocks: [],
   quickContacts: {
     whatsapp: {
@@ -551,7 +567,8 @@ const blockTypes = [
   { type: 'map', name: 'Mappa Google', description: 'Mappa di Google Maps con info contatto' },
   { type: 'social', name: 'Social Media', description: 'Link a social media con icone personalizzabili' },
   { type: 'form', name: 'Form', description: 'Form di contatto per lead' },
-  { type: 'footer', name: 'Footer', description: 'Footer con info azienda e contatti' }
+  { type: 'footer', name: 'Footer', description: 'Footer con info azienda e contatti' },
+  { type: 'legal-footer', name: 'Footer Legale', description: 'Footer con link legali e informazioni aziendali' }
 ]
 
 // Computed property per filtrare i blocchi in base alla ricerca
@@ -632,6 +649,7 @@ onMounted(async () => {
 
       page.value = {
         ...data,
+        blocks: data.blocks || [],  // Assicura che blocks sia sempre un array
         styles: {
           backgroundColor: data.styles?.backgroundColor || '#FFFFFF',
           blockGap: data.styles?.blockGap ?? 15,
@@ -700,11 +718,30 @@ const addBlock = (type) => {
     }
   }
 
-  // Verifica se è un footer e se ne esiste già uno
+  // Verifica se è un footer e se ne esiste già uno o un legal-footer
   if (type === 'footer') {
     const hasFooter = page.value.blocks.some(block => block.type === 'footer')
     if (hasFooter) {
       alert('Puoi aggiungere solo un footer per pagina')
+      return
+    }
+    const hasLegalFooter = page.value.blocks.some(block => block.type === 'legal-footer')
+    if (hasLegalFooter) {
+      alert('Non puoi aggiungere un Footer standard se è già presente un Footer Legale.\n\nElimina prima il Footer Legale per aggiungere un Footer standard.')
+      return
+    }
+  }
+
+  // Verifica se è un legal-footer e se ne esiste già uno o un footer standard
+  if (type === 'legal-footer') {
+    const hasLegalFooter = page.value.blocks.some(block => block.type === 'legal-footer')
+    if (hasLegalFooter) {
+      alert('Puoi aggiungere solo un Footer Legale per pagina')
+      return
+    }
+    const hasFooter = page.value.blocks.some(block => block.type === 'footer')
+    if (hasFooter) {
+      alert('Non puoi aggiungere un Footer Legale se è già presente un Footer standard.\n\nElimina prima il Footer standard per aggiungere un Footer Legale.')
       return
     }
   }
@@ -741,14 +778,23 @@ const addBlock = (type) => {
   else if (type === 'footer') {
     page.value.blocks.push(newBlock)
     updateBlockOrder()
+  }
+  // Se è un legal-footer, aggiungi sempre alla fine
+  else if (type === 'legal-footer') {
+    page.value.blocks.push(newBlock)
+    updateBlockOrder()
   } else {
-    // Inserisci dopo l'header (se esiste) e prima del footer (se esiste)
+    // Inserisci dopo l'header (se esiste) e prima del footer/legal-footer (se esiste)
     const headerIndex = page.value.blocks.findIndex(block => block.type === 'header')
     const footerIndex = page.value.blocks.findIndex(block => block.type === 'footer')
+    const legalFooterIndex = page.value.blocks.findIndex(block => block.type === 'legal-footer')
 
-    if (footerIndex !== -1) {
-      // Se esiste un footer, inserisci prima del footer
-      page.value.blocks.splice(footerIndex, 0, newBlock)
+    // Trova l'indice del footer (normale o legale, quello che c'è)
+    const anyFooterIndex = footerIndex !== -1 ? footerIndex : legalFooterIndex
+
+    if (anyFooterIndex !== -1) {
+      // Se esiste un footer (qualsiasi tipo), inserisci prima del footer
+      page.value.blocks.splice(anyFooterIndex, 0, newBlock)
       updateBlockOrder()
     } else if (headerIndex !== -1) {
       // Se esiste un header ma non un footer, inserisci dopo l'header
@@ -776,6 +822,7 @@ const getDefaultContent = (type) => {
         instagram: '',
         twitter: ''
       },
+      iconStyle: 'monochrome',
       socialButtonStyle: {
         backgroundColor: 'transparent',
         color: '#FFFFFF',
@@ -791,6 +838,7 @@ const getDefaultContent = (type) => {
       buttonText: 'Call to Action',
       buttonLink: '#',
       backgroundImage: '',
+      height: '400px',
       buttonStyle: {
         backgroundColor: '#4F46E5',
         textColor: '#FFFFFF',
@@ -805,12 +853,12 @@ const getDefaultContent = (type) => {
     },
     text: {
       title: 'Titolo Sezione',
-      text: '<p>Inserisci qui il tuo testo...</p>'
+      text: '<p>Inserisci qui il tuo testo...</p>',
+      lineHeight: '1.625'
     },
     'image-slide': {
       image: '',
       alt: 'Immagine diapositiva',
-      height: '600px',
       fullWidth: true,
       showOverlay: false,
       overlayTitle: '',
@@ -831,16 +879,22 @@ const getDefaultContent = (type) => {
     },
     features: {
       title: 'I Nostri Vantaggi',
+      titleColor: '',
+      featureTitleColor: '',
+      featureTextColor: '#6B7280',
       features: [
         {
+          icon: 'bolt',
           title: 'Velocità',
           description: 'Risposte rapide e servizio efficiente per tutte le tue esigenze.'
         },
         {
+          icon: 'star',
           title: 'Qualità',
           description: 'Standard elevati e attenzione ai dettagli in ogni progetto.'
         },
         {
+          icon: 'shield',
           title: 'Affidabilità',
           description: 'Supporto costante e professionalità garantita.'
         }
@@ -871,10 +925,21 @@ const getDefaultContent = (type) => {
     },
     cta: {
       title: 'Pronto per iniziare?',
-      description: 'Contattaci oggi per una consulenza gratuita e senza impegno.',
+      description: '<p>Contattaci oggi per una consulenza gratuita e senza impegno.</p>',
       buttonText: 'Richiedi Consulenza',
       buttonLink: '#contatti',
-      secondaryText: 'Nessun obbligo, rispondiamo in 24 ore'
+      secondaryText: 'Nessun obbligo, rispondiamo in 24 ore',
+      buttonStyle: {
+        backgroundColor: '#4F46E5',
+        textColor: '#FFFFFF',
+        fontSize: '18px',
+        padding: '16px 32px',
+        borderRadius: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderStyle: 'solid',
+        shadow: 'lg'
+      }
     },
     'two-column-text-image': {
       title: 'Titolo Sezione',
@@ -888,6 +953,7 @@ const getDefaultContent = (type) => {
     },
     form: {
       title: 'Contattaci',
+      caption: 'Compila il form e ti ricontatteremo al più presto',
       fields: [
         { name: 'name', label: 'Nome', type: 'text', required: true },
         { name: 'email', label: 'Email', type: 'email', required: true },
@@ -895,7 +961,10 @@ const getDefaultContent = (type) => {
         { name: 'city', label: 'Città', type: 'text', required: true },
         { name: 'notes', label: 'Note', type: 'textarea', required: false }
       ],
+      textareaPlaceholder: 'Scrivi qui il tuo messaggio...',
       buttonText: 'Invia',
+      buttonLayout: 'full',
+      fieldBorderRadius: 'lg',
       buttonStyle: {
         backgroundColor: '#4F46E5',
         textColor: '#FFFFFF',
@@ -994,6 +1063,11 @@ const getDefaultContent = (type) => {
       contactTitle: 'Contatti',
       contactText: '<p><strong>Email:</strong> <a href="mailto:info@example.com">info@example.com</a></p><p><strong>Telefono:</strong> <a href="tel:+39123456789">+39 123 456 7890</a></p><p><strong>Indirizzo:</strong> Via Example, 123 - 00100 Roma</p>',
       copyright: '© 2025 La Tua Azienda. Tutti i diritti riservati.'
+    },
+    'legal-footer': {
+      fullWidth: true,
+      // Non salvare legalLinks - verranno calcolati dinamicamente dal componente
+      legalText: 'ARAN CUCINE PALERMO - VIALE LAZIO, 124/126 90144 PALERMO (PA), <a href="mailto:info@arancucinepalermo.it">info@arancucinepalermo.it</a>, <a href="tel:+390915142890">091 514 289</a><br>è un\'iniziativa INTERLINEA SRL, VIALE AIACE, 138 90151 PALERMO - P.IVA e C.F: 05472210821 - Tutti i diritti riservati - sito realizzato da <a href="https://www.edysma.com/dachi.php?mit=arancucinepalermo" target="_blank">EDYSMA</a> e <a href="https://www.fm-marketing.it/" target="_blank">FM MARKETING</a> in conformità agli standards di accessibilità e di Responsive Web Design (RWD)'
     }
   }
   return defaults[type] || {}
@@ -1016,7 +1090,8 @@ const getBlockComponent = (type) => {
     map: MapBlock,
     social: SocialBlock,
     form: FormBlock,
-    footer: FooterBlock
+    footer: FooterBlock,
+    'legal-footer': LegalFooterBlock
   }
   return components[type] || TextBlock
 }
@@ -1044,9 +1119,9 @@ const updateBlockInline = (index, updatedBlock) => {
 }
 
 const onBlockMove = (evt) => {
-  // Previeni lo spostamento di header e footer
+  // Previeni lo spostamento di header, footer e legal-footer
   const draggedBlock = page.value.blocks[evt.draggedContext.index]
-  if (draggedBlock.type === 'header' || draggedBlock.type === 'footer') {
+  if (draggedBlock.type === 'header' || draggedBlock.type === 'footer' || draggedBlock.type === 'legal-footer') {
     return false
   }
   return true
@@ -1060,11 +1135,25 @@ const updateBlockOrder = () => {
     page.value.blocks.unshift(header)
   }
 
-  // Assicura che il footer sia sempre alla fine
+  // Assicura che il legal-footer sia sempre all'ultima posizione
+  const legalFooterIndex = page.value.blocks.findIndex(block => block.type === 'legal-footer')
+  if (legalFooterIndex !== -1 && legalFooterIndex !== page.value.blocks.length - 1) {
+    const legalFooter = page.value.blocks.splice(legalFooterIndex, 1)[0]
+    page.value.blocks.push(legalFooter)
+  }
+
+  // Assicura che il footer sia sempre alla fine (prima del legal-footer se presente)
   const footerIndex = page.value.blocks.findIndex(block => block.type === 'footer')
-  if (footerIndex !== -1 && footerIndex !== page.value.blocks.length - 1) {
+  const hasLegalFooter = page.value.blocks.some(block => block.type === 'legal-footer')
+  const targetFooterPosition = hasLegalFooter ? page.value.blocks.length - 2 : page.value.blocks.length - 1
+  if (footerIndex !== -1 && footerIndex !== targetFooterPosition) {
     const footer = page.value.blocks.splice(footerIndex, 1)[0]
-    page.value.blocks.push(footer)
+    if (hasLegalFooter) {
+      // Inserisci prima del legal-footer
+      page.value.blocks.splice(page.value.blocks.length - 1, 0, footer)
+    } else {
+      page.value.blocks.push(footer)
+    }
   }
 
   page.value.blocks.forEach((block, index) => {
@@ -1091,6 +1180,7 @@ const autoSave = async () => {
       page.value = {
         ...page.value,
         ...newPage,
+        blocks: newPage.blocks || page.value.blocks || [],  // Assicura che blocks sia sempre un array
         styles: {
           ...page.value.styles,
           ...(newPage.styles || {})
@@ -1113,6 +1203,13 @@ const goBack = () => {
   router.push('/')
 }
 
+const openPreview = () => {
+  if (page.value.id) {
+    const routeData = router.resolve(`/preview/${page.value.id}`)
+    window.open(routeData.href, '_blank')
+  }
+}
+
 const updatePageSettings = (updatedPage) => {
   console.log('PageEditor - updatePageSettings received:', JSON.parse(JSON.stringify(updatedPage)))
   page.value = { ...page.value, ...updatedPage }
@@ -1123,6 +1220,27 @@ const updatePageSettings = (updatedPage) => {
 </script>
 
 <style scoped>
+/* Container width override - sovrascrive max-w-7xl nei blocchi */
+.container-width-max-w-4xl :deep(.max-w-7xl) {
+  max-width: 56rem !important; /* 896px */
+}
+
+.container-width-max-w-5xl :deep(.max-w-7xl) {
+  max-width: 64rem !important; /* 1024px */
+}
+
+.container-width-max-w-6xl :deep(.max-w-7xl) {
+  max-width: 72rem !important; /* 1152px */
+}
+
+.container-width-max-w-7xl :deep(.max-w-7xl) {
+  max-width: 80rem !important; /* 1280px - default */
+}
+
+.container-width-max-w-full :deep(.max-w-7xl) {
+  max-width: 100% !important;
+}
+
 /* Forza layout mobile/tablet nelle viste simulate */
 .viewport-mobile :deep(.grid),
 .viewport-tablet :deep(.grid) {

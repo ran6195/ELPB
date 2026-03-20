@@ -7,20 +7,19 @@
           'relative w-full overflow-hidden',
           roundedCorners ? 'rounded-lg' : ''
         ]"
-        :style="slideStyles"
       >
         <!-- Immagine -->
         <img
           v-if="block.content.image"
           :src="block.content.image"
           :alt="block.content.alt || 'Immagine diapositiva'"
-          class="w-full h-full object-cover"
+          class="w-full h-auto"
         />
 
         <!-- Placeholder se non c'è immagine -->
         <div
           v-else
-          class="w-full h-full flex items-center justify-center bg-gray-200"
+          class="w-full flex items-center justify-center bg-gray-200 py-24"
         >
           <div class="text-center text-gray-400">
             <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +27,7 @@
             </svg>
             <p class="text-lg font-medium">Carica un'immagine</p>
             <p class="text-sm mt-2">
-              {{ block.content.fullWidth === false ? 'Larghezza limitata come gli altri blocchi' : 'Immagine a tutta larghezza' }}
+              L'immagine manterrà le sue proporzioni originali
             </p>
           </div>
         </div>
@@ -84,14 +83,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
-
-const slideStyles = computed(() => {
-  const height = props.block.content.height || '600px'
-  return {
-    height: height,
-    minHeight: height
-  }
-})
 
 const overlayStyles = computed(() => {
   const opacity = props.block.content.overlayOpacity || 0.5

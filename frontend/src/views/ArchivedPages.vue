@@ -104,6 +104,12 @@
               >
                 Ripristina
               </button>
+              <button
+                @click="forceDeletePage(page.id, page.title)"
+                class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                Elimina Definitivamente
+              </button>
             </div>
           </div>
         </div>
@@ -129,6 +135,24 @@ const restorePage = async (id) => {
       alert('Pagina ripristinata con successo!')
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Errore durante il ripristino della pagina'
+      alert(errorMessage)
+    }
+  }
+}
+
+const forceDeletePage = async (id, title) => {
+  const confirmed = confirm(
+    `⚠️ ATTENZIONE: Stai per eliminare DEFINITIVAMENTE la pagina "${title}".\n\n` +
+    'Questa azione è IRREVERSIBILE e la pagina NON potrà essere ripristinata.\n\n' +
+    'Sei assolutamente sicuro di voler procedere?'
+  )
+
+  if (confirmed) {
+    try {
+      await pageStore.forceDeletePage(id)
+      alert('Pagina eliminata definitivamente')
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Errore durante l\'eliminazione definitiva della pagina'
       alert(errorMessage)
     }
   }

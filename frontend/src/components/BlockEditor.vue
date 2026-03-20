@@ -42,6 +42,22 @@
         />
       </div>
 
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Altezza Blocco</label>
+        <select
+          v-model="localBlock.content.height"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="300px">Bassa (300px)</option>
+          <option value="400px">Media (400px)</option>
+          <option value="500px">Alta (500px)</option>
+          <option value="600px">Molto Alta (600px)</option>
+          <option value="700px">Extra Alta (700px)</option>
+          <option value="100vh">Schermo Intero (100vh)</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Altezza minima del blocco hero</p>
+      </div>
+
       <!-- Stile Pulsante -->
       <div class="border-t border-gray-200 pt-4">
         <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stile Pulsante</h5>
@@ -205,6 +221,22 @@
         <label class="block text-xs font-medium text-gray-700 mb-2">Testo</label>
         <RichTextEditor v-model="localBlock.content.text" />
       </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Spaziatura Verticale Linee</label>
+        <select
+          v-model="localBlock.content.lineHeight"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="1">Compatta (1)</option>
+          <option value="1.25">Stretta (1.25)</option>
+          <option value="1.375">Normale Stretta (1.375)</option>
+          <option value="1.5">Normale (1.5)</option>
+          <option value="1.625">Comoda (1.625)</option>
+          <option value="1.75">Spaziosa (1.75)</option>
+          <option value="2">Molto Spaziosa (2)</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Controlla la distanza tra le righe di testo</p>
+      </div>
     </div>
 
     <!-- Image Slide Block Editor -->
@@ -248,19 +280,6 @@
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">Altezza Diapositiva</label>
-        <select
-          v-model="localBlock.content.height"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
-        >
-          <option value="400px">Piccola (400px)</option>
-          <option value="600px">Media (600px)</option>
-          <option value="800px">Grande (800px)</option>
-          <option value="100vh">Schermo intero</option>
-        </select>
-      </div>
-
-      <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Immagine</label>
         <select
           v-model="localBlock.content.fullWidth"
@@ -269,7 +288,7 @@
           <option :value="true">Tutta larghezza (Full Width)</option>
           <option :value="false">Larghezza limitata (Contenuta)</option>
         </select>
-        <p class="text-xs text-gray-500 mt-1">Scegli se l'immagine deve occupare tutta la larghezza o essere contenuta come gli altri blocchi</p>
+        <p class="text-xs text-gray-500 mt-1">L'immagine manterrà le sue proporzioni originali. La larghezza si adatterà automaticamente.</p>
       </div>
 
       <!-- Overlay opzionale -->
@@ -536,12 +555,58 @@
         />
       </div>
       <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Sottotitolo/Caption</label>
+        <textarea
+          v-model="localBlock.content.caption"
+          rows="2"
+          placeholder="Testo descrittivo sotto il titolo (opzionale)"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        ></textarea>
+        <p class="text-xs text-gray-500 mt-1">Testo che appare sotto il titolo del form</p>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Placeholder Area Messaggio</label>
+        <input
+          v-model="localBlock.content.textareaPlaceholder"
+          type="text"
+          placeholder="Es: Scrivi qui il tuo messaggio..."
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+        <p class="text-xs text-gray-500 mt-1">Testo placeholder per il campo messaggio</p>
+      </div>
+      <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Testo Pulsante</label>
         <input
           v-model="localBlock.content.buttonText"
           type="text"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Layout Pulsante</label>
+        <select
+          v-model="localBlock.content.buttonLayout"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="full">Larghezza Completa</option>
+          <option value="centered">Centrato</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Il pulsante centrato usa il padding personalizzato, quello a larghezza completa occupa tutto lo spazio</p>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Angoli Campi</label>
+        <select
+          v-model="localBlock.content.fieldBorderRadius"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="none">Nessuno (Squadrati)</option>
+          <option value="sm">Piccoli (4px)</option>
+          <option value="md">Medi (6px)</option>
+          <option value="lg">Grandi (8px)</option>
+          <option value="xl">Extra Grandi (12px)</option>
+          <option value="full">Molto Arrotondati (16px)</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Curvatura degli angoli dei campi del form</p>
       </div>
 
       <!-- Stile Pulsante -->
@@ -750,6 +815,200 @@
           <p class="text-xs text-gray-500 mt-1">
             Dopo l'invio del form, l'utente verrà reindirizzato a questo URL. Lascia vuoto per usare la pagina di ringraziamento standard.
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Block Editor -->
+    <div v-else-if="block.type === 'cta'" class="space-y-5">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Titolo</label>
+        <input
+          v-model="localBlock.content.title"
+          type="text"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Descrizione</label>
+        <RichTextEditor v-model="localBlock.content.description" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Testo Pulsante</label>
+        <input
+          v-model="localBlock.content.buttonText"
+          type="text"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Link Pulsante</label>
+        <input
+          v-model="localBlock.content.buttonLink"
+          type="text"
+          placeholder="https://example.com o /pagina"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Testo Secondario</label>
+        <input
+          v-model="localBlock.content.secondaryText"
+          type="text"
+          placeholder="Testo piccolo sotto il pulsante (opzionale)"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+
+      <!-- Stile Pulsante -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stile Pulsante</h5>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.buttonStyle.backgroundColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.buttonStyle.backgroundColor"
+                type="text"
+                placeholder="#4F46E5"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Testo</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.buttonStyle.textColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.buttonStyle.textColor"
+                type="text"
+                placeholder="#FFFFFF"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Testo</label>
+            <select
+              v-model="localBlock.content.buttonStyle.fontSize"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="14px">Piccolo (14px)</option>
+              <option value="16px">Normale (16px)</option>
+              <option value="18px">Medio (18px)</option>
+              <option value="20px">Grande (20px)</option>
+              <option value="22px">Extra Large (22px)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Padding</label>
+            <select
+              v-model="localBlock.content.buttonStyle.padding"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="10px 24px">Compatto (10px 24px)</option>
+              <option value="12px 32px">Piccolo (12px 32px)</option>
+              <option value="16px 32px">Medio (16px 32px)</option>
+              <option value="16px 40px">Grande (16px 40px)</option>
+              <option value="20px 48px">Extra Large (20px 48px)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Arrotondamento Angoli</label>
+            <select
+              v-model="localBlock.content.buttonStyle.borderRadius"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="0px">Nessuno (Rettangolare)</option>
+              <option value="4px">Leggero (4px)</option>
+              <option value="8px">Medio (8px)</option>
+              <option value="12px">Arrotondato (12px)</option>
+              <option value="16px">Molto Arrotondato (16px)</option>
+              <option value="9999px">Pillola (Completamente arrotondato)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Ombra</label>
+            <select
+              v-model="localBlock.content.buttonStyle.shadow"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="none">Nessuna</option>
+              <option value="sm">Piccola</option>
+              <option value="md">Media</option>
+              <option value="lg">Grande</option>
+              <option value="xl">Extra Large</option>
+            </select>
+          </div>
+
+          <!-- Bordo -->
+          <div class="border-t border-gray-200 pt-3">
+            <h6 class="text-xs font-medium text-gray-700 mb-3">Bordo (Opzionale)</h6>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Bordo</label>
+                <select
+                  v-model="localBlock.content.buttonStyle.borderWidth"
+                  class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+                >
+                  <option value="0px">Nessuno</option>
+                  <option value="1px">1px</option>
+                  <option value="2px">2px</option>
+                  <option value="3px">3px</option>
+                  <option value="4px">4px</option>
+                </select>
+              </div>
+
+              <div v-if="localBlock.content.buttonStyle.borderWidth !== '0px'">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Colore Bordo</label>
+                <div class="flex items-center gap-3">
+                  <input
+                    v-model="localBlock.content.buttonStyle.borderColor"
+                    type="color"
+                    class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+                  />
+                  <input
+                    v-model="localBlock.content.buttonStyle.borderColor"
+                    type="text"
+                    placeholder="#000000"
+                    class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+                  />
+                </div>
+              </div>
+
+              <div v-if="localBlock.content.buttonStyle.borderWidth !== '0px'">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Stile Bordo</label>
+                <select
+                  v-model="localBlock.content.buttonStyle.borderStyle"
+                  class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+                >
+                  <option value="solid">Solido</option>
+                  <option value="dashed">Tratteggiato</option>
+                  <option value="dotted">Punteggiato</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -978,6 +1237,18 @@
         <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stile Bottoni Social</h5>
 
         <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Tipo Icone</label>
+            <select
+              v-model="localBlock.content.iconStyle"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="colored">Colorate (Standard)</option>
+              <option value="monochrome">Monocromatiche</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Le icone colorate usano i colori brand ufficiali</p>
+          </div>
+
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo</label>
             <div class="flex items-center gap-3">
@@ -1509,6 +1780,522 @@
       </div>
     </div>
 
+    <!-- Legal Footer Block Editor -->
+    <div v-else-if="block.type === 'legal-footer'" class="space-y-5">
+      <!-- Opzioni Layout -->
+      <div class="border-b border-gray-200 pb-4">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Layout
+        </h4>
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Larghezza Completa</label>
+            <p class="text-xs text-gray-500 mt-1">
+              Lo sfondo si estende a tutta la larghezza della pagina
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="localBlock.content.fullWidth"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Link Legali -->
+      <div class="border-b border-gray-200 pb-4">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Link Legali
+          </h4>
+          <button
+            @click="addLegalLink"
+            class="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+          >
+            + Aggiungi Link
+          </button>
+        </div>
+
+        <!-- Lista link legali -->
+        <div class="space-y-3">
+          <div
+            v-for="(link, index) in localBlock.content.legalLinks"
+            :key="index"
+            class="border border-gray-300 rounded-lg p-3"
+          >
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-medium text-gray-700">Link {{ index + 1 }}</span>
+              <button
+                @click="removeLegalLink(index)"
+                class="text-red-600 hover:text-red-800 text-xs font-medium"
+              >
+                Rimuovi
+              </button>
+            </div>
+            <div class="space-y-2">
+              <input
+                v-model="localBlock.content.legalLinks[index].text"
+                type="text"
+                placeholder="Testo del link (es: Privacy)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+              <input
+                v-model="localBlock.content.legalLinks[index].url"
+                type="text"
+                placeholder="URL (es: /privacy.php)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  v-model="localBlock.content.legalLinks[index].isCookiePreference"
+                  :id="`cookie-pref-${index}`"
+                  class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <label :for="`cookie-pref-${index}`" class="text-xs text-gray-700">
+                  Preferenze Cookies (aggiunge classe cc-show)
+                </label>
+              </div>
+            </div>
+          </div>
+          <p v-if="localBlock.content.legalLinks?.length === 0" class="text-xs text-gray-500 text-center py-4">
+            Nessun link aggiunto. Clicca "+ Aggiungi Link" per iniziare.
+          </p>
+        </div>
+      </div>
+
+      <!-- Testo Legale -->
+      <div>
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Testo Legale
+        </h4>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">Contenuto</label>
+          <p class="text-xs text-gray-500 mb-2">Informazioni aziendali, copyright e credits</p>
+          <RichTextEditor v-model="localBlock.content.legalText" />
+        </div>
+      </div>
+
+      <!-- Dati Legali per le Pagine Legali Dinamiche -->
+      <div class="border-t border-gray-200 pt-5">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-3 tracking-wide">
+          Dati Legali
+        </h4>
+        <p class="text-xs text-gray-500 mb-4">
+          Questi dati verranno utilizzati per generare automaticamente le pagine Privacy, Condizioni d'uso e Cookie Policy.
+        </p>
+
+        <div class="space-y-4">
+          <!-- Ragione Sociale -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">
+              Ragione Sociale Azienda <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="legalInfoForm.ragioneSociale"
+              type="text"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+
+          <!-- Indirizzo -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">
+              Indirizzo (Sede Legale) <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="legalInfoForm.indirizzo"
+              type="text"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+
+          <!-- CAP, Città, Provincia -->
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                CAP <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.cap"
+                type="text"
+                required
+                maxlength="5"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Città <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.citta"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Provincia <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.provincia"
+                type="text"
+                required
+                maxlength="2"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <!-- Email e Telefono -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Email <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.email"
+                type="email"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Telefono <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.telefono"
+                type="tel"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <!-- Sito Web e Nome del Sito -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Sito Web
+              </label>
+              <input
+                v-model="legalInfoForm.sitoWeb"
+                type="text"
+                placeholder="www.esempio.it"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Nome del Sito
+              </label>
+              <input
+                v-model="legalInfoForm.nomeSito"
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <!-- Amministratore -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">
+              Nome e Cognome Amministratore <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="legalInfoForm.amministratore"
+              type="text"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+
+          <!-- P.IVA e Codice Fiscale -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                P.IVA <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.piva"
+                type="text"
+                required
+                maxlength="11"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Codice Fiscale <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="legalInfoForm.codiceFiscale"
+                type="text"
+                required
+                maxlength="16"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <!-- Gestore Dati -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">
+              Gestore Dati <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="legalInfoForm.gestoreDati"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="">Seleziona gestore dati</option>
+              <option value="Edysma">Edysma</option>
+              <option value="FM">FM</option>
+            </select>
+          </div>
+
+          <!-- Messaggio di successo/errore -->
+          <div v-if="legalInfoSuccess" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+            ✓ Dati legali salvati con successo!
+          </div>
+          <div v-if="legalInfoError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {{ legalInfoError }}
+          </div>
+
+          <!-- Pulsante Salva -->
+          <button
+            @click="saveLegalInfo"
+            :disabled="savingLegalInfo"
+            class="w-full bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ savingLegalInfo ? 'Salvataggio...' : 'Salva Dati Legali' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Block Editor -->
+    <div v-else-if="block.type === 'features'" class="space-y-5">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Titolo Sezione</label>
+        <input
+          v-model="localBlock.content.title"
+          type="text"
+          placeholder="I Nostri Vantaggi"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Numero Colonne</label>
+        <select
+          v-model.number="localBlock.content.columns"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option :value="3">3 Colonne</option>
+          <option :value="4">4 Colonne</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Numero di colonne su desktop</p>
+      </div>
+
+      <!-- Stile Icone -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stile Icone</h5>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Forma Icone</label>
+            <select
+              v-model="localBlock.content.iconShape"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="circle">Cerchio</option>
+              <option value="rounded">Arrotondato</option>
+              <option value="square">Quadrato</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Icona</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.iconColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.iconColor"
+                type="text"
+                placeholder="#2563EB (blu)"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo Icona</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.iconBackgroundColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.iconBackgroundColor"
+                type="text"
+                placeholder="#DBEAFE (azzurro chiaro)"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colori Personalizzati -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Colori Testo</h5>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titolo Principale</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.titleColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.titleColor"
+                type="text"
+                placeholder="Eredita da stili blocco"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titoli Vantaggi</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.featureTitleColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.featureTitleColor"
+                type="text"
+                placeholder="Eredita da stili blocco"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Testo Descrizioni</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model="localBlock.content.featureTextColor"
+                type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+              />
+              <input
+                v-model="localBlock.content.featureTextColor"
+                type="text"
+                placeholder="#6B7280 (grigio)"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+              />
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Colore per i testi descrittivi più piccoli</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vantaggi -->
+      <div class="border-t border-gray-200 pt-4">
+        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-4 tracking-wide">
+          Vantaggi
+        </h4>
+        <div
+          v-for="(feature, index) in localBlock.content.features"
+          :key="index"
+          class="mb-4 p-4 border border-gray-200 rounded-lg"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <h5 class="text-xs font-medium text-gray-700">Vantaggio {{ index + 1 }}</h5>
+            <button
+              @click="removeFeature(index)"
+              class="text-red-600 hover:text-red-800 text-xs"
+            >
+              Rimuovi
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Icona</label>
+              <select
+                :value="localBlock.content.features[index].icon"
+                @change="updateFeatureField(index, 'icon', $event.target.value)"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              >
+                <option value="check">✓ Check (Spunta)</option>
+                <option value="star">★ Star (Stella)</option>
+                <option value="bolt">⚡ Bolt (Fulmine)</option>
+                <option value="shield">🛡️ Shield (Scudo)</option>
+                <option value="rocket">🚀 Rocket (Razzo)</option>
+                <option value="heart">❤️ Heart (Cuore)</option>
+                <option value="lightbulb">💡 Light Bulb (Lampadina)</option>
+                <option value="chart">📊 Chart (Grafico)</option>
+                <option value="clock">🕐 Clock (Orologio)</option>
+                <option value="globe">🌍 Globe (Globo)</option>
+                <option value="users">👥 Users (Utenti)</option>
+                <option value="cog">⚙️ Cog (Ingranaggio)</option>
+                <option value="gift">🎁 Gift (Regalo)</option>
+                <option value="trophy">🏆 Trophy (Trofeo)</option>
+                <option value="sparkles">✨ Sparkles (Scintille)</option>
+                <option value="thumbup">👍 Thumb Up (Mi piace)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Titolo</label>
+              <input
+                :value="localBlock.content.features[index].title"
+                @input="updateFeatureField(index, 'title', $event.target.value)"
+                type="text"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Descrizione</label>
+              <textarea
+                :value="localBlock.content.features[index].description"
+                @input="updateFeatureField(index, 'description', $event.target.value)"
+                rows="2"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button
+          @click="addFeature"
+          class="w-full px-4 py-2.5 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-lg text-sm font-medium transition-colors"
+        >
+          + Aggiungi Vantaggio
+        </button>
+      </div>
+    </div>
+
     <!-- Services Grid Block Editor -->
     <div v-else-if="block.type === 'services-grid'" class="space-y-5">
       <div>
@@ -1912,6 +2699,7 @@ import { ref, watch, computed } from 'vue'
 import RichTextEditor from './RichTextEditor.vue'
 import apiClient from '../api/axios'
 import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
+import { usePageStore } from '../stores/pageStore'
 
 const props = defineProps({
   block: {
@@ -1921,6 +2709,59 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+// Page store per salvare i dati legali
+const pageStore = usePageStore()
+
+// Form dati legali
+const legalInfoForm = ref({
+  ragioneSociale: '',
+  indirizzo: '',
+  cap: '',
+  citta: '',
+  provincia: '',
+  email: '',
+  telefono: '',
+  sitoWeb: '',
+  nomeSito: '',
+  amministratore: '',
+  piva: '',
+  codiceFiscale: '',
+  gestoreDati: 'Edysma'
+})
+
+const savingLegalInfo = ref(false)
+const legalInfoError = ref(null)
+const legalInfoSuccess = ref(false)
+
+// Carica i dati legali esistenti dalla pagina corrente
+if (pageStore.currentPage?.legal_info) {
+  legalInfoForm.value = { ...legalInfoForm.value, ...pageStore.currentPage.legal_info }
+}
+
+// Funzione per salvare i dati legali
+const saveLegalInfo = async () => {
+  if (!pageStore.currentPage?.id) {
+    legalInfoError.value = 'Nessuna pagina selezionata'
+    return
+  }
+
+  savingLegalInfo.value = true
+  legalInfoError.value = null
+  legalInfoSuccess.value = false
+
+  try {
+    await pageStore.updateLegalInfo(pageStore.currentPage.id, legalInfoForm.value)
+    legalInfoSuccess.value = true
+    setTimeout(() => {
+      legalInfoSuccess.value = false
+    }, 3000)
+  } catch (error) {
+    legalInfoError.value = error.response?.data?.message || 'Errore durante il salvataggio'
+  } finally {
+    savingLegalInfo.value = false
+  }
+}
 
 // Mappatura nomi blocchi in italiano
 const blockTypeNames = {
@@ -1939,7 +2780,8 @@ const blockTypeNames = {
   'map': 'Mappa Google',
   'social': 'Social Media',
   'form': 'Form',
-  'footer': 'Footer'
+  'footer': 'Footer',
+  'legal-footer': 'Footer Legale'
 }
 
 // Nome blocco tradotto
@@ -2219,6 +3061,46 @@ const addFooterLink = () => {
 
 const removeFooterLink = (index) => {
   localBlock.value.content.links.splice(index, 1)
+}
+
+// Funzioni per gestire i link legali
+const addLegalLink = () => {
+  if (!localBlock.value.content.legalLinks) {
+    localBlock.value.content.legalLinks = []
+  }
+  localBlock.value.content.legalLinks.push({
+    text: 'Nuovo Link',
+    url: '#',
+    isCookiePreference: false
+  })
+}
+
+const removeLegalLink = (index) => {
+  localBlock.value.content.legalLinks.splice(index, 1)
+}
+
+// Funzioni per gestire le features (vantaggi)
+const addFeature = () => {
+  if (!localBlock.value.content.features) {
+    localBlock.value.content.features = []
+  }
+  localBlock.value.content.features.push({
+    icon: 'check',
+    title: 'Nuovo Vantaggio',
+    description: 'Descrizione del vantaggio'
+  })
+}
+
+const removeFeature = (index) => {
+  localBlock.value.content.features.splice(index, 1)
+}
+
+const updateFeatureField = (index, field, value) => {
+  if (!localBlock.value.content.features[index]) return
+  localBlock.value.content.features[index] = {
+    ...localBlock.value.content.features[index],
+    [field]: value
+  }
 }
 
 // Funzioni per gestire lo slider

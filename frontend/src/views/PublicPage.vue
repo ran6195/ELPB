@@ -1,6 +1,7 @@
 <template>
   <div
     class="min-h-screen"
+    :class="`container-width-${page?.styles?.containerWidth || 'max-w-7xl'}`"
     :style="{
       backgroundColor: page?.styles?.backgroundColor || '#FFFFFF',
       fontFamily: page?.styles?.fontFamily || 'inherit'
@@ -61,6 +62,7 @@ import CtaBlock from '../components/blocks/CtaBlock.vue'
 import SliderBlock from '../components/blocks/SliderBlock.vue'
 import MapBlock from '../components/blocks/MapBlock.vue'
 import QuickContactBlock from '../components/blocks/QuickContactBlock.vue'
+import LegalFooterBlock from '../components/blocks/LegalFooterBlock.vue'
 
 const route = useRoute()
 const pageStore = usePageStore()
@@ -74,9 +76,36 @@ onMounted(async () => {
     page.value = response.data
     // Imposta currentPage nello store per il form
     pageStore.currentPage = response.data
-    // Carica il font se specificato
+
+    // Raccoglie tutti i font unici dalla pagina e dai blocchi
+    const allFonts = new Set()
+
+    // Font della pagina
     if (response.data.styles?.fontFamily) {
-      loadGoogleFont(response.data.styles.fontFamily)
+      allFonts.add(response.data.styles.fontFamily)
+    }
+
+    // Font dei blocchi
+    if (response.data.blocks && Array.isArray(response.data.blocks)) {
+      response.data.blocks.forEach(block => {
+        if (block.styles?.fontFamily) {
+          allFonts.add(block.styles.fontFamily)
+        }
+      })
+    }
+
+    // Carica tutti i font unici
+    allFonts.forEach(font => {
+      loadGoogleFont(font)
+    })
+
+    // Carica Cookie Consent CSS
+    let cookieConsentLink = document.querySelector('link[href="/cookieconsent/cookieconsent.css"]')
+    if (!cookieConsentLink) {
+      cookieConsentLink = document.createElement('link')
+      cookieConsentLink.setAttribute('rel', 'stylesheet')
+      cookieConsentLink.setAttribute('href', '/cookieconsent/cookieconsent.css')
+      document.head.appendChild(cookieConsentLink)
     }
   } catch (err) {
     error.value = err.response?.data?.error || 'Pagina non trovata'
@@ -101,8 +130,32 @@ const getBlockComponent = (type) => {
     slider: SliderBlock,
     map: MapBlock,
     form: FormBlock,
-    footer: FooterBlock
+    footer: FooterBlock,
+    'legal-footer': LegalFooterBlock
   }
   return components[type] || TextBlock
 }
 </script>
+
+<style scoped>
+/* Container width override - sovrascrive max-w-7xl nei blocchi */
+.container-width-max-w-4xl :deep(.max-w-7xl) {
+  max-width: 56rem !important; /* 896px */
+}
+
+.container-width-max-w-5xl :deep(.max-w-7xl) {
+  max-width: 64rem !important; /* 1024px */
+}
+
+.container-width-max-w-6xl :deep(.max-w-7xl) {
+  max-width: 72rem !important; /* 1152px */
+}
+
+.container-width-max-w-7xl :deep(.max-w-7xl) {
+  max-width: 80rem !important; /* 1280px - default */
+}
+
+.container-width-max-w-full :deep(.max-w-7xl) {
+  max-width: 100% !important;
+}
+</style>

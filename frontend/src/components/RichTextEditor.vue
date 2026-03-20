@@ -1,154 +1,19 @@
 <template>
   <div class="rich-text-editor">
-    <!-- Toolbar -->
-    <div v-if="editor" class="toolbar">
-      <!-- Bold -->
-      <button
-        @click="editor.chain().focus().toggleBold().run()"
-        :class="{ 'is-active': editor.isActive('bold') }"
-        type="button"
-        title="Grassetto"
-      >
-        <strong>B</strong>
-      </button>
-
-      <!-- Italic -->
-      <button
-        @click="editor.chain().focus().toggleItalic().run()"
-        :class="{ 'is-active': editor.isActive('italic') }"
-        type="button"
-        title="Corsivo"
-      >
-        <em>I</em>
-      </button>
-
-      <!-- Underline -->
-      <button
-        @click="editor.chain().focus().toggleUnderline().run()"
-        :class="{ 'is-active': editor.isActive('underline') }"
-        type="button"
-        title="Sottolineato"
-      >
-        <u>U</u>
-      </button>
-
-      <span class="divider"></span>
-
-      <!-- Headings -->
-      <button
-        @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-        :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
-        type="button"
-        title="Titolo H1"
-      >
-        H1
-      </button>
-      <button
-        @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-        :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
-        type="button"
-        title="Titolo H2"
-      >
-        H2
-      </button>
-      <button
-        @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
-        type="button"
-        title="Titolo H3"
-      >
-        H3
-      </button>
-      <button
-        @click="editor.chain().focus().setParagraph().run()"
-        :class="{ 'is-active': editor.isActive('paragraph') }"
-        type="button"
-        title="Paragrafo"
-      >
-        P
-      </button>
-
-      <span class="divider"></span>
-
-      <!-- Lists -->
-      <button
-        @click="editor.chain().focus().toggleBulletList().run()"
-        :class="{ 'is-active': editor.isActive('bulletList') }"
-        type="button"
-        title="Lista puntata"
-      >
-        •&nbsp;Lista
-      </button>
-      <button
-        @click="editor.chain().focus().toggleOrderedList().run()"
-        :class="{ 'is-active': editor.isActive('orderedList') }"
-        type="button"
-        title="Lista numerata"
-      >
-        1.&nbsp;Lista
-      </button>
-
-      <span class="divider"></span>
-
-      <!-- Alignment -->
-      <button
-        @click="editor.chain().focus().setTextAlign('left').run()"
-        :class="{ 'is-active': editor.isActive({ textAlign: 'left' }) }"
-        type="button"
-        title="Allinea a sinistra"
-      >
-        ⬅
-      </button>
-      <button
-        @click="editor.chain().focus().setTextAlign('center').run()"
-        :class="{ 'is-active': editor.isActive({ textAlign: 'center' }) }"
-        type="button"
-        title="Allinea al centro"
-      >
-        ↔
-      </button>
-      <button
-        @click="editor.chain().focus().setTextAlign('right').run()"
-        :class="{ 'is-active': editor.isActive({ textAlign: 'right' }) }"
-        type="button"
-        title="Allinea a destra"
-      >
-        ➡
-      </button>
-
-      <span class="divider"></span>
-
-      <!-- Link -->
-      <button
-        @click="setLink"
-        :class="{ 'is-active': editor.isActive('link') }"
-        type="button"
-        title="Aggiungi link"
-      >
-        🔗
-      </button>
-      <button
-        v-if="editor.isActive('link')"
-        @click="editor.chain().focus().unsetLink().run()"
-        type="button"
-        title="Rimuovi link"
-      >
-        ⛔
-      </button>
-    </div>
-
-    <!-- Editor Content -->
-    <editor-content :editor="editor" class="editor-content" />
+    <QuillEditor
+      v-model:content="content"
+      content-type="html"
+      :toolbar="toolbarOptions"
+      theme="snow"
+      @update:content="handleUpdate"
+    />
   </div>
 </template>
 
 <script setup>
-import { useEditor, EditorContent } from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
-import Link from '@tiptap/extension-link'
-import TextAlign from '@tiptap/extension-text-align'
-import Underline from '@tiptap/extension-underline'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
 
 const props = defineProps({
   modelValue: {
@@ -159,48 +24,32 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-const editor = useEditor({
-  content: props.modelValue,
-  extensions: [
-    StarterKit,
-    Underline,
-    Link.configure({
-      openOnClick: false,
-      HTMLAttributes: {
-        target: '_blank',
-        rel: 'noopener noreferrer'
-      }
-    }),
-    TextAlign.configure({
-      types: ['heading', 'paragraph']
-    })
-  ],
-  onUpdate: ({ editor }) => {
-    emit('update:modelValue', editor.getHTML())
-  }
-})
+const content = ref(props.modelValue)
 
-// Update editor content when modelValue changes externally
-watch(() => props.modelValue, (newValue) => {
-  const isSame = editor.value.getHTML() === newValue
-  if (!isSame && editor.value) {
-    editor.value.commands.setContent(newValue, false)
-  }
-})
+// Toolbar configuration - include tutte le funzionalità necessarie
+const toolbarOptions = [
+  ['bold', 'italic', 'underline', 'strike'], // text formatting
+  [{ 'header': [1, 2, 3, false] }], // headings dropdown
+  [{ 'list': 'ordered'}, { 'list': 'bullet' }], // lists
+  [{ 'align': ['', 'center', 'right', 'justify'] }], // text align ('' = left)
+  [{ 'color': [] }, { 'background': [] }], // colore testo e sfondo
+  ['blockquote', 'code-block'], // quote e code
+  ['link'], // link
+  ['clean'] // remove formatting button
+]
 
-const setLink = () => {
-  const previousUrl = editor.value.getAttributes('link').href
-  const url = window.prompt('URL:', previousUrl)
-
-  if (url === null) return
-
-  if (url === '') {
-    editor.value.chain().focus().extendMarkRange('link').unsetLink().run()
-    return
-  }
-
-  editor.value.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+// Update parent when content changes
+const handleUpdate = (newContent) => {
+  console.log('📝 VueQuill HTML generato:', newContent)
+  emit('update:modelValue', newContent)
 }
+
+// Watch for external changes to modelValue
+watch(() => props.modelValue, (newValue) => {
+  if (newValue !== content.value) {
+    content.value = newValue
+  }
+})
 </script>
 
 <style scoped>
@@ -210,103 +59,181 @@ const setLink = () => {
   overflow: hidden;
 }
 
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px;
+/* Personalizzazione stili Quill */
+:deep(.ql-toolbar) {
   background: #f9fafb;
+  border: none;
   border-bottom: 1px solid #d1d5db;
+  padding: 8px;
 }
 
-.toolbar button {
-  padding: 6px 10px;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-  color: #374151;
-  font-weight: 500;
-}
-
-.toolbar button:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
-}
-
-.toolbar button.is-active {
-  background: #3b82f6;
-  color: white;
-  border-color: #2563eb;
-}
-
-.divider {
-  width: 1px;
-  background: #d1d5db;
-  margin: 0 4px;
-}
-
-.editor-content {
-  padding: 16px;
+:deep(.ql-container) {
+  border: none;
+  font-size: 14px;
   min-height: 200px;
   max-height: 400px;
   overflow-y: auto;
 }
 
-/* Stili per il contenuto dell'editor */
-:deep(.ProseMirror) {
-  outline: none;
-  min-height: 150px;
+:deep(.ql-editor) {
+  padding: 16px;
+  min-height: 200px;
 }
 
-:deep(.ProseMirror p) {
+:deep(.ql-editor.ql-blank::before) {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+/* Stili per il contenuto */
+:deep(.ql-editor p) {
   margin-bottom: 0.5em;
 }
 
-:deep(.ProseMirror h1) {
+:deep(.ql-editor h1) {
   font-size: 2em;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
 
-:deep(.ProseMirror h2) {
+:deep(.ql-editor h2) {
   font-size: 1.5em;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
 
-:deep(.ProseMirror h3) {
+:deep(.ql-editor h3) {
   font-size: 1.25em;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
 
-:deep(.ProseMirror ul),
-:deep(.ProseMirror ol) {
+/* Grassetto normale per paragrafi */
+:deep(.ql-editor p strong),
+:deep(.ql-editor p b) {
+  font-weight: 700 !important;
+}
+
+/* Grassetto extra per heading */
+:deep(.ql-editor h1 strong),
+:deep(.ql-editor h1 b) {
+  font-weight: 900 !important;
+}
+
+:deep(.ql-editor h2 strong),
+:deep(.ql-editor h2 b) {
+  font-weight: 900 !important;
+}
+
+:deep(.ql-editor h3 strong),
+:deep(.ql-editor h3 b) {
+  font-weight: 900 !important;
+}
+
+:deep(.ql-editor ul),
+:deep(.ql-editor ol) {
   padding-left: 1.5em;
   margin-bottom: 0.5em;
 }
 
-:deep(.ProseMirror a) {
+:deep(.ql-editor li) {
+  margin-bottom: 0.25em;
+}
+
+:deep(.ql-editor li strong),
+:deep(.ql-editor li b) {
+  font-weight: 700 !important;
+}
+
+:deep(.ql-editor a) {
   color: #3b82f6;
   text-decoration: underline;
 }
 
-:deep(.ProseMirror a:hover) {
+:deep(.ql-editor a:hover) {
   color: #2563eb;
 }
 
-:deep(.ProseMirror strong) {
-  font-weight: bold;
+:deep(.ql-editor strong) {
+  font-weight: 700 !important;
 }
 
-:deep(.ProseMirror em) {
+:deep(.ql-editor em) {
+  font-style: italic !important;
+}
+
+:deep(.ql-editor u) {
+  text-decoration: underline !important;
+}
+
+:deep(.ql-editor s),
+:deep(.ql-editor del) {
+  text-decoration: line-through !important;
+}
+
+:deep(.ql-editor blockquote) {
+  border-left: 4px solid #d1d5db;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 1em;
   font-style: italic;
+  color: #6b7280;
 }
 
-:deep(.ProseMirror u) {
-  text-decoration: underline;
+:deep(.ql-editor pre.ql-syntax) {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1em;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin-bottom: 1em;
+  font-family: 'Courier New', monospace;
+}
+
+/* Allineamento testo */
+:deep(.ql-editor .ql-align-center) {
+  text-align: center;
+}
+
+:deep(.ql-editor .ql-align-right) {
+  text-align: right;
+}
+
+:deep(.ql-editor .ql-align-justify) {
+  text-align: justify;
+}
+
+/* Stili bottoni toolbar */
+:deep(.ql-toolbar button) {
+  width: auto !important;
+  padding: 4px 8px;
+}
+
+:deep(.ql-toolbar button:hover) {
+  background: #e5e7eb;
+}
+
+:deep(.ql-toolbar button.ql-active) {
+  background: #3b82f6;
+  color: white;
+}
+
+:deep(.ql-toolbar .ql-stroke) {
+  stroke: #374151;
+}
+
+:deep(.ql-toolbar button.ql-active .ql-stroke) {
+  stroke: white;
+}
+
+:deep(.ql-toolbar .ql-fill) {
+  fill: #374151;
+}
+
+:deep(.ql-toolbar button.ql-active .ql-fill) {
+  fill: white;
 }
 </style>
