@@ -1120,8 +1120,9 @@ HTML;
         }
 
         $html = <<<HTML
-<section class="form-block py-12 px-4" {$blockStyle}>
-    <div class="container mx-auto max-w-2xl">
+<section class="form-block">
+    <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
+        <div class="max-w-2xl mx-auto">
         <h2 class="text-3xl font-bold mb-2 text-center">{$title}</h2>
         {$captionHtml}
         <p class="text-sm text-gray-500 mb-4 text-center">
@@ -1219,6 +1220,7 @@ HTML;
 
             <div id="{$formId}-message" class="hidden mt-4 p-4 rounded"></div>
         </form>
+        </div>
     </div>
 </section>
 
