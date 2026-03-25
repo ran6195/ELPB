@@ -106,6 +106,28 @@ class BlockRenderer
     }
 
     /**
+     * Estrae l'ID video da un URL YouTube in qualsiasi formato
+     */
+    protected function extractYoutubeId($url)
+    {
+        $id = null;
+        $parsed = parse_url($url);
+        $host = $parsed['host'] ?? '';
+        if (str_contains($host, 'youtu.be')) {
+            $id = ltrim($parsed['path'] ?? '', '/');
+        } elseif (str_contains($host, 'youtube.com')) {
+            parse_str($parsed['query'] ?? '', $query);
+            $id = $query['v'] ?? null;
+            if (!$id && str_contains($parsed['path'] ?? '', '/embed/')) {
+                $id = explode('/embed/', $parsed['path'])[1] ?? null;
+                $id = explode('/', $id ?? '')[0] ?: null;
+            }
+        }
+        // Valida: solo caratteri alfanumerici, trattini e underscore
+        return ($id && preg_match('/^[a-zA-Z0-9_-]{11}$/', $id)) ? $id : null;
+    }
+
+    /**
      * Get rounded class based on settings
      *
      * @return  string  CSS class
@@ -1151,7 +1173,16 @@ HTML;
         $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
 
         $videoHtml = '';
-        if (!empty($videoUrl)) {
+        // Auto-detect YouTube dall'URL (funziona anche senza videoType='youtube')
+        $youtubeId = !empty($videoUrl) ? $this->extractYoutubeId($content['videoUrl'] ?? '') : null;
+        if ($youtubeId) {
+            $embedUrl = 'https://www.youtube.com/embed/' . $youtubeId;
+            $videoHtml = <<<HTML
+                <div style="position:relative; width:100%; padding-top:56.25%;">
+                    <iframe src="{$embedUrl}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:0.25rem;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+HTML;
+        } elseif (!empty($videoUrl)) {
             $videoHtml = <<<HTML
                 <video controls autoplay muted playsinline loop class="w-full h-auto mx-auto max-w-md">
                     <source src="{$videoUrl}" type="video/mp4">

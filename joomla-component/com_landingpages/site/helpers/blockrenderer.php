@@ -105,7 +105,15 @@ class BlockRenderer
         $method = 'render' . str_replace('-', '', ucwords($type, '-'));
 
         if (method_exists(__CLASS__, $method)) {
-            return self::$method($content, $styles, $block);
+            $html = self::$method($content, $styles, $block);
+
+            // Aggiungi id ancora se presente
+            if (!empty($content['anchor'])) {
+                $anchor = htmlspecialchars($content['anchor']);
+                $html = preg_replace('/^(<(?:div|nav|section|footer|header|article|main|aside)\b)/', '$1 id="' . $anchor . '"', $html, 1);
+            }
+
+            return $html;
         }
 
         return '<!-- Unknown block type: ' . htmlspecialchars($type) . ' -->';
@@ -151,6 +159,18 @@ class BlockRenderer
     }
 
     /**
+     * Build title style attribute with optional color and font-size
+     */
+    protected static function buildTitleStyle($titleColor, $titleSize = '')
+    {
+        static $sizeMap = ['xl' => '1.25rem', '2xl' => '1.5rem', '3xl' => '1.875rem', '4xl' => '2.25rem', '5xl' => '3rem', '6xl' => '3.75rem'];
+        $css = '';
+        if ($titleColor) $css .= "color:{$titleColor};";
+        if (!empty($titleSize) && isset($sizeMap[$titleSize])) $css .= "font-size:{$sizeMap[$titleSize]};";
+        return $css ? " style=\"{$css}\"" : '';
+    }
+
+    /**
      * Get rounded class based on block settings
      *
      * @param   array  $block  Block data
@@ -161,6 +181,58 @@ class BlockRenderer
     {
         $roundedCorners = $block['roundedCorners'] ?? true;
         return $roundedCorners ? 'rounded-lg' : '';
+    }
+
+    /**
+     * Estrae l'ID video da un URL YouTube in qualsiasi formato
+     */
+    protected static function extractYoutubeId($url)
+    {
+        $id = null;
+        $parsed = parse_url($url);
+        $host = $parsed['host'] ?? '';
+        if (str_contains($host, 'youtu.be')) {
+            $id = ltrim($parsed['path'] ?? '', '/');
+        } elseif (str_contains($host, 'youtube.com')) {
+            parse_str($parsed['query'] ?? '', $query);
+            $id = $query['v'] ?? null;
+            if (!$id && str_contains($parsed['path'] ?? '', '/embed/')) {
+                $id = explode('/embed/', $parsed['path'])[1] ?? null;
+                $id = explode('/', $id ?? '')[0] ?: null;
+            }
+        }
+        return ($id && preg_match('/^[a-zA-Z0-9_-]{11}$/', $id)) ? $id : null;
+    }
+
+    /**
+     * Converte qualsiasi formato di URL/iframe/testo Google Maps
+     * in un URL embed che non richiede API key.
+     */
+    protected static function resolveMapEmbedUrl($input)
+    {
+        $input = trim($input);
+        if (empty($input)) return '';
+
+        if (preg_match('/src=["\']([^"\']+)["\']/', $input, $m)) {
+            return $m[1];
+        }
+
+        if (strpos($input, 'google.com/maps/embed') !== false) {
+            return $input;
+        }
+
+        $query = $input;
+        if (strpos($input, 'google.com/maps') !== false) {
+            if (preg_match('/place\/([^\/@]+)/', $input, $m)) {
+                $query = urldecode(str_replace('+', ' ', $m[1]));
+            } elseif (preg_match('/@(-?\d+\.\d+),(-?\d+\.\d+)/', $input, $m)) {
+                $query = $m[1] . ',' . $m[2];
+            } elseif (preg_match('/[?&]q=([^&]+)/', $input, $m)) {
+                $query = urldecode($m[1]);
+            }
+        }
+
+        return 'https://maps.google.com/maps?q=' . urlencode($query) . '&output=embed&hl=it';
     }
 
     /**
@@ -685,7 +757,8 @@ HTML;
 
         // Fallback to block text color if custom colors not set
         $defaultTextColor = $styles['textColor'] ?? '';
-        $titleStyle = !empty($titleColor) ? "color: {$titleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
+        $effectiveTitleColor = !empty($titleColor) ? $titleColor : $defaultTextColor;
+        $titleStyle = self::buildTitleStyle($effectiveTitleColor, $content['titleSize'] ?? '');
         $featureTitleStyle = !empty($featureTitleColor) ? "color: {$featureTitleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
 
         $html = <<<HTML
@@ -694,10 +767,9 @@ HTML;
 HTML;
 
         if (!empty($title)) {
-            $titleStyleAttr = !empty($titleStyle) ? "style=\"{$titleStyle}\"" : '';
             $html .= <<<HTML
 
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12" {$titleStyleAttr}>{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -740,6 +812,7 @@ HTML;
         $services = $content['services'] ?? [];
         $roundedClass = self::getRoundedClass($block);
         $blockStyle = self::getBlockStyle($styles);
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
 
         $html = <<<HTML
 <div class="services-grid-block">
@@ -749,7 +822,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -841,6 +914,8 @@ HTML;
 
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+
         $html = <<<HTML
 <div class="cta-block">
     <div class="max-w-7xl mx-auto px-6 py-16 text-center {$roundedClass}" {$blockStyle}>
@@ -849,7 +924,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl md:text-4xl font-bold mb-6">{$title}</h2>
+        <h2 class="text-3xl md:text-4xl font-bold mb-6"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -891,21 +966,57 @@ HTML;
         $height = htmlspecialchars($content['height'] ?? '400px');
         $roundedClass = self::getRoundedClass($block);
 
-        // Extra styles for Hero (background image, min-height)
-        $extraStyles = [];
+        // Content positioning
+        $horizontal = $content['contentHorizontal'] ?? 'center';
+        $vertical   = $content['contentVertical']   ?? 'middle';
+        $contentMaxWidth = $content['contentMaxWidth'] ?? '100%';
+        $justifyMap = ['left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end'];
+        $alignMap   = ['top' => 'flex-start', 'middle' => 'center', 'bottom' => 'flex-end'];
 
-        // Add background image if present
+        // Wrapper styles (position, min-height, background-color, font, flex)
+        $wrapperStyles = [
+            'position: relative', 'overflow: hidden', 'width: 100%', 'min-height: ' . $height,
+            'display: flex',
+            'justify-content: ' . ($justifyMap[$horizontal] ?? 'center'),
+            'align-items: '     . ($alignMap[$vertical]    ?? 'center'),
+        ];
+        if (!empty($styles['backgroundColor'])) {
+            $wrapperStyles[] = 'background-color: ' . $styles['backgroundColor'];
+        }
+        if (!empty($styles['fontFamily'])) {
+            $wrapperStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+        }
+        $wrapperAttr = 'style="' . implode('; ', $wrapperStyles) . '"';
+
+        // Layer 1: background image with opacity
+        $bgImageHtml = '';
         if (!empty($backgroundImage)) {
-            $extraStyles[] = 'background-image: url(' . $backgroundImage . ')';
-            $extraStyles[] = 'background-size: cover';
-            $extraStyles[] = 'background-position: center';
+            $bgOpacity = floatval($content['backgroundImageOpacity'] ?? 1);
+            $bgImageHtml = "<div style=\"position:absolute;top:0;left:0;width:100%;height:100%;background-image:url({$backgroundImage});background-size:cover;background-position:center;background-repeat:no-repeat;opacity:{$bgOpacity}\"></div>";
         }
 
-        // Add min-height
-        $extraStyles[] = 'min-height: ' . $height;
+        // Layer 2: overlay
+        $overlayHtml = '';
+        if (!empty($content['overlayEnabled'])) {
+            $overlayColor = htmlspecialchars($content['overlayColor'] ?? '#000000');
+            $overlayOpacity = floatval($content['overlayOpacity'] ?? 0.5);
+            $overlayHtml = "<div style=\"position:absolute;top:0;left:0;width:100%;height:100%;background-color:{$overlayColor};opacity:{$overlayOpacity}\"></div>";
+        }
 
-        // Use getBlockStyle with extra styles
-        $blockStyle = self::getBlockStyle($styles, $extraStyles);
+        // Content layer styles (text color, padding, positioning)
+        $contentStyles = [
+            'position: relative', 'z-index: 1',
+            'width: ' . $contentMaxWidth,
+            'text-align: ' . $horizontal,
+            'padding: 5rem 1.5rem',
+        ];
+        if (!empty($styles['textColor'])) {
+            $contentStyles[] = 'color: ' . $styles['textColor'];
+        }
+        if (!empty($styles['padding'])) {
+            $contentStyles[] = 'padding: ' . $styles['padding'];
+        }
+        $contentStyleAttr = 'style="' . implode('; ', $contentStyles) . '"';
 
         // Button styles
         $buttonStyle = $content['buttonStyle'] ?? [];
@@ -930,11 +1041,18 @@ HTML;
 
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
+
         return <<<HTML
-<div class="hero-block">
-    <div class="max-w-7xl mx-auto px-6 py-20 text-center {$roundedClass}" {$blockStyle}>
-        <h1 class="text-5xl font-bold mb-4">{$title}</h1>
-        <p class="text-xl mb-8">{$subtitle}</p>
+<div class="hero-block" {$wrapperAttr}>
+    {$bgImageHtml}
+    {$overlayHtml}
+    <div class="{$roundedClass}" {$contentStyleAttr}>
+        <h1 class="text-5xl font-bold mb-4"{$titleStyle}>{$title}</h1>
+        <p class="text-xl mb-8"{$subtitleStyle}>{$subtitle}</p>
         <a href="{$buttonLink}" class="inline-block font-semibold transition-all hover:opacity-90" style="{$buttonStyles}">
             {$buttonText}
         </a>
@@ -955,10 +1073,11 @@ HTML;
         $roundedClass = self::getRoundedClass($block);
 
         $blockStyle = self::getBlockStyle($styles);
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
 
         $titleHtml = '';
         if (!empty($title)) {
-            $titleHtml = "<h2 class=\"text-3xl font-bold mb-4\">{$title}</h2>";
+            $titleHtml = "<h2 class=\"text-3xl font-bold mb-4\"{$titleStyle}>{$title}</h2>";
         }
 
         return <<<HTML
@@ -980,15 +1099,15 @@ HTML;
         $text = htmlspecialchars($content['text'] ?? 'Text');
         $image = htmlspecialchars($content['image'] ?? '');
         $roundedClass = self::getRoundedClass($block);
-
         $blockStyle = self::getBlockStyle($styles);
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
 
         return <<<HTML
 <section class="two-column-text-image py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
     <div class="container mx-auto max-w-7xl">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
             <div>
-                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{$title}</h2>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4"{$titleStyle}>{$title}</h2>
                 <p class="text-sm sm:text-base text-gray-600">{$text}</p>
             </div>
             <div>
@@ -1009,8 +1128,8 @@ HTML;
         $text = htmlspecialchars($content['text'] ?? 'Text');
         $image = htmlspecialchars($content['image'] ?? '');
         $roundedClass = self::getRoundedClass($block);
-
         $blockStyle = self::getBlockStyle($styles);
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
 
         return <<<HTML
 <section class="two-column-image-text py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
@@ -1020,7 +1139,7 @@ HTML;
                 <img src="{$image}" alt="{$title}" class="w-full h-auto shadow-lg {$roundedClass}">
             </div>
             <div>
-                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{$title}</h2>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4"{$titleStyle}>{$title}</h2>
                 <p class="text-sm sm:text-base text-gray-600">{$text}</p>
             </div>
         </div>
@@ -1045,8 +1164,22 @@ HTML;
         // Use getBlockStyle - it now includes font family and all styles
         $blockStyle = self::getBlockStyle($styles);
 
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
+
         $videoHtml = '';
-        if (!empty($videoUrl)) {
+        // Auto-detect YouTube dall'URL (funziona anche senza videoType='youtube')
+        $youtubeId = !empty($content['videoUrl']) ? self::extractYoutubeId($content['videoUrl']) : null;
+        if ($youtubeId) {
+            $embedUrl = 'https://www.youtube.com/embed/' . $youtubeId;
+            $videoHtml = <<<HTML
+                <div style="position:relative; width:100%; padding-top:56.25%;">
+                    <iframe src="{$embedUrl}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:0.25rem;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+HTML;
+        } elseif (!empty($videoUrl)) {
             $videoHtml = <<<HTML
                 <video controls autoplay muted playsinline loop class="w-full h-auto mx-auto max-w-md">
                     <source src="{$videoUrl}" type="video/mp4">
@@ -1080,8 +1213,8 @@ HTML;
             </div>
             <!-- Info Column -->
             <div class="flex flex-col justify-center p-8">
-                <h2 class="text-2xl font-bold mb-2">{$title}</h2>
-                <p class="text-lg mb-4">{$subtitle}</p>
+                <h2 class="text-2xl font-bold mb-2"{$titleStyle}>{$title}</h2>
+                <p class="text-lg mb-4"{$subtitleStyle}>{$subtitle}</p>
                 <div class="mb-4">
                     {$mapHtml}
                 </div>
@@ -1185,11 +1318,14 @@ HTML;
             $captionHtml = "<p class=\"text-center text-gray-600 mb-8 max-w-2xl mx-auto\">{$caption}</p>";
         }
 
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+
         $html = <<<HTML
 <section class="form-block">
     <div class="max-w-7xl mx-auto px-6 py-12" {$blockStyle}>
         <div class="max-w-2xl mx-auto">
-        <h2 class="text-3xl font-bold mb-2 text-center">{$title}</h2>
+        <h2 class="text-3xl font-bold mb-2 text-center"{$titleStyle}>{$title}</h2>
         {$captionHtml}
         <p class="text-sm text-gray-500 mb-4 text-center">
             <span class="text-red-500">*</span> Campi obbligatori
@@ -1404,8 +1540,8 @@ HTML;
         $showNavigation = $content['showNavigation'] ?? true;
         $showPagination = $content['showPagination'] ?? true;
         $roundedClass = self::getRoundedClass($block);
-
         $blockStyle = self::getBlockStyle($styles);
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
         $sliderId = 'slider-' . uniqid();
 
         // Map aspect ratios to CSS classes
@@ -1430,7 +1566,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl font-bold text-center mb-8">{$title}</h2>
+        <h2 class="text-3xl font-bold text-center mb-8"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -1529,7 +1665,7 @@ HTML;
     {
         $title = htmlspecialchars($content['title'] ?? '');
         $description = htmlspecialchars($content['description'] ?? '');
-        $mapUrl = htmlspecialchars($content['mapUrl'] ?? '');
+        $mapUrl = htmlspecialchars(self::resolveMapEmbedUrl($content['mapUrl'] ?? ''));
         $height = htmlspecialchars($content['height'] ?? '450px');
         $showContactInfo = $content['showContactInfo'] ?? false;
         $address = htmlspecialchars($content['address'] ?? '');
@@ -1538,6 +1674,11 @@ HTML;
         $roundedClass = self::getRoundedClass($block);
 
         $blockStyle = self::getBlockStyle($styles);
+
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $descriptionColor = htmlspecialchars($content['descriptionColor'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $descriptionStyle = $descriptionColor ? " style=\"color:{$descriptionColor}\"" : '';
 
         $html = <<<HTML
 <div class="map-block">
@@ -1548,7 +1689,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl font-bold text-center mb-8">{$title}</h2>
+        <h2 class="text-3xl font-bold text-center mb-8"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -1556,7 +1697,7 @@ HTML;
         if (!empty($description)) {
             $html .= <<<HTML
 
-        <p class="text-center text-gray-600 mb-8">{$description}</p>
+        <p class="text-center text-gray-600 mb-8"{$descriptionStyle}>{$description}</p>
 HTML;
         }
 
@@ -2069,10 +2210,11 @@ HTML;
      */
     protected static function renderLegalfooter($content, $styles, $block)
     {
-        // Genera link dinamici solo se ci sono dati legali e slug
-        // SEMPRE usa i link calcolati dinamicamente, ignora quelli salvati nel content
-        if (self::$hasLegalInfo && !empty(self::$pageSlug)) {
-            // Usa URL Joomla per task displayLegal
+        // Modalità manuale: usa i link configurati dall'utente nel blocco
+        if (isset($content['useAutoLinks']) && $content['useAutoLinks'] === false) {
+            $legalLinks = $content['legalLinks'] ?? [];
+        } elseif (self::$hasLegalInfo && !empty(self::$pageSlug)) {
+            // Modalità automatica: genera link Joomla per task displayLegal
             $legalLinks = [
                 ['text' => 'Privacy', 'url' => 'index.php?option=com_landingpages&task=displayLegal&slug=' . self::$pageSlug . '&type=privacy', 'isCookiePreference' => false],
                 ['text' => "Condizioni d'uso", 'url' => 'index.php?option=com_landingpages&task=displayLegal&slug=' . self::$pageSlug . '&type=condizioni', 'isCookiePreference' => false],
