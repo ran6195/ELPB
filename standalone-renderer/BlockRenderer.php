@@ -49,7 +49,15 @@ class BlockRenderer
         $method = 'render' . str_replace('-', '', ucwords($type, '-'));
 
         if (method_exists($this, $method)) {
-            return $this->$method($content, $styles, $block);
+            $html = $this->$method($content, $styles, $block);
+
+            // Aggiungi id ancora se presente
+            if (!empty($content['anchor'])) {
+                $anchor = htmlspecialchars($content['anchor']);
+                $html = preg_replace('/^(<(?:div|nav|section|footer|header|article|main|aside)\b)/', '$1 id="' . $anchor . '"', $html, 1);
+            }
+
+            return $html;
         }
 
         return '<!-- Unknown block type: ' . htmlspecialchars($type) . ' -->';
@@ -86,6 +94,18 @@ class BlockRenderer
     }
 
     /**
+     * Build title style attribute with optional color and font-size
+     */
+    protected function buildTitleStyle($titleColor, $titleSize = '')
+    {
+        static $sizeMap = ['xl' => '1.25rem', '2xl' => '1.5rem', '3xl' => '1.875rem', '4xl' => '2.25rem', '5xl' => '3rem', '6xl' => '3.75rem'];
+        $css = '';
+        if ($titleColor) $css .= "color:{$titleColor};";
+        if (!empty($titleSize) && isset($sizeMap[$titleSize])) $css .= "font-size:{$sizeMap[$titleSize]};";
+        return $css ? " style=\"{$css}\"" : '';
+    }
+
+    /**
      * Get rounded class based on settings
      *
      * @return  string  CSS class
@@ -93,6 +113,45 @@ class BlockRenderer
     protected function getRoundedClass()
     {
         return $this->roundedCorners ? 'rounded-lg' : '';
+    }
+
+    /**
+     * Converte qualsiasi formato di URL/iframe/testo Google Maps
+     * in un URL embed che non richiede API key.
+     */
+    protected function resolveMapEmbedUrl($input)
+    {
+        $input = trim($input);
+        if (empty($input)) return '';
+
+        // Se è un iframe completo, estrai l'src
+        if (preg_match('/src=["\']([^"\']+)["\']/', $input, $m)) {
+            return $m[1];
+        }
+
+        // Se è già un URL embed diretto (da Google Maps > Condividi > Incorpora)
+        if (strpos($input, 'google.com/maps/embed') !== false) {
+            return $input;
+        }
+
+        // Per qualsiasi altro formato, usa maps.google.com senza API key
+        $query = $input;
+        if (strpos($input, 'google.com/maps') !== false) {
+            // Tenta di estrarre il nome del posto
+            if (preg_match('/place\/([^\/@]+)/', $input, $m)) {
+                $query = urldecode(str_replace('+', ' ', $m[1]));
+            }
+            // Tenta coordinate @lat,lng
+            elseif (preg_match('/@(-?\d+\.\d+),(-?\d+\.\d+)/', $input, $m)) {
+                $query = $m[1] . ',' . $m[2];
+            }
+            // Tenta parametro q=
+            elseif (preg_match('/[?&]q=([^&]+)/', $input, $m)) {
+                $query = urldecode($m[1]);
+            }
+        }
+
+        return 'https://maps.google.com/maps?q=' . urlencode($query) . '&output=embed&hl=it';
     }
 
     /**
@@ -355,10 +414,41 @@ HTML;
         $containerId = 'video-container-' . uniqid();
         $videoId = 'video-' . uniqid();
 
-        // Rileva se è YouTube o Vimeo
-        $isEmbed = strpos($videoUrl, 'youtube.com') !== false ||
+        // Rileva tipo sorgente
+        $isInstagram = strpos($videoUrl, 'instagram.com/reel/') !== false ||
+                       strpos($videoUrl, 'instagram.com/p/') !== false;
+        $isEmbed = !$isInstagram && (
+                   strpos($videoUrl, 'youtube.com') !== false ||
                    strpos($videoUrl, 'youtu.be') !== false ||
-                   strpos($videoUrl, 'vimeo.com') !== false;
+                   strpos($videoUrl, 'vimeo.com') !== false);
+
+        // Instagram: rendering separato portrait centrato
+        if (!empty($videoUrl) && $isInstagram) {
+            $embedUrl = $this->getInstagramEmbedUrl($videoUrl);
+            $embedUrlEscaped = htmlspecialchars($embedUrl);
+            $cleanMode = !empty($content['instagramCleanMode']);
+
+            $allowAttr = 'allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin"';
+            if ($cleanMode) {
+                $iframeHtml = '<div style="position:relative;overflow:hidden;width:400px;max-width:100%;height:500px;border-radius:4px;">'
+                    . '<iframe src="' . $embedUrlEscaped . '" frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen ' . $allowAttr
+                    . ' style="position:absolute;top:-56px;left:0;width:400px;height:750px;border:none;"></iframe>'
+                    . '</div>';
+            } else {
+                $iframeHtml = '<iframe src="' . $embedUrlEscaped . '" width="400" height="700" frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen ' . $allowAttr . ' style="max-width:100%;"></iframe>';
+            }
+
+            $html = <<<HTML
+<div class="video-block" id="{$containerId}">
+    <div class="{$wrapperClass}" {$blockStyle}>
+        <div class="w-full flex justify-center items-center py-6">
+            {$iframeHtml}
+        </div>
+    </div>
+</div>
+HTML;
+            return $html;
+        }
 
         $html = <<<HTML
 <div class="video-block" id="{$containerId}">
@@ -380,7 +470,6 @@ HTML;
                 // File video diretto
                 $videoUrlEscaped = htmlspecialchars($videoUrl);
                 $videoType = $this->getVideoMimeType($videoUrl);
-                // Se playOnScroll è attivo, rimuovi autoplay
                 $autoplayAttr = ($autoplay && !$playOnScroll) ? 'autoplay' : '';
                 $loopAttr = $loop ? 'loop' : '';
                 $mutedAttr = $muted ? 'muted' : '';
@@ -402,8 +491,8 @@ HTML;
                     <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                     </svg>
-                    <p class="text-lg font-medium">Inserisci URL video o YouTube</p>
-                    <p class="text-sm mt-2">Supporta: YouTube, Vimeo, MP4, WebM</p>
+                    <p class="text-lg font-medium">Inserisci URL video o Instagram Reel</p>
+                    <p class="text-sm mt-2">Supporta: YouTube, Vimeo, Instagram, MP4, WebM</p>
                 </div>
             </div>
 HTML;
@@ -556,6 +645,28 @@ HTML;
     }
 
     /**
+     * Converte URL Instagram Reel/Post in embed URL
+     */
+    protected function getInstagramEmbedUrl($url)
+    {
+        // https://www.instagram.com/reel/ABC123/
+        if (strpos($url, '/reel/') !== false) {
+            $parts = explode('/reel/', $url);
+            $reelId = explode('/', explode('?', $parts[1])[0])[0];
+            if ($reelId) return 'https://www.instagram.com/reel/' . $reelId . '/embed/';
+        }
+
+        // https://www.instagram.com/p/ABC123/
+        if (strpos($url, '/p/') !== false) {
+            $parts = explode('/p/', $url);
+            $postId = explode('/', explode('?', $parts[1])[0])[0];
+            if ($postId) return 'https://www.instagram.com/p/' . $postId . '/embed/';
+        }
+
+        return $url;
+    }
+
+    /**
      * Get icon path for features block
      */
     protected function getFeatureIconPath($iconName)
@@ -614,7 +725,8 @@ HTML;
 
         // Fallback to block text color if custom colors not set
         $defaultTextColor = $styles['textColor'] ?? '';
-        $titleStyle = !empty($titleColor) ? "color: {$titleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
+        $effectiveTitleColor = !empty($titleColor) ? $titleColor : $defaultTextColor;
+        $titleStyle = $this->buildTitleStyle($effectiveTitleColor, $content['titleSize'] ?? '');
         $featureTitleStyle = !empty($featureTitleColor) ? "color: {$featureTitleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
 
         $html = <<<HTML
@@ -623,10 +735,9 @@ HTML;
 HTML;
 
         if (!empty($title)) {
-            $titleStyleAttr = !empty($titleStyle) ? "style=\"{$titleStyle}\"" : '';
             $html .= <<<HTML
 
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12" {$titleStyleAttr}>{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -669,6 +780,7 @@ HTML;
         $services = $content['services'] ?? [];
         $roundedClass = $this->getRoundedClass();
         $blockStyle = $this->getBlockStyle($styles);
+        $titleStyle = $this->buildTitleStyle('', $content['titleSize'] ?? '');
 
         $html = <<<HTML
 <div class="services-grid-block">
@@ -678,7 +790,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">{$title}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -770,6 +882,8 @@ HTML;
 
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
+        $titleStyle = $this->buildTitleStyle('', $content['titleSize'] ?? '');
+
         $html = <<<HTML
 <div class="cta-block">
     <div class="max-w-7xl mx-auto px-6 py-16 text-center {$roundedClass}" {$blockStyle}>
@@ -778,7 +892,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl md:text-4xl font-bold mb-6">{$title}</h2>
+        <h2 class="text-3xl md:text-4xl font-bold mb-6"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -820,36 +934,57 @@ HTML;
         $height = htmlspecialchars($content['height'] ?? '400px');
         $roundedClass = $this->getRoundedClass();
 
-        // Build inline styles
-        $inlineStyles = [];
+        // Content positioning
+        $horizontal = $content['contentHorizontal'] ?? 'center';
+        $vertical   = $content['contentVertical']   ?? 'middle';
+        $contentMaxWidth = $content['contentMaxWidth'] ?? '100%';
+        $justifyMap = ['left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end'];
+        $alignMap   = ['top' => 'flex-start', 'middle' => 'center', 'bottom' => 'flex-end'];
 
+        // Wrapper styles (position, min-height, background-color, font, flex)
+        $wrapperStyles = [
+            'position: relative', 'overflow: hidden', 'width: 100%', 'min-height: ' . $height,
+            'display: flex',
+            'justify-content: ' . ($justifyMap[$horizontal] ?? 'center'),
+            'align-items: '     . ($alignMap[$vertical]    ?? 'center'),
+        ];
         if (!empty($styles['backgroundColor'])) {
-            $inlineStyles[] = 'background-color: ' . $styles['backgroundColor'];
+            $wrapperStyles[] = 'background-color: ' . $styles['backgroundColor'];
         }
-
-        if (!empty($styles['textColor'])) {
-            $inlineStyles[] = 'color: ' . $styles['textColor'];
-        }
-
-        if (!empty($styles['padding'])) {
-            $inlineStyles[] = 'padding: ' . $styles['padding'];
-        }
-
         if (!empty($styles['fontFamily'])) {
-            $inlineStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+            $wrapperStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
         }
+        $wrapperAttr = 'style="' . implode('; ', $wrapperStyles) . '"';
 
-        // Add background image if present
+        // Layer 1: background image with opacity
+        $bgImageHtml = '';
         if (!empty($backgroundImage)) {
-            $inlineStyles[] = 'background-image: url(' . $backgroundImage . ')';
-            $inlineStyles[] = 'background-size: cover';
-            $inlineStyles[] = 'background-position: center';
+            $bgOpacity = floatval($content['backgroundImageOpacity'] ?? 1);
+            $bgImageHtml = "<div style=\"position:absolute;top:0;left:0;width:100%;height:100%;background-image:url({$backgroundImage});background-size:cover;background-position:center;background-repeat:no-repeat;opacity:{$bgOpacity}\"></div>";
         }
 
-        // Add min-height
-        $inlineStyles[] = 'min-height: ' . $height;
+        // Layer 2: overlay
+        $overlayHtml = '';
+        if (!empty($content['overlayEnabled'])) {
+            $overlayColor = htmlspecialchars($content['overlayColor'] ?? '#000000');
+            $overlayOpacity = floatval($content['overlayOpacity'] ?? 0.5);
+            $overlayHtml = "<div style=\"position:absolute;top:0;left:0;width:100%;height:100%;background-color:{$overlayColor};opacity:{$overlayOpacity}\"></div>";
+        }
 
-        $styleAttr = !empty($inlineStyles) ? 'style="' . implode('; ', $inlineStyles) . '"' : '';
+        // Content layer styles (text color, padding, positioning)
+        $contentStyles = [
+            'position: relative', 'z-index: 1',
+            'width: ' . $contentMaxWidth,
+            'text-align: ' . $horizontal,
+            'padding: 5rem 1.5rem',
+        ];
+        if (!empty($styles['textColor'])) {
+            $contentStyles[] = 'color: ' . $styles['textColor'];
+        }
+        if (!empty($styles['padding'])) {
+            $contentStyles[] = 'padding: ' . $styles['padding'];
+        }
+        $contentStyleAttr = 'style="' . implode('; ', $contentStyles) . '"';
 
         // Button styles
         $buttonStyle = $content['buttonStyle'] ?? [];
@@ -874,17 +1009,36 @@ HTML;
 
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
+        $titleStyle = $this->buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
+
         return <<<HTML
-<div class="hero-block">
-    <div class="max-w-7xl mx-auto px-6 py-20 text-center {$roundedClass}" {$styleAttr}>
-        <h1 class="text-5xl font-bold mb-4">{$title}</h1>
-        <p class="text-xl mb-8">{$subtitle}</p>
+<div class="hero-block" {$wrapperAttr}>
+    {$bgImageHtml}
+    {$overlayHtml}
+    <div class="{$roundedClass}" {$contentStyleAttr}>
+        <h1 class="text-5xl font-bold mb-4"{$titleStyle}>{$title}</h1>
+        <p class="text-xl mb-8"{$subtitleStyle}>{$subtitle}</p>
         <a href="{$buttonLink}" class="inline-block font-semibold transition-all hover:opacity-90" style="{$buttonStyles}">
             {$buttonText}
         </a>
     </div>
 </div>
 HTML;
+    }
+
+    /**
+     * Render Hero Wide block (larghezza variabile)
+     */
+    protected function renderHerowide($content, $styles, $block)
+    {
+        $blockWidth = htmlspecialchars($content['blockWidth'] ?? '100%');
+
+        $innerHtml = $this->renderHero($content, $styles, $block);
+
+        return "<div style=\"width:{$blockWidth};margin:0 auto\">{$innerHtml}</div>";
     }
 
     /**
@@ -900,9 +1054,10 @@ HTML;
 
         $blockStyle = $this->getBlockStyle($styles);
 
+        $titleStyle = $this->buildTitleStyle('', $content['titleSize'] ?? '');
         $titleHtml = '';
         if (!empty($title)) {
-            $titleHtml = "<h2 class=\"text-3xl font-bold mb-4\">{$title}</h2>";
+            $titleHtml = "<h2 class=\"text-3xl font-bold mb-4\"{$titleStyle}>{$title}</h2>";
         }
 
         return <<<HTML
@@ -924,15 +1079,15 @@ HTML;
         $text = htmlspecialchars($content['text'] ?? 'Text');
         $image = htmlspecialchars($content['image'] ?? '');
         $roundedClass = $this->getRoundedClass();
-
         $blockStyle = $this->getBlockStyle($styles);
+        $titleStyle = $this->buildTitleStyle('', $content['titleSize'] ?? '');
 
         return <<<HTML
 <section class="two-column-text-image py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
     <div class="container mx-auto max-w-7xl">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
             <div>
-                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{$title}</h2>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4"{$titleStyle}>{$title}</h2>
                 <p class="text-sm sm:text-base text-gray-600">{$text}</p>
             </div>
             <div>
@@ -953,8 +1108,8 @@ HTML;
         $text = htmlspecialchars($content['text'] ?? 'Text');
         $image = htmlspecialchars($content['image'] ?? '');
         $roundedClass = $this->getRoundedClass();
-
         $blockStyle = $this->getBlockStyle($styles);
+        $titleStyle = $this->buildTitleStyle('', $content['titleSize'] ?? '');
 
         return <<<HTML
 <section class="two-column-image-text py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
@@ -964,7 +1119,7 @@ HTML;
                 <img src="{$image}" alt="{$title}" class="w-full h-auto shadow-lg {$roundedClass}">
             </div>
             <div>
-                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{$title}</h2>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4"{$titleStyle}>{$title}</h2>
                 <p class="text-sm sm:text-base text-gray-600">{$text}</p>
             </div>
         </div>
@@ -989,6 +1144,11 @@ HTML;
         $blockStyle = $this->getBlockStyle($styles);
         $bgColor = $styles['backgroundColor'] ?? '#1f2937';
         $textColor = $styles['textColor'] ?? '#ffffff';
+
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
+        $titleStyle = $this->buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
 
         $videoHtml = '';
         if (!empty($videoUrl)) {
@@ -1025,8 +1185,8 @@ HTML;
             </div>
             <!-- Info Column -->
             <div class="flex flex-col justify-center p-8 bg-gray-900 text-white">
-                <h2 class="text-2xl font-bold mb-2">{$title}</h2>
-                <p class="text-lg mb-4">{$subtitle}</p>
+                <h2 class="text-2xl font-bold mb-2"{$titleStyle}>{$title}</h2>
+                <p class="text-lg mb-4"{$subtitleStyle}>{$subtitle}</p>
                 <div class="mb-4">
                     {$mapHtml}
                 </div>
@@ -1114,16 +1274,20 @@ HTML;
             }
         }
 
+        $captionColor = htmlspecialchars($content['captionColor'] ?? '#6B7280');
         $captionHtml = '';
         if (!empty($caption)) {
-            $captionHtml = "<p class=\"text-center text-gray-600 mb-8 max-w-2xl mx-auto\">{$caption}</p>";
+            $captionHtml = "<p class=\"text-center mb-8 max-w-2xl mx-auto\" style=\"color:{$captionColor}\">{$caption}</p>";
         }
+
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $titleStyle = $this->buildTitleStyle($titleColor, $content['titleSize'] ?? '');
 
         $html = <<<HTML
 <section class="form-block">
     <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
         <div class="max-w-2xl mx-auto">
-        <h2 class="text-3xl font-bold mb-2 text-center">{$title}</h2>
+        <h2 class="text-3xl font-bold mb-2 text-center"{$titleStyle}>{$title}</h2>
         {$captionHtml}
         <p class="text-sm text-gray-500 mb-4 text-center">
             <span class="text-red-500">*</span> Campi obbligatori
@@ -1134,7 +1298,7 @@ HTML;
             <input type="hidden" name="thank_you_url" value="{$thankYouUrl}">
 
             <!-- Campi input su 2 colonne -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 HTML;
 
         // Render input fields
@@ -1282,13 +1446,9 @@ HTML;
                     window.location.href = thankYouUrl;
                 } else {
                     // Redirect to thank you page: /{slug}?_mode=thankyou (replaceState in page.php mostra /{slug}/thank-you)
-                    const pageSlug = form.querySelector('input[name="page_slug"]')?.value || '';
-                    if (pageSlug) {
-                        window.location.href = '/' + encodeURIComponent(pageSlug) + '?_mode=thankyou';
-                    } else {
-                        const currentPath = window.location.pathname;
-                        window.location.href = currentPath + (currentPath.includes('?') ? '&' : '?') + '_mode=thankyou';
-                    }
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('_mode', 'thankyou');
+                    window.location.href = currentUrl.toString();
                 }
             } else {
                 showMessage(result.error || 'Si è verificato un errore. Riprova più tardi.', 'error');
@@ -1327,6 +1487,292 @@ HTML;
     }
 
     /**
+     * Render Form Avanzato block (campi dinamici con griglia 2 colonne)
+     */
+    protected function renderFormAvanzato($content, $styles, $block)
+    {
+        $title = htmlspecialchars($content['title'] ?? '');
+        $caption = htmlspecialchars($content['caption'] ?? '');
+        $fields = $content['fields'] ?? [];
+        $buttonText = htmlspecialchars($content['buttonText'] ?? 'Invia');
+        $buttonLayout = $content['buttonLayout'] ?? 'full';
+        $showPrivacy = $content['showPrivacy'] ?? true;
+        $privacyLink = htmlspecialchars($content['privacyLink'] ?? '/privacy-policy');
+        $privacyTextColor = htmlspecialchars($content['privacyTextColor'] ?? '#374151');
+        $recaptchaSiteKey = htmlspecialchars($content['recaptchaSiteKey'] ?? '');
+        $thankYouUrl = htmlspecialchars($content['thankYouUrl'] ?? '');
+        $roundedClass = $this->getRoundedClass();
+
+        $fieldBorderRadius = $content['fieldBorderRadius'] ?? 'lg';
+        $radiusMap = [
+            'none' => '',
+            'sm' => 'rounded',
+            'md' => 'rounded-md',
+            'lg' => 'rounded-lg',
+            'xl' => 'rounded-xl',
+            'full' => 'rounded-2xl'
+        ];
+        $fieldRoundedClass = $radiusMap[$fieldBorderRadius] ?? 'rounded-lg';
+
+        $apiUrl = $this->apiUrl;
+        $pageId = $this->pageId;
+        $formId = 'adv-form-' . ($block['id'] ?? uniqid());
+        $blockStyle = $this->getBlockStyle($styles);
+
+        $buttonStyle = $content['buttonStyle'] ?? [];
+        $buttonBg = htmlspecialchars($buttonStyle['backgroundColor'] ?? '#4F46E5');
+        $buttonColor = htmlspecialchars($buttonStyle['textColor'] ?? '#FFFFFF');
+        $buttonFontSize = htmlspecialchars($buttonStyle['fontSize'] ?? '16px');
+        $buttonPadding = htmlspecialchars($buttonStyle['padding'] ?? '12px 32px');
+        $buttonRadius = htmlspecialchars($buttonStyle['borderRadius'] ?? '8px');
+        $buttonBorderWidth = htmlspecialchars($buttonStyle['borderWidth'] ?? '0px');
+        $buttonBorderColor = htmlspecialchars($buttonStyle['borderColor'] ?? 'transparent');
+        $buttonBorderStyle = htmlspecialchars($buttonStyle['borderStyle'] ?? 'solid');
+        $buttonShadow = $buttonStyle['shadow'] ?? 'md';
+        $shadowMap = [
+            'none' => 'none',
+            'sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            'xl' => '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        ];
+        $boxShadow = $shadowMap[$buttonShadow] ?? $shadowMap['md'];
+        $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
+
+        $captionColor = htmlspecialchars($content['captionColor'] ?? '#6B7280');
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $titleStyle = $this->buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $titleHtml = $title ? "<h2 class=\"text-3xl font-bold mb-2 text-center\"{$titleStyle}>{$title}</h2>" : '';
+        $captionHtml = $caption ? "<p class=\"text-center mb-8 max-w-2xl mx-auto\" style=\"color:{$captionColor}\">{$caption}</p>" : '';
+        $fieldsJson = json_encode(array_values($fields));
+
+        $html = <<<HTML
+<section class="form-block">
+    <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
+        <div class="max-w-2xl mx-auto">
+        {$titleHtml}
+        {$captionHtml}
+        <p class="text-sm text-gray-500 mb-4 text-center">
+            <span class="text-red-500">*</span> Campi obbligatori
+        </p>
+        <form id="{$formId}" class="landing-page-form space-y-4" method="post" action="">
+            <input type="hidden" name="page_id" value="{$pageId}">
+            <input type="hidden" name="page_slug" value="{$this->pageSlug}">
+            <input type="hidden" name="thank_you_url" value="{$thankYouUrl}">
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+HTML;
+
+        foreach ($fields as $field) {
+            $fieldName = htmlspecialchars($field['name'] ?? '');
+            $fieldLabel = htmlspecialchars($field['label'] ?? '');
+            $fieldType = $field['type'] ?? 'text';
+            $fieldRequired = !empty($field['required']) ? 'required' : '';
+            $requiredMark = !empty($field['required']) ? ' *' : '';
+            $placeholder = htmlspecialchars($field['placeholder'] ?? ($fieldLabel . $requiredMark));
+            $colSpan = $field['colSpan'] ?? 'half';
+
+            if ($fieldType === 'textarea') {
+                $html .= <<<HTML
+
+                <div class="lg:col-span-2">
+                    <textarea name="{$fieldName}" rows="4" placeholder="{$placeholder}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}></textarea>
+                </div>
+HTML;
+            } elseif ($fieldType === 'select') {
+                $colClass = $colSpan === 'full' ? 'lg:col-span-2' : '';
+                $firstOptionText = htmlspecialchars(!empty($field['placeholder']) ? $field['placeholder'] : $fieldLabel);
+                $optionsHtml = "<option value=\"\" disabled selected>{$firstOptionText}{$requiredMark}</option>";
+                foreach (($field['options'] ?? []) as $opt) {
+                    $optVal = htmlspecialchars($opt);
+                    $optionsHtml .= "<option value=\"{$optVal}\">{$optVal}</option>";
+                }
+                $html .= <<<HTML
+
+                <div class="{$colClass}">
+                    <select name="{$fieldName}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}>
+                        {$optionsHtml}
+                    </select>
+                </div>
+HTML;
+            } elseif ($fieldType === 'date') {
+                $colClass = $colSpan === 'full' ? 'lg:col-span-2' : '';
+                $requiredSpan = !empty($field['required']) ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+                $html .= <<<HTML
+
+                <div class="{$colClass}">
+                    <label class="block text-sm mb-1 opacity-80">{$placeholder}{$requiredSpan}</label>
+                    <input type="date" name="{$fieldName}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}>
+                </div>
+HTML;
+            } elseif ($fieldType === 'time') {
+                $colClass = $colSpan === 'full' ? 'lg:col-span-2' : '';
+                $requiredSpan = !empty($field['required']) ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+                $hourOptions = '<option value="" disabled selected>-- Seleziona ora --</option>';
+                for ($h = 0; $h < 24; $h++) {
+                    $val = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+                    $hourOptions .= "<option value=\"{$val}\">{$val}</option>";
+                }
+                $html .= <<<HTML
+
+                <div class="{$colClass}">
+                    <label class="block text-sm mb-1 opacity-80">{$placeholder}{$requiredSpan}</label>
+                    <select name="{$fieldName}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}>
+                        {$hourOptions}
+                    </select>
+                </div>
+HTML;
+            } else {
+                $colClass = $colSpan === 'full' ? 'lg:col-span-2' : '';
+                $html .= <<<HTML
+
+                <div class="{$colClass}">
+                    <input type="{$fieldType}" name="{$fieldName}" placeholder="{$placeholder}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}>
+                </div>
+HTML;
+            }
+        }
+
+        $html .= <<<HTML
+
+            </div>
+HTML;
+
+        if ($showPrivacy) {
+            $html .= <<<HTML
+
+            <div class="form-field">
+                <label class="flex items-start space-x-2">
+                    <input type="checkbox" name="privacy_accepted" required class="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                    <span class="text-sm" style="color: {$privacyTextColor};">
+                        Do il consenso alla
+                        <a href="{$privacyLink}" target="_blank" class="hover:underline">Privacy</a>
+                        <span class="text-red-500">*</span>
+                    </span>
+                </label>
+            </div>
+HTML;
+        }
+
+        if (!empty($recaptchaSiteKey)) {
+            $html .= <<<HTML
+
+            <div class="form-field">
+                <div class="g-recaptcha" data-sitekey="{$recaptchaSiteKey}"></div>
+            </div>
+            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+HTML;
+        }
+
+        $buttonWrapperClass = $buttonLayout === 'centered' ? 'flex justify-center' : '';
+        $buttonClass = $buttonLayout === 'centered' ? 'font-medium transition-colors' : 'w-full font-medium transition-colors';
+
+        $html .= <<<HTML
+
+            <div class="{$buttonWrapperClass}">
+                <button type="submit" class="{$buttonClass}" style="{$buttonStyles}">
+                    {$buttonText}
+                </button>
+            </div>
+
+            <div id="{$formId}-message" class="hidden mt-4 p-4 rounded"></div>
+        </form>
+        </div>
+    </div>
+</section>
+
+<script>
+(function() {
+    const form = document.getElementById('{$formId}');
+    const messageDiv = document.getElementById('{$formId}-message');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.textContent;
+    const apiUrl = '{$apiUrl}';
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const data = {
+            page_id: parseInt(formData.get('page_id')) || null,
+            privacy_accepted: formData.get('privacy_accepted') === 'on'
+        };
+
+        if ('{$recaptchaSiteKey}' && window.grecaptcha) {
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                showMessage('Per favore completa il reCAPTCHA', 'error');
+                return;
+            }
+            data.recaptcha_token = recaptchaResponse;
+        }
+
+        const fields = form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]), textarea, select');
+        fields.forEach(field => {
+            if (field.name && field.name !== 'privacy_accepted') {
+                data[field.name] = field.value;
+            }
+        });
+
+        // Mappa i campi con standard_field alle colonne dedicate
+        const fieldDefs = {$fieldsJson};
+        fieldDefs.forEach(function(fieldDef) {
+            if (fieldDef.standard_field && fieldDef.standard_field !== '' && fieldDef.name in data) {
+                data[fieldDef.standard_field] = data[fieldDef.name];
+            }
+        });
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Invio in corso...';
+
+        try {
+            const response = await fetch(apiUrl + '/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                const thankYouUrl = formData.get('thank_you_url');
+                if (thankYouUrl && thankYouUrl.trim() !== '') {
+                    window.location.href = thankYouUrl;
+                } else {
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('_mode', 'thankyou');
+                    window.location.href = currentUrl.toString();
+                }
+            } else {
+                showMessage(result.error || 'Si è verificato un errore. Riprova più tardi.', 'error');
+                if (window.grecaptcha) { grecaptcha.reset(); }
+            }
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            showMessage('Si è verificato un errore. Riprova più tardi.', 'error');
+            if (window.grecaptcha) { grecaptcha.reset(); }
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+        }
+    });
+
+    function showMessage(message, type) {
+        messageDiv.textContent = message;
+        messageDiv.className = 'mt-4 p-4 rounded ' + (type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-700');
+        messageDiv.classList.remove('hidden');
+        if (type === 'success') {
+            setTimeout(() => { messageDiv.classList.add('hidden'); }, 5000);
+        }
+    }
+})();
+</script>
+HTML;
+
+        return $html;
+    }
+
+    /**
      * Render Slider block
      */
     protected function renderSlider($content, $styles, $block)
@@ -1343,8 +1789,8 @@ HTML;
         $showNavigation = $content['showNavigation'] ?? true;
         $showPagination = $content['showPagination'] ?? true;
         $roundedClass = $this->getRoundedClass();
-
         $blockStyle = $this->getBlockStyle($styles);
+        $titleStyle = $this->buildTitleStyle('', $content['titleSize'] ?? '');
         $sliderId = 'slider-' . uniqid();
 
         // Map aspect ratios to CSS classes
@@ -1369,7 +1815,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl font-bold text-center mb-8">{$title}</h2>
+        <h2 class="text-3xl font-bold text-center mb-8"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -1468,7 +1914,7 @@ HTML;
     {
         $title = htmlspecialchars($content['title'] ?? '');
         $description = htmlspecialchars($content['description'] ?? '');
-        $mapUrl = htmlspecialchars($content['mapUrl'] ?? '');
+        $mapUrl = htmlspecialchars($this->resolveMapEmbedUrl($content['mapUrl'] ?? ''));
         $height = htmlspecialchars($content['height'] ?? '450px');
         $showContactInfo = $content['showContactInfo'] ?? false;
         $address = htmlspecialchars($content['address'] ?? '');
@@ -1477,6 +1923,11 @@ HTML;
         $roundedClass = $this->getRoundedClass();
 
         $blockStyle = $this->getBlockStyle($styles);
+
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $descriptionColor = htmlspecialchars($content['descriptionColor'] ?? '');
+        $titleStyle = $this->buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $descriptionStyle = $descriptionColor ? " style=\"color:{$descriptionColor}\"" : '';
 
         $html = <<<HTML
 <div class="map-block">
@@ -1487,7 +1938,7 @@ HTML;
         if (!empty($title)) {
             $html .= <<<HTML
 
-        <h2 class="text-3xl font-bold text-center mb-8">{$title}</h2>
+        <h2 class="text-3xl font-bold text-center mb-8"{$titleStyle}>{$title}</h2>
 HTML;
         }
 
@@ -1495,7 +1946,7 @@ HTML;
         if (!empty($description)) {
             $html .= <<<HTML
 
-        <p class="text-center text-gray-600 mb-8">{$description}</p>
+        <p class="text-center text-gray-600 mb-8"{$descriptionStyle}>{$description}</p>
 HTML;
         }
 
@@ -2008,16 +2459,12 @@ HTML;
      */
     protected function renderLegalfooter($content, $styles, $block)
     {
-        // Genera link dinamici solo se ci sono dati legali
-        // SEMPRE usa i link calcolati dinamicamente, ignora quelli salvati nel content
-        if ($this->hasLegalInfo && !empty($this->pageSlug)) {
-            // Se legalBaseUrl è specificato (chiamato da backend), usa URL assoluti
-            // Altrimenti usa URL relativi (renderer standalone)
+        // Modalità manuale: usa i link configurati dall'utente nel blocco
+        if (isset($content['useAutoLinks']) && $content['useAutoLinks'] === false) {
+            $legalLinks = $content['legalLinks'] ?? [];
+        } elseif ($this->hasLegalInfo && !empty($this->pageSlug)) {
+            // Modalità automatica: genera link dalle pagine legali
             $baseUrl = !empty($this->legalBaseUrl) ? $this->legalBaseUrl : '';
-
-            // Debug log
-            error_log("BlockRenderer: Generating legal links with baseUrl='$baseUrl' and slug='{$this->pageSlug}'");
-
             $legalLinks = [
                 ['text' => 'Privacy', 'url' => $baseUrl . '/legal/' . $this->pageSlug . '/privacy', 'isCookiePreference' => false],
                 ['text' => "Condizioni d'uso", 'url' => $baseUrl . '/legal/' . $this->pageSlug . '/condizioni', 'isCookiePreference' => false],
