@@ -16,6 +16,7 @@
       <div
         v-for="block in sortedBlocks"
         :key="block.id"
+        :id="block.content?.anchor || undefined"
       >
         <component
           :is="getBlockComponent(block.type)"
@@ -47,9 +48,11 @@ import { usePageStore } from '../stores/pageStore'
 import { loadGoogleFont } from '../utils/googleFonts'
 import HeaderBlock from '../components/blocks/HeaderBlock.vue'
 import HeroBlock from '../components/blocks/HeroBlock.vue'
+import HeroWideBlock from '../components/blocks/HeroWideBlock.vue'
 import ImageSlideBlock from '../components/blocks/ImageSlideBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
+import AdvancedFormBlock from '../components/blocks/AdvancedFormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
 import TwoColumnImageText from '../components/blocks/TwoColumnImageText.vue'
 import VideoBlock from '../components/blocks/VideoBlock.vue'
@@ -131,6 +134,7 @@ const getBlockComponent = (type) => {
   const components = {
     header: HeaderBlock,
     hero: HeroBlock,
+    'hero-wide': HeroWideBlock,
     'image-slide': ImageSlideBlock,
     video: VideoBlock,
     text: TextBlock,
@@ -143,6 +147,7 @@ const getBlockComponent = (type) => {
     slider: SliderBlock,
     map: MapBlock,
     form: FormBlock,
+    'form-avanzato': AdvancedFormBlock,
     footer: FooterBlock,
     social: SocialBlock,
     'legal-footer': LegalFooterBlock

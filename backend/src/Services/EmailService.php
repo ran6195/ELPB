@@ -153,6 +153,106 @@ class EmailService
     }
 
     /**
+     * Invia email di cortesia al cliente che ha inviato il form
+     *
+     * @param object $lead
+     * @param object $page
+     * @return bool
+     */
+    public function sendLeadConfirmation($lead, $page)
+    {
+        try {
+            $confirmationSettings = $page->notification_settings['confirmation_email'] ?? [];
+
+            if (empty($confirmationSettings['enabled'])) {
+                return false;
+            }
+
+            if (empty($lead->email) || !filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
+                error_log("EmailService: Email cliente non valida per lead #{$lead->id}, skip email di cortesia");
+                return false;
+            }
+
+            $subject = $confirmationSettings['subject'] ?? 'Abbiamo ricevuto la tua richiesta';
+            $bodyTemplate = $confirmationSettings['body'] ?? "Ciao {name},\n\ngrazie per averci contattato. Abbiamo ricevuto la tua richiesta e ti risponderemo al più presto.\n\nA presto!";
+            $fromName = !empty($confirmationSettings['from_name']) ? $confirmationSettings['from_name'] : $this->config['from_name'];
+            $fromAddress = !empty($confirmationSettings['from_address']) ? $confirmationSettings['from_address'] : $this->config['from_address'];
+            $headerColor = $confirmationSettings['header_color'] ?? '#667eea';
+            $headerColorEnd = $confirmationSettings['header_color_end'] ?? '#764ba2';
+
+            // Sostituisci placeholder
+            $bodyText = str_replace('{name}', $lead->name ?? 'Cliente', $bodyTemplate);
+
+            $this->mailer->clearAddresses();
+            $this->mailer->clearReplyTos();
+            $this->mailer->clearCustomHeaders();
+
+            $this->mailer->setFrom($fromAddress, $fromName);
+            $this->mailer->addAddress($lead->email, $lead->name ?? '');
+
+            $this->mailer->Subject = $subject;
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $this->getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor, $headerColorEnd);
+            $this->mailer->AltBody = $bodyText;
+
+            $result = $this->mailer->send();
+
+            if ($result) {
+                error_log("EmailService: Email cortesia inviata a {$lead->email} per lead #{$lead->id}");
+            }
+
+            return $result;
+
+        } catch (Exception $e) {
+            error_log("EmailService: Errore email cortesia lead #{$lead->id}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Template HTML per email di cortesia al cliente
+     */
+    private function getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor = '#667eea', $headerColorEnd = '#764ba2')
+    {
+        $pageTitle = htmlspecialchars($page->title);
+        $bodyHtml = nl2br(htmlspecialchars($bodyText));
+        $headerColor = htmlspecialchars($headerColor);
+        $headerColorEnd = htmlspecialchars($headerColorEnd);
+
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conferma ricezione richiesta</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, {$headerColor} 0%, {$headerColorEnd} 100%); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+        .content { padding: 30px 20px; font-size: 15px; color: #374151; }
+        .footer { background: #f9fafb; padding: 16px 20px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✉️ {$pageTitle}</h1>
+        </div>
+        <div class="content">
+            <p>{$bodyHtml}</p>
+        </div>
+        <div class="footer">
+            <p>Questa email è stata inviata automaticamente. Si prega di non rispondere a questa email.</p>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
      * Determina lista destinatari email
      *
      * @param object $page
@@ -199,9 +299,9 @@ class EmailService
         $leadMessage = nl2br(htmlspecialchars($lead->message ?? 'Nessun messaggio'));
         $leadDate = date('d/m/Y H:i', strtotime($lead->created_at));
 
-        // URL backend per vedere lead (se APP_URL è configurato)
-        $backendUrl = $_ENV['APP_URL'] ?? 'http://localhost:8000';
-        $leadsUrl = rtrim($backendUrl, '/') . '/#/';
+        // URL pannello frontend per vedere i lead
+        $frontendUrl = $_ENV['FRONTEND_URL'] ?? $_ENV['APP_URL'] ?? 'http://localhost:3000';
+        $leadsUrl = rtrim($frontendUrl, '/')  . '/#/';
 
         return <<<HTML
 <!DOCTYPE html>

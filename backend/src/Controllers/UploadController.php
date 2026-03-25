@@ -19,23 +19,38 @@ class UploadController
         $uploadedFile = $uploadedFiles['image'];
 
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            $response->getBody()->write(json_encode(['error' => 'Upload error']));
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE   => 'File troppo grande (supera upload_max_filesize in php.ini)',
+                UPLOAD_ERR_FORM_SIZE  => 'File troppo grande (supera MAX_FILE_SIZE del form)',
+                UPLOAD_ERR_PARTIAL    => 'File caricato solo parzialmente',
+                UPLOAD_ERR_NO_FILE    => 'Nessun file inviato',
+                UPLOAD_ERR_NO_TMP_DIR => 'Cartella temporanea mancante',
+                UPLOAD_ERR_CANT_WRITE => 'Impossibile scrivere il file su disco',
+                UPLOAD_ERR_EXTENSION  => 'Upload bloccato da un\'estensione PHP',
+            ];
+            $code = $uploadedFile->getError();
+            $msg = $errorMessages[$code] ?? 'Errore upload sconosciuto (code: ' . $code . ')';
+            $response->getBody()->write(json_encode(['error' => $msg]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
 
         // Validate file type
         $mimeType = $uploadedFile->getClientMediaType();
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif', 'image/bmp', 'image/tiff', 'image/svg+xml'];
 
         if (!in_array($mimeType, $allowedTypes)) {
-            $response->getBody()->write(json_encode(['error' => 'Invalid file type. Only images are allowed.']));
+            $response->getBody()->write(json_encode(['error' => 'Tipo file non supportato: ' . $mimeType . '. Usa JPEG, PNG, GIF, WebP, AVIF o SVG.']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
 
         // Generate unique filename
         $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
         $filename = uniqid() . '.' . $extension;
-        $uploadPath = __DIR__ . '/../../public/uploads/images/' . $filename;
+        $imagesDir = __DIR__ . '/../../public/uploads/images/';
+        if (!is_dir($imagesDir)) {
+            mkdir($imagesDir, 0755, true);
+        }
+        $uploadPath = $imagesDir . $filename;
 
         try {
             $uploadedFile->moveTo($uploadPath);

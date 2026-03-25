@@ -13,6 +13,7 @@
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
         class="text-3xl font-bold text-center mb-8 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+        :style="mapTitleStyles"
       >
         {{ block.content.title }}
       </h2>
@@ -23,6 +24,7 @@
         :contenteditable="editable"
         @blur="updateContent('description', $event.target.innerText)"
         class="text-center text-gray-600 mb-8 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+        :style="block.content.descriptionColor ? { color: block.content.descriptionColor } : {}"
       >
         {{ block.content.description }}
       </p>
@@ -140,6 +142,15 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
+const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
+const mapTitleStyles = computed(() => {
+  const s = {}
+  if (props.block.content.titleColor) s.color = props.block.content.titleColor
+  const fs = titleSizeMap[props.block.content.titleSize]
+  if (fs) s.fontSize = fs
+  return s
+})
+
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}
   return {
@@ -150,45 +161,44 @@ const blockStyles = computed(() => {
   }
 })
 
-// Genera URL iframe da vari formati di input
+// Genera URL iframe da vari formati di input (senza API key)
 const mapUrl = computed(() => {
   const input = props.block.content.mapUrl || ''
   if (!input) return ''
 
-  // Se è un iframe completo, estrai l'src (controlla PRIMA di tutto)
+  // Se è un iframe completo, estrai l'src
   const iframeMatch = input.match(/src=["']([^"']+)["']/)
   if (iframeMatch) {
     return iframeMatch[1]
   }
 
-  // Se è già un URL embed, usalo direttamente
+  // Se è già un URL embed diretto (da Google Maps > Condividi > Incorpora)
   if (input.includes('google.com/maps/embed')) {
     return input
   }
 
-  // Se è un URL normale di Google Maps, converti in embed
-  if (input.includes('google.com/maps')) {
-    // Estrai le coordinate o place_id dall'URL
-    const placeMatch = input.match(/place\/([^/]+)/)
-    if (placeMatch) {
-      const place = encodeURIComponent(placeMatch[1])
-      return `https://www.google.com/maps/embed/v1/place?key=&q=${place}`
-    }
-
-    // Se contiene coordinate @lat,lng
-    const coordMatch = input.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
-    if (coordMatch) {
-      return `https://www.google.com/maps/embed/v1/view?key=&center=${coordMatch[1]},${coordMatch[2]}&zoom=${props.block.content.zoom || 15}`
-    }
-  }
-
-  // Altrimenti prova a usarlo come ricerca
-  if (input.trim()) {
-    return `https://www.google.com/maps/embed/v1/place?key=&q=${encodeURIComponent(input)}`
-  }
-
-  return ''
+  // Per qualsiasi altro formato (URL normale, coordinate, testo indirizzo)
+  // usa il formato senza API key: maps.google.com/maps?q=...&output=embed
+  const query = input.includes('google.com/maps') ? extractQueryFromMapsUrl(input) : input
+  return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&output=embed&hl=it`
 })
+
+// Estrae una query leggibile da un URL di Google Maps
+const extractQueryFromMapsUrl = (url) => {
+  // Tenta di estrarre il nome del posto
+  const placeMatch = url.match(/place\/([^/@]+)/)
+  if (placeMatch) return decodeURIComponent(placeMatch[1].replace(/\+/g, ' '))
+
+  // Tenta di estrarre le coordinate @lat,lng
+  const coordMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (coordMatch) return `${coordMatch[1]},${coordMatch[2]}`
+
+  // Tenta parametro q=
+  const qMatch = url.match(/[?&]q=([^&]+)/)
+  if (qMatch) return decodeURIComponent(qMatch[1])
+
+  return url
+}
 
 const updateContent = (field, value) => {
   const updatedBlock = {

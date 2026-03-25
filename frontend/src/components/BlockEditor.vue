@@ -7,8 +7,8 @@
       <p class="text-sm text-gray-900 font-medium">{{ blockTypeName }}</p>
     </div>
 
-    <!-- Hero Block Editor -->
-    <div v-if="block.type === 'hero'" class="space-y-5">
+    <!-- Hero / Hero Larghezza Variabile Block Editor -->
+    <div v-if="block.type === 'hero' || block.type === 'hero-wide'" class="space-y-5">
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Titolo</label>
         <input
@@ -38,8 +38,20 @@
         <input
           v-model="localBlock.content.buttonLink"
           type="text"
+          placeholder="https://... oppure #ancora"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+        <div v-if="availableAnchors.length" class="mt-1.5">
+          <select
+            @change="localBlock.content.buttonLink = $event.target.value; $event.target.selectedIndex = 0"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-gray-50 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+          >
+            <option value="">↗ Vai a una sezione della pagina...</option>
+            <option v-for="a in availableAnchors" :key="a.value" :value="a.value">
+              #{{ a.label }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <div>
@@ -56,6 +68,158 @@
           <option value="100vh">Schermo Intero (100vh)</option>
         </select>
         <p class="text-xs text-gray-500 mt-1">Altezza minima del blocco hero</p>
+      </div>
+
+      <div v-if="block.type === 'hero-wide'">
+        <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Blocco</label>
+        <select
+          v-model="localBlock.content.blockWidth"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="100%">Piena (100%)</option>
+          <option value="75%">Larga (75%)</option>
+          <option value="66%">2/3 (66%)</option>
+          <option value="50%">Metà (50%)</option>
+          <option value="33%">Stretta (33%)</option>
+          <option value="25%">Molto Stretta (25%)</option>
+        </select>
+      </div>
+
+      <!-- Posizione Contenuto -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Posizione Contenuto</h5>
+        <div class="space-y-3">
+          <!-- 3x3 position picker -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Posizione</label>
+            <div class="grid grid-cols-3 gap-1 w-28">
+              <template v-for="v in ['top','middle','bottom']" :key="v">
+                <button
+                  v-for="h in ['left','center','right']"
+                  :key="h"
+                  type="button"
+                  @click="localBlock.content.contentHorizontal = h; localBlock.content.contentVertical = v"
+                  :class="[
+                    'h-8 w-8 rounded border-2 flex items-center justify-center transition-all',
+                    localBlock.content.contentHorizontal === h && localBlock.content.contentVertical === v
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-300 hover:border-gray-400 bg-white'
+                  ]"
+                  :title="`${v} ${h}`"
+                >
+                  <svg class="w-4 h-4 text-gray-500" viewBox="0 0 16 16" fill="currentColor">
+                    <!-- Punto di ancoraggio posizione -->
+                    <rect
+                      :x="h === 'left' ? 1 : h === 'center' ? 5.5 : 10"
+                      :y="v === 'top' ? 1 : v === 'middle' ? 5.5 : 10"
+                      width="5" height="5" rx="1"
+                      :class="localBlock.content.contentHorizontal === h && localBlock.content.contentVertical === v ? 'text-primary-500' : 'text-gray-400'"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Larghezza area contenuto -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza area contenuto</label>
+            <select
+              v-model="localBlock.content.contentMaxWidth"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            >
+              <option value="100%">Piena larghezza (100%)</option>
+              <option value="75%">Larga (75%)</option>
+              <option value="66%">2/3 (66%)</option>
+              <option value="50%">Metà (50%)</option>
+              <option value="33%">Stretta (33%)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Immagine di Sfondo -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Immagine di Sfondo</h5>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">URL Immagine</label>
+            <input
+              v-model="localBlock.content.backgroundImage"
+              type="text"
+              placeholder="https://... oppure /uploads/..."
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un'immagine</label>
+            <input
+              type="file"
+              accept="image/*"
+              @change="handleHeroBgImageUpload"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+            />
+          </div>
+
+          <div v-if="localBlock.content.backgroundImage">
+            <label class="block text-xs font-medium text-gray-700 mb-2">
+              Opacità Immagine: {{ Math.round((localBlock.content.backgroundImageOpacity ?? 1) * 100) }}%
+            </label>
+            <input
+              v-model.number="localBlock.content.backgroundImageOpacity"
+              type="range"
+              min="0.05"
+              max="1"
+              step="0.05"
+              class="w-full accent-primary-500"
+            />
+          </div>
+
+          <!-- Overlay -->
+          <div v-if="localBlock.content.backgroundImage" class="border-t border-gray-100 pt-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                v-model="localBlock.content.overlayEnabled"
+                type="checkbox"
+                class="w-4 h-4 rounded accent-primary-500"
+              />
+              <span class="text-xs font-medium text-gray-700">Abilita Overlay Colorato</span>
+            </label>
+          </div>
+
+          <div v-if="localBlock.content.backgroundImage && localBlock.content.overlayEnabled" class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Colore Overlay</label>
+              <div class="flex items-center gap-3">
+                <input
+                  v-model="localBlock.content.overlayColor"
+                  type="color"
+                  class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+                />
+                <input
+                  v-model="localBlock.content.overlayColor"
+                  type="text"
+                  placeholder="#000000"
+                  class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Opacità Overlay: {{ Math.round((localBlock.content.overlayOpacity ?? 0.5) * 100) }}%
+              </label>
+              <input
+                v-model.number="localBlock.content.overlayOpacity"
+                type="range"
+                min="0.05"
+                max="0.95"
+                step="0.05"
+                class="w-full accent-primary-500"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Stile Pulsante -->
@@ -205,6 +369,46 @@
           </div>
         </div>
       </div>
+
+      <!-- Colori Testo -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Colori Testo</h5>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+            <select v-model="localBlock.content.titleSize"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+              <option value="">Predefinita</option>
+              <option value="xl">Piccolo</option>
+              <option value="2xl">Medio</option>
+              <option value="3xl">Grande</option>
+              <option value="4xl">Molto grande</option>
+              <option value="5xl">Enorme</option>
+              <option value="6xl">Gigante</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titolo</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.titleColor" type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.titleColor" type="text"
+                placeholder="#111827"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sottotitolo</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.subtitleColor" type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.subtitleColor" type="text"
+                placeholder="#374151"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Text Block Editor -->
@@ -216,6 +420,19 @@
           type="text"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Testo</label>
@@ -388,10 +605,10 @@
         <input
           v-model="localBlock.content.videoUrl"
           type="text"
-          placeholder="https://www.youtube.com/watch?v=... o https://example.com/video.mp4"
+          placeholder="https://www.youtube.com/watch?v=... oppure https://www.instagram.com/reel/..."
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
-        <p class="text-xs text-gray-500 mt-1">Supporta: YouTube, Vimeo, MP4, WebM, OGG, MOV</p>
+        <p class="text-xs text-gray-500 mt-1">Supporta: YouTube, Vimeo, Instagram Reel, MP4, WebM, OGG, MOV</p>
       </div>
 
       <div>
@@ -406,7 +623,32 @@
 
       <!-- Anteprima video -->
       <div v-if="localBlock.content.videoUrl" class="mt-2">
+        <!-- Instagram: badge + opzione solo video -->
+        <div v-if="localBlock.content.videoUrl.includes('instagram.com')" class="space-y-2">
+          <div class="w-full h-16 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm font-medium">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            Instagram Reel collegato
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" v-model="localBlock.content.instagramCleanMode" class="w-4 h-4 rounded border-gray-300 text-primary-600" />
+            <span class="text-xs text-gray-700">Solo video (nascondi UI Instagram)</span>
+          </label>
+        </div>
+        <!-- YouTube/Vimeo: badge informativo -->
+        <div
+          v-else-if="localBlock.content.videoUrl.includes('youtube.com') || localBlock.content.videoUrl.includes('youtu.be') || localBlock.content.videoUrl.includes('vimeo.com')"
+          class="w-full h-16 flex items-center justify-center gap-2 bg-gray-800 rounded-lg text-white text-sm font-medium"
+        >
+          <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+          Video collegato — anteprima disponibile nella pagina
+        </div>
+        <!-- File diretto: anteprima reale -->
         <video
+          v-else
           :src="localBlock.content.videoUrl"
           controls
           class="w-full h-48 object-cover rounded-lg border border-gray-300"
@@ -563,6 +805,45 @@
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         ></textarea>
         <p class="text-xs text-gray-500 mt-1">Testo che appare sotto il titolo del form</p>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titolo Form</label>
+        <div class="flex items-center gap-3">
+          <input v-model="localBlock.content.titleColor" type="color"
+            class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+          <input v-model="localBlock.content.titleColor" type="text"
+            placeholder="#111827"
+            class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Colore Caption</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="color"
+            v-model="localBlock.content.captionColor"
+            class="w-8 h-8 rounded border border-gray-300 cursor-pointer p-0.5"
+          />
+          <input
+            type="text"
+            v-model="localBlock.content.captionColor"
+            placeholder="#6B7280"
+            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+          />
+        </div>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Placeholder Area Messaggio</label>
@@ -819,6 +1100,360 @@
       </div>
     </div>
 
+    <!-- Form Avanzato Block Editor -->
+    <div v-else-if="block.type === 'form-avanzato'" class="space-y-5">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Titolo Form</label>
+        <input
+          v-model="localBlock.content.title"
+          type="text"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Sottotitolo/Caption</label>
+        <textarea
+          v-model="localBlock.content.caption"
+          rows="2"
+          placeholder="Testo descrittivo sotto il titolo (opzionale)"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        ></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titolo Form</label>
+        <div class="flex items-center gap-3">
+          <input v-model="localBlock.content.titleColor" type="color"
+            class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+          <input v-model="localBlock.content.titleColor" type="text"
+            placeholder="#111827"
+            class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Colore Caption</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="color"
+            v-model="localBlock.content.captionColor"
+            class="w-8 h-8 rounded border border-gray-300 cursor-pointer p-0.5"
+          />
+          <input
+            type="text"
+            v-model="localBlock.content.captionColor"
+            placeholder="#6B7280"
+            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Campo Builder -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Campi del Form</h5>
+
+        <draggable
+          v-model="localBlock.content.fields"
+          item-key="id"
+          handle=".drag-handle"
+          class="space-y-3"
+          :animation="150"
+        >
+          <template #item="{ element: field, index: fieldIndex }">
+          <div
+            class="border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-2"
+          >
+            <!-- Riga 1: Handle + Label + Elimina -->
+            <div class="flex items-center gap-2">
+              <span class="drag-handle cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0" title="Trascina per riordinare">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm8-16a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+                </svg>
+              </span>
+              <input
+                :value="field.label"
+                @input="field.label = $event.target.value; field.name = $event.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')"
+                type="text"
+                placeholder="Label campo"
+                class="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm"
+              />
+              <button
+                @click="localBlock.content.fields.splice(fieldIndex, 1)"
+                class="text-red-500 hover:text-red-700 p-1 rounded"
+                title="Elimina campo"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Riga 2: Tipo + Colonna + Obbligatorio -->
+            <div class="grid grid-cols-3 gap-2">
+              <select
+                v-model="field.type"
+                class="px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm"
+              >
+                <option value="text">Testo</option>
+                <option value="email">Email</option>
+                <option value="tel">Telefono</option>
+                <option value="select">Select</option>
+                <option value="textarea">Textarea</option>
+                <option value="date">Data</option>
+                <option value="time">Orario</option>
+              </select>
+              <select
+                v-model="field.colSpan"
+                :disabled="field.type === 'textarea'"
+                class="px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm disabled:opacity-50"
+              >
+                <option value="half">Mezza colonna</option>
+                <option value="full">Intera riga</option>
+              </select>
+              <label class="flex items-center gap-1 text-xs text-gray-700 cursor-pointer">
+                <input type="checkbox" v-model="field.required" class="w-3.5 h-3.5 rounded border-gray-300" />
+                Obbligatorio
+              </label>
+            </div>
+
+            <!-- Placeholder -->
+            <input
+              v-model="field.placeholder"
+              type="text"
+              placeholder="Placeholder (opzionale)"
+              class="w-full px-2 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm"
+            />
+
+            <!-- Colonna lead -->
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500 whitespace-nowrap">Colonna lead:</label>
+              <select
+                v-model="field.standard_field"
+                class="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-xs"
+              >
+                <option value="">Nessuna (solo metadata)</option>
+                <option value="name">Nome</option>
+                <option value="email">Email</option>
+                <option value="phone">Telefono</option>
+                <option value="message">Messaggio</option>
+              </select>
+            </div>
+
+            <!-- Opzioni Select -->
+            <div v-if="field.type === 'select'" class="space-y-1.5">
+              <p class="text-xs text-gray-500 font-medium">Opzioni del menu a tendina:</p>
+              <div
+                v-for="(opt, optIndex) in (field.options || [])"
+                :key="optIndex"
+                class="flex items-center gap-2"
+              >
+                <input
+                  :value="opt"
+                  @input="field.options[optIndex] = $event.target.value"
+                  type="text"
+                  placeholder="Opzione..."
+                  class="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm"
+                />
+                <button
+                  @click="field.options.splice(optIndex, 1)"
+                  class="text-red-400 hover:text-red-600"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <button
+                @click="if (!field.options) field.options = []; field.options.push('')"
+                class="text-xs text-primary-600 hover:text-primary-800 font-medium"
+              >
+                + Aggiungi opzione
+              </button>
+            </div>
+          </div>
+          </template>
+        </draggable>
+
+        <button
+          @click="localBlock.content.fields.push({ id: Date.now().toString(), name: 'campo_' + (localBlock.content.fields.length + 1), label: 'Nuovo Campo', type: 'text', required: false, colSpan: 'full', placeholder: '', standard_field: '' })"
+          class="mt-3 w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+        >
+          + Aggiungi campo
+        </button>
+      </div>
+
+      <!-- Pulsante -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Testo Pulsante</label>
+        <input
+          v-model="localBlock.content.buttonText"
+          type="text"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Layout Pulsante</label>
+        <select
+          v-model="localBlock.content.buttonLayout"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="full">Larghezza Completa</option>
+          <option value="centered">Centrato</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Angoli Campi</label>
+        <select
+          v-model="localBlock.content.fieldBorderRadius"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="none">Nessuno (Squadrati)</option>
+          <option value="sm">Piccoli (4px)</option>
+          <option value="md">Medi (6px)</option>
+          <option value="lg">Grandi (8px)</option>
+          <option value="xl">Extra Grandi (12px)</option>
+          <option value="full">Molto Arrotondati (16px)</option>
+        </select>
+      </div>
+
+      <!-- Stile Pulsante -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stile Pulsante</h5>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sfondo</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.buttonStyle.backgroundColor" type="color" class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.buttonStyle.backgroundColor" type="text" placeholder="#4F46E5" class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Testo</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.buttonStyle.textColor" type="color" class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.buttonStyle.textColor" type="text" placeholder="#FFFFFF" class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Testo</label>
+            <select v-model="localBlock.content.buttonStyle.fontSize" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+              <option value="12px">Piccolo (12px)</option>
+              <option value="14px">Normale (14px)</option>
+              <option value="16px">Medio (16px)</option>
+              <option value="18px">Grande (18px)</option>
+              <option value="20px">Extra Large (20px)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Padding</label>
+            <select v-model="localBlock.content.buttonStyle.padding" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+              <option value="8px 16px">Compatto (8px 16px)</option>
+              <option value="10px 24px">Piccolo (10px 24px)</option>
+              <option value="12px 32px">Medio (12px 32px)</option>
+              <option value="16px 40px">Grande (16px 40px)</option>
+              <option value="20px 48px">Extra Large (20px 48px)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Arrotondamento Angoli</label>
+            <select v-model="localBlock.content.buttonStyle.borderRadius" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+              <option value="0px">Nessuno (Rettangolare)</option>
+              <option value="4px">Leggero (4px)</option>
+              <option value="8px">Medio (8px)</option>
+              <option value="12px">Arrotondato (12px)</option>
+              <option value="16px">Molto Arrotondato (16px)</option>
+              <option value="9999px">Pillola (Completamente arrotondato)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Ombra</label>
+            <select v-model="localBlock.content.buttonStyle.shadow" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+              <option value="none">Nessuna</option>
+              <option value="sm">Piccola</option>
+              <option value="md">Media</option>
+              <option value="lg">Grande</option>
+              <option value="xl">Extra Large</option>
+            </select>
+          </div>
+          <div class="border-t border-gray-200 pt-3">
+            <h6 class="text-xs font-medium text-gray-700 mb-3">Bordo (Opzionale)</h6>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Bordo</label>
+                <select v-model="localBlock.content.buttonStyle.borderWidth" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+                  <option value="0px">Nessuno</option>
+                  <option value="1px">1px</option>
+                  <option value="2px">2px</option>
+                  <option value="3px">3px</option>
+                  <option value="4px">4px</option>
+                </select>
+              </div>
+              <div v-if="localBlock.content.buttonStyle.borderWidth !== '0px'">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Colore Bordo</label>
+                <div class="flex items-center gap-3">
+                  <input v-model="localBlock.content.buttonStyle.borderColor" type="color" class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+                  <input v-model="localBlock.content.buttonStyle.borderColor" type="text" placeholder="#000000" class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono" />
+                </div>
+              </div>
+              <div v-if="localBlock.content.buttonStyle.borderWidth !== '0px'">
+                <label class="block text-xs font-medium text-gray-700 mb-2">Stile Bordo</label>
+                <select v-model="localBlock.content.buttonStyle.borderStyle" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+                  <option value="solid">Solido</option>
+                  <option value="dashed">Tratteggiato</option>
+                  <option value="dotted">Punteggiato</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3">Privacy Policy</h5>
+        <div class="space-y-3">
+          <div class="flex items-center">
+            <input type="checkbox" v-model="localBlock.content.showPrivacy" id="showPrivacyAdv" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
+            <label for="showPrivacyAdv" class="ml-2 text-sm text-gray-700">Mostra checkbox privacy</label>
+          </div>
+          <div v-if="localBlock.content.showPrivacy !== false" class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Link Privacy Policy</label>
+              <input v-model="localBlock.content.privacyLink" type="text" placeholder="/privacy-policy o https://example.com/privacy" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Colore Testo Privacy</label>
+              <div class="flex items-center gap-3">
+                <input v-model="localBlock.content.privacyTextColor" type="color" class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+                <input v-model="localBlock.content.privacyTextColor" type="text" placeholder="#374151" class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagina di Ringraziamento -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3">Pagina di Ringraziamento</h5>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-2">URL Pagina Ringraziamento</label>
+          <input v-model="localBlock.content.thankYouUrl" type="text" placeholder="https://example.com/grazie oppure /grazie" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+          <p class="text-xs text-gray-500 mt-1">Lascia vuoto per usare la pagina di ringraziamento standard.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- CTA Block Editor -->
     <div v-else-if="block.type === 'cta'" class="space-y-5">
       <div>
@@ -828,6 +1463,19 @@
           type="text"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
       </div>
 
       <div>
@@ -849,9 +1497,20 @@
         <input
           v-model="localBlock.content.buttonLink"
           type="text"
-          placeholder="https://example.com o /pagina"
+          placeholder="https://example.com, /pagina oppure #ancora"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+        <div v-if="availableAnchors.length" class="mt-1.5">
+          <select
+            @change="localBlock.content.buttonLink = $event.target.value; $event.target.selectedIndex = 0"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-gray-50 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+          >
+            <option value="">↗ Vai a una sezione della pagina...</option>
+            <option v-for="a in availableAnchors" :key="a.value" :value="a.value">
+              #{{ a.label }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <div>
@@ -1024,6 +1683,19 @@
         />
       </div>
       <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
+      </div>
+      <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Testo</label>
         <textarea
           v-model="localBlock.content.text"
@@ -1054,13 +1726,28 @@
     <!-- Video-Info Block Editor -->
     <div v-else-if="block.type === 'video-info'" class="space-y-5">
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">URL Video</label>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Tipo Video</label>
+        <select
+          v-model="localBlock.content.videoType"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="file">File video (MP4)</option>
+          <option value="youtube">YouTube</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">
+          {{ localBlock.content.videoType === 'youtube' ? 'URL YouTube' : 'URL Video' }}
+        </label>
         <input
           v-model="localBlock.content.videoUrl"
           type="text"
-          placeholder="https://example.com/video.mp4"
+          :placeholder="localBlock.content.videoType === 'youtube' ? 'https://www.youtube.com/watch?v=...' : 'https://example.com/video.mp4'"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+        <p v-if="localBlock.content.videoType === 'youtube'" class="text-xs text-gray-500 mt-1">
+          Accetta URL del tipo: youtube.com/watch?v=... oppure youtu.be/...
+        </p>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Titolo</label>
@@ -1119,6 +1806,46 @@
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Orari e Informazioni</label>
         <RichTextEditor v-model="localBlock.content.scheduleText" />
+      </div>
+
+      <!-- Colori Testo -->
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Colori Testo</h5>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+            <select v-model="localBlock.content.titleSize"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+              <option value="">Predefinita</option>
+              <option value="xl">Piccolo</option>
+              <option value="2xl">Medio</option>
+              <option value="3xl">Grande</option>
+              <option value="4xl">Molto grande</option>
+              <option value="5xl">Enorme</option>
+              <option value="6xl">Gigante</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titolo</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.titleColor" type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.titleColor" type="text"
+                placeholder="#111827"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Sottotitolo</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.subtitleColor" type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.subtitleColor" type="text"
+                placeholder="#374151"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1354,6 +2081,19 @@
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
       </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
+      </div>
 
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Descrizione (opzionale)</label>
@@ -1363,6 +2103,28 @@
           placeholder="es: Vieni a trovarci nel nostro showroom"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Colore Titolo</label>
+        <div class="flex items-center gap-3">
+          <input v-model="localBlock.content.titleColor" type="color"
+            class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+          <input v-model="localBlock.content.titleColor" type="text"
+            placeholder="#111827"
+            class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Colore Descrizione</label>
+        <div class="flex items-center gap-3">
+          <input v-model="localBlock.content.descriptionColor" type="color"
+            class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+          <input v-model="localBlock.content.descriptionColor" type="text"
+            placeholder="#4B5563"
+            class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+        </div>
       </div>
 
       <div>
@@ -1807,17 +2569,41 @@
 
       <!-- Link Legali -->
       <div class="border-b border-gray-200 pb-4">
-        <div class="flex justify-between items-center mb-4">
-          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Link Legali
-          </h4>
-          <button
-            @click="addLegalLink"
-            class="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
-          >
-            + Aggiungi Link
-          </button>
+        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          Link Legali
+        </h4>
+
+        <!-- Toggle auto/manuale -->
+        <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Genera automaticamente</label>
+            <p class="text-xs text-gray-500 mt-0.5">Usa i dati legali per generare i link</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="localBlock.content.useAutoLinks"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+          </label>
         </div>
+
+        <!-- Info modalità automatica -->
+        <p v-if="localBlock.content.useAutoLinks" class="text-xs text-gray-500 text-center py-3 bg-blue-50 rounded-lg border border-blue-100">
+          I link vengono generati dai dati legali della pagina (sezione sotto).
+        </p>
+
+        <!-- Editor link manuali -->
+        <template v-else>
+          <div class="flex justify-end mb-3">
+            <button
+              @click="addLegalLink"
+              class="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+            >
+              + Aggiungi Link
+            </button>
+          </div>
 
         <!-- Lista link legali -->
         <div class="space-y-3">
@@ -1865,6 +2651,7 @@
             Nessun link aggiunto. Clicca "+ Aggiungi Link" per iniziare.
           </p>
         </div>
+        </template>
       </div>
 
       <!-- Testo Legale -->
@@ -2093,6 +2880,19 @@
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
       </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
+      </div>
 
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Numero Colonne</label>
@@ -2306,6 +3106,19 @@
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
       </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
+      </div>
 
       <!-- Servizi -->
       <div class="border-t border-gray-200 pt-4">
@@ -2394,6 +3207,19 @@
           placeholder="es: I Nostri Prodotti"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Dimensione Titolo</label>
+        <select v-model="localBlock.content.titleSize"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm">
+          <option value="">Predefinita</option>
+          <option value="xl">Piccolo</option>
+          <option value="2xl">Medio</option>
+          <option value="3xl">Grande</option>
+          <option value="4xl">Molto grande</option>
+          <option value="5xl">Enorme</option>
+          <option value="6xl">Gigante</option>
+        </select>
       </div>
 
       <!-- Opzioni Slider -->
@@ -2691,11 +3517,32 @@
       </div>
     </div>
 
+    <!-- Ancora sezione (disponibile per tutti i blocchi) -->
+    <div class="border-t border-gray-200 pt-4 mt-2">
+      <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Ancora Sezione</h5>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">ID ancora</label>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-400 font-mono">#</span>
+          <input
+            v-model="localBlock.content.anchor"
+            type="text"
+            placeholder="es: servizi, contatti, prezzi"
+            class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+          />
+        </div>
+        <p class="text-xs text-gray-500 mt-1">
+          I pulsanti con link <span class="font-mono">#{{ localBlock.content.anchor || 'ancora' }}</span> scorreranno fino a questa sezione
+        </p>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import draggable from 'vuedraggable'
 import RichTextEditor from './RichTextEditor.vue'
 import apiClient from '../api/axios'
 import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
@@ -2705,10 +3552,21 @@ const props = defineProps({
   block: {
     type: Object,
     required: true
+  },
+  pageBlocks: {
+    type: Array,
+    default: () => []
   }
 })
 
 const emit = defineEmits(['update'])
+
+// Blocchi con ancora disponibili per il link picker
+const availableAnchors = computed(() =>
+  (props.pageBlocks || [])
+    .filter(b => b.content?.anchor && b.id !== props.block.id)
+    .map(b => ({ label: b.content.anchor, value: '#' + b.content.anchor }))
+)
 
 // Page store per salvare i dati legali
 const pageStore = usePageStore()
@@ -2780,6 +3638,8 @@ const blockTypeNames = {
   'map': 'Mappa Google',
   'social': 'Social Media',
   'form': 'Form',
+  'form-avanzato': 'Form Avanzato',
+  'hero-wide': 'Hero Larghezza Variabile',
   'footer': 'Footer',
   'legal-footer': 'Footer Legale'
 }
@@ -2829,6 +3689,27 @@ const initBlock = (block) => {
         borderStyle: 'solid',
         shadow: 'md'
       }
+    }
+    if (clonedBlock.content.backgroundImageOpacity === undefined) {
+      clonedBlock.content.backgroundImageOpacity = 1
+    }
+    if (clonedBlock.content.overlayEnabled === undefined) {
+      clonedBlock.content.overlayEnabled = false
+    }
+    if (!clonedBlock.content.overlayColor) {
+      clonedBlock.content.overlayColor = '#000000'
+    }
+    if (clonedBlock.content.overlayOpacity === undefined) {
+      clonedBlock.content.overlayOpacity = 0.5
+    }
+    if (!clonedBlock.content.contentHorizontal) {
+      clonedBlock.content.contentHorizontal = 'center'
+    }
+    if (!clonedBlock.content.contentVertical) {
+      clonedBlock.content.contentVertical = 'middle'
+    }
+    if (!clonedBlock.content.contentMaxWidth) {
+      clonedBlock.content.contentMaxWidth = '100%'
     }
   }
 
@@ -2933,11 +3814,7 @@ const handleImageUpload = async (event) => {
     formData.append('image', file)
 
     try {
-      const response = await apiClient.post('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await apiClient.post('/upload/image', formData)
 
       if (response.data.success) {
         // Determina quale campo aggiornare in base al tipo di blocco
@@ -2951,6 +3828,28 @@ const handleImageUpload = async (event) => {
       }
     } catch (error) {
       alert('Errore durante il caricamento dell\'immagine')
+      console.error(error)
+    }
+  }
+}
+
+const handleHeroBgImageUpload = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    try {
+      const response = await apiClient.post('/upload/image', formData)
+
+      if (response.data.success) {
+        localBlock.value.content.backgroundImage = response.data.url
+      } else {
+        alert('Errore durante il caricamento dell\'immagine: ' + (response.data.error || 'Errore sconosciuto'))
+      }
+    } catch (error) {
+      const msg = error.response?.data?.error || 'Errore durante il caricamento dell\'immagine'
+      alert(msg)
       console.error(error)
     }
   }
@@ -2979,11 +3878,7 @@ const handleVideoUpload = async (event) => {
     formData.append('video', file)
 
     try {
-      const response = await apiClient.post('/upload/video', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await apiClient.post('/upload/video', formData)
 
       if (response.data.success) {
         localBlock.value.content.videoUrl = response.data.url
@@ -3005,11 +3900,7 @@ const handleMapImageUpload = async (event) => {
     formData.append('image', file)
 
     try {
-      const response = await apiClient.post('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await apiClient.post('/upload/image', formData)
 
       if (response.data.success) {
         localBlock.value.content.mapImage = response.data.url
@@ -3030,11 +3921,7 @@ const handleServiceImageUpload = async (event, serviceIndex) => {
     formData.append('image', file)
 
     try {
-      const response = await apiClient.post('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await apiClient.post('/upload/image', formData)
 
       if (response.data.success) {
         localBlock.value.content.services[serviceIndex].image = response.data.url
@@ -3111,11 +3998,7 @@ const handleSlideImageUpload = async (event, slideIndex) => {
     formData.append('image', file)
 
     try {
-      const response = await apiClient.post('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await apiClient.post('/upload/image', formData)
 
       if (response.data.success) {
         localBlock.value.content.slides[slideIndex].image = response.data.url

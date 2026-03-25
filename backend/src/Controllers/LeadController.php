@@ -42,6 +42,102 @@ class LeadController
         return $response->withHeader('Content-Type', 'application/json');
     }
 
+    public function addNote(Request $request, Response $response, $args)
+    {
+        $leadId = $args['id'];
+        $user = $request->getAttribute('user');
+
+        if (!$user) {
+            $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+
+        $data = json_decode($request->getBody()->getContents(), true);
+        $noteText = trim($data['note'] ?? '');
+
+        if (empty($noteText)) {
+            $response->getBody()->write(json_encode(['error' => 'Note text is required']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        $lead = Lead::with('page')->find($leadId);
+        if (!$lead) {
+            $response->getBody()->write(json_encode(['error' => 'Lead not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Check permissions
+        if ($user->role !== 'admin' && $user->company_id) {
+            if (!$lead->page || $lead->page->company_id !== $user->company_id) {
+                $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+            }
+        }
+
+        $metadata = $lead->metadata ?? [];
+        $notes = $metadata['_notes'] ?? [];
+        $notes[] = [
+            'text' => $noteText,
+            'timestamp' => date('c'),
+            'author' => $user->name ?? $user->email
+        ];
+        $metadata['_notes'] = $notes;
+
+        $lead->metadata = $metadata;
+        $lead->save();
+
+        $response->getBody()->write(json_encode(['message' => 'Note added', 'metadata' => $metadata]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    public function updateAppointment(Request $request, Response $response, $args)
+    {
+        $leadId = $args['id'];
+        $user = $request->getAttribute('user');
+
+        if (!$user) {
+            $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+
+        $lead = Lead::with('page')->find($leadId);
+        if (!$lead) {
+            $response->getBody()->write(json_encode(['error' => 'Lead not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        if ($user->role !== 'admin' && $user->company_id) {
+            if (!$lead->page || $lead->page->company_id !== $user->company_id) {
+                $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+            }
+        }
+
+        $data = json_decode($request->getBody()->getContents(), true);
+        $date = trim($data['date'] ?? '');
+        $time = trim($data['time'] ?? '');
+
+        if (empty($date)) {
+            $response->getBody()->write(json_encode(['error' => 'La data è obbligatoria']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        $metadata = $lead->metadata ?? [];
+        $metadata['_appointment'] = [
+            'date' => $date,
+            'time' => $time,
+            'notes' => trim($data['notes'] ?? ''),
+            'set_by' => $user->name ?? $user->email,
+            'set_at' => date('c')
+        ];
+
+        $lead->metadata = $metadata;
+        $lead->save();
+
+        $response->getBody()->write(json_encode(['message' => 'Appuntamento salvato', 'metadata' => $metadata]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
     public function delete(Request $request, Response $response, $args)
     {
         $leadId = $args['id'];
@@ -113,6 +209,17 @@ class LeadController
             }
         }
 
+        // Campi standard mappati a colonne dedicate
+        $standardKeys = ['page_id', 'name', 'email', 'phone', 'message', 'recaptcha_token'];
+
+        // Tutti i campi extra (campi custom del form avanzato) vanno in metadata
+        $metadata = [];
+        foreach ($data as $key => $value) {
+            if (!in_array($key, $standardKeys)) {
+                $metadata[$key] = $value;
+            }
+        }
+
         // Create lead
         $lead = Lead::create([
             'page_id' => $data['page_id'] ?? null,
@@ -120,7 +227,7 @@ class LeadController
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'message' => $data['message'] ?? null,
-            'metadata' => $data['metadata'] ?? []
+            'metadata' => $metadata
         ]);
 
         // Invia notifica email (non bloccante)
@@ -146,6 +253,9 @@ class LeadController
                     } else {
                         error_log("LeadController: Email notifica lead #{$lead->id} FALLITA (controlla log EmailService)");
                     }
+
+                    // Email di cortesia al cliente
+                    $emailService->sendLeadConfirmation($lead, $page);
                 }
             }
         } catch (\Exception $e) {

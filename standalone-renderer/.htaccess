@@ -12,7 +12,7 @@
     # Se i file sono in una sottodirectory (es. edysma.net/ELPB/standalone-renderer/):
     # RewriteBase /ELPB/standalone-renderer/
 
-    RewriteBase /
+    RewriteBase /landingpages/
 
     # Se il file o directory esiste, servilo direttamente
     RewriteCond %{REQUEST_FILENAME} -f [OR]

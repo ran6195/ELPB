@@ -52,12 +52,17 @@ const props = defineProps({
   }
 })
 
-// Default content - genera link dinamici basati sullo slug della pagina e presenza dati legali
+// Link legali: manuali o generati automaticamente
 const defaultLegalLinks = computed(() => {
+  // Modalità manuale: usa i link configurati dall'utente
+  if (props.block.content.useAutoLinks === false) {
+    return props.block.content.legalLinks || []
+  }
+
+  // Modalità automatica (default): genera link dallo slug e dati legali
   const slug = props.page?.slug || ''
   const hasLegalInfo = props.page?.legal_info && Object.keys(props.page.legal_info).length > 0
 
-  // Se non c'è slug o non ci sono dati legali, usa link di placeholder
   if (!slug || !hasLegalInfo) {
     return [
       { text: 'Privacy', url: '#', isCookiePreference: false },
@@ -67,12 +72,8 @@ const defaultLegalLinks = computed(() => {
     ]
   }
 
-  // Usa URL del backend per le pagine legali
-  // In produzione: https://edysma.net/ELPB/backend/public/legal/{slug}/{type}
-  // In sviluppo: http://localhost:8000/legal/{slug}/{type}
-  // Nota: Sui renderer standalone e Joomla usano path relativi locali
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-  const backendUrl = apiUrl.replace(/\/api$/, '') // Rimuove /api dalla fine
+  const backendUrl = apiUrl.replace(/\/api$/, '')
 
   return [
     { text: 'Privacy', url: `${backendUrl}/legal/${slug}/privacy`, isCookiePreference: false },

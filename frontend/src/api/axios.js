@@ -22,6 +22,12 @@ apiClient.interceptors.request.use(
       console.log('[Axios] Nessun token trovato in localStorage')
     }
 
+    // Per FormData (upload file) rimuovi il Content-Type fisso
+    // così il browser imposta automaticamente multipart/form-data con boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+
     console.log('[Axios] Richiesta:', config.method.toUpperCase(), config.url)
 
     return config

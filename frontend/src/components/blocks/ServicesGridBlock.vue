@@ -7,6 +7,7 @@
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
         class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+        :style="titleFontSize ? { fontSize: titleFontSize } : {}"
       >
         {{ block.content.title }}
       </h2>
@@ -86,6 +87,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
+const titleFontSize = computed(() => titleSizeMap[props.block.content.titleSize] || null)
 
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}

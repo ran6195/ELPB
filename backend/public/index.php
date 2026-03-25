@@ -100,6 +100,8 @@ $app->post('/api/upload/video', '\App\Controllers\UploadController:uploadVideo')
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);
 $app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(AuthMiddleware::class);
+$app->post('/api/leads/{id}/notes', '\App\Controllers\LeadController:addNote')->add(AuthMiddleware::class);
+$app->put('/api/leads/{id}/appointment', '\App\Controllers\LeadController:updateAppointment')->add(AuthMiddleware::class);
 
 // ===== PUBLIC ROUTES (accessibili senza auth) =====
 // Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti

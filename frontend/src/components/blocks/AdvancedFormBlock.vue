@@ -1,8 +1,8 @@
 <template>
   <div class="form-block">
     <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
-      <h2 class="text-3xl font-bold mb-2 text-center"
-        :style="formTitleStyles"
+      <h2 v-if="block.content.title" class="text-3xl font-bold mb-2 text-center"
+        :style="block.content.titleColor ? { color: block.content.titleColor } : {}"
       >
         {{ block.content.title }}
       </h2>
@@ -16,38 +16,102 @@
       </p>
 
       <form @submit.prevent="submitForm" class="space-y-4">
-        <!-- Campi input su 2 colonne -->
+        <!-- Griglia 2 colonne per i campi -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div
-            v-for="field in inputFields"
-            :key="field.name"
-            class="form-field"
-          >
-            <input
-              :id="field.name"
-              :type="field.type"
-              v-model="formData[field.name]"
-              :required="field.required"
-              :placeholder="field.label + (field.required ? ' *' : '')"
-              :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
-            />
-          </div>
-        </div>
+          <template v-for="field in block.content.fields" :key="field.id">
+            <!-- Textarea occupa sempre tutta la larghezza -->
+            <div
+              v-if="field.type === 'textarea'"
+              class="lg:col-span-2"
+            >
+              <textarea
+                :name="field.name"
+                v-model="formData[field.name]"
+                :required="field.required"
+                :placeholder="field.placeholder || (field.label + (field.required ? ' *' : ''))"
+                rows="4"
+                :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
+                style="color: #111827"
+              ></textarea>
+            </div>
 
-        <!-- Campi textarea a tutta larghezza -->
-        <div
-          v-for="field in textareaFields"
-          :key="field.name"
-          class="form-field"
-        >
-          <textarea
-            :id="field.name"
-            v-model="formData[field.name]"
-            :required="field.required"
-            :placeholder="block.content.textareaPlaceholder || (field.label + (field.required ? ' *' : ''))"
-            rows="4"
-            :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
-          ></textarea>
+            <!-- Select -->
+            <div
+              v-else-if="field.type === 'select'"
+              :class="field.colSpan === 'full' ? 'lg:col-span-2' : ''"
+            >
+              <select
+                :name="field.name"
+                v-model="formData[field.name]"
+                :required="field.required"
+                :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
+                style="color: #111827"
+              >
+                <option value="" disabled>{{ field.placeholder || field.label }}{{ field.required ? ' *' : '' }}</option>
+                <option
+                  v-for="opt in (field.options || [])"
+                  :key="opt"
+                  :value="opt"
+                >{{ opt }}</option>
+              </select>
+            </div>
+
+            <!-- Date: mostra label sopra il campo -->
+            <div
+              v-else-if="field.type === 'date'"
+              :class="field.colSpan === 'full' ? 'lg:col-span-2' : ''"
+            >
+              <label class="block text-sm mb-1 opacity-80">
+                {{ field.placeholder || field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span>
+              </label>
+              <input
+                :name="field.name"
+                type="date"
+                v-model="formData[field.name]"
+                :required="field.required"
+                :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
+                style="color: #111827"
+              />
+            </div>
+
+            <!-- Time: select con sole ore -->
+            <div
+              v-else-if="field.type === 'time'"
+              :class="field.colSpan === 'full' ? 'lg:col-span-2' : ''"
+            >
+              <label class="block text-sm mb-1 opacity-80">
+                {{ field.placeholder || field.label }}<span v-if="field.required" class="text-red-500 ml-0.5">*</span>
+              </label>
+              <select
+                :name="field.name"
+                v-model="formData[field.name]"
+                :required="field.required"
+                :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
+                style="color: #111827"
+              >
+                <option value="" disabled>-- Seleziona ora --</option>
+                <option v-for="h in 24" :key="h - 1" :value="String(h - 1).padStart(2, '0') + ':00'">
+                  {{ String(h - 1).padStart(2, '0') }}:00
+                </option>
+              </select>
+            </div>
+
+            <!-- Input (text, email, tel) -->
+            <div
+              v-else
+              :class="field.colSpan === 'full' ? 'lg:col-span-2' : ''"
+            >
+              <input
+                :name="field.name"
+                :type="field.type"
+                v-model="formData[field.name]"
+                :required="field.required"
+                :placeholder="field.placeholder || (field.label + (field.required ? ' *' : ''))"
+                :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
+                style="color: #111827"
+              />
+            </div>
+          </template>
         </div>
 
         <!-- Privacy Checkbox -->
@@ -60,14 +124,12 @@
               class="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
             <span class="text-sm" :style="{ color: block.content.privacyTextColor || '#374151' }">
-              Accetto la
+              Do il consenso alla
               <a
                 :href="block.content.privacyLink || '#'"
                 target="_blank"
                 class="hover:underline"
-              >
-                privacy policy e il trattamento dei dati
-              </a>
+              >Privacy</a>
               <span class="text-red-500">*</span>
             </span>
           </label>
@@ -134,15 +196,6 @@ const props = defineProps({
 const pageStore = usePageStore()
 const router = useRouter()
 
-const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
-const formTitleStyles = computed(() => {
-  const s = {}
-  if (props.block.content.titleColor) s.color = props.block.content.titleColor
-  const fs = titleSizeMap[props.block.content.titleSize]
-  if (fs) s.fontSize = fs
-  return s
-})
-
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}
   return {
@@ -187,7 +240,6 @@ const buttonStyles = computed(() => {
   }
 })
 
-// Border radius per i campi
 const fieldBorderRadiusClass = computed(() => {
   const radiusMap = {
     'none': '',
@@ -201,15 +253,6 @@ const fieldBorderRadiusClass = computed(() => {
   return radiusMap[radius] || 'rounded-lg'
 })
 
-// Separa campi input (text, email, tel, etc.) dai textarea
-const inputFields = computed(() => {
-  return (props.block.content.fields || []).filter(field => field.type !== 'textarea')
-})
-
-const textareaFields = computed(() => {
-  return (props.block.content.fields || []).filter(field => field.type === 'textarea')
-})
-
 const formData = reactive({})
 const submitting = ref(false)
 const successMessage = ref('')
@@ -221,7 +264,6 @@ const recaptchaElement = ref(null)
 let recaptchaWidgetId = null
 
 const recaptchaSiteKey = computed(() => {
-  // Usa le chiavi da recaptcha_settings se reCAPTCHA è abilitato
   if (props.page?.recaptcha_settings?.enabled) {
     return props.page.recaptcha_settings.site_key || ''
   }
@@ -238,10 +280,10 @@ const canSubmit = computed(() => {
   return !submitting.value
 })
 
-// Initialize form data
 watch(
   () => props.block.content.fields,
   (fields) => {
+    if (!fields) return
     fields.forEach(field => {
       if (!(field.name in formData)) {
         formData[field.name] = ''
@@ -251,14 +293,12 @@ watch(
   { immediate: true }
 )
 
-// Load reCAPTCHA script
 const loadRecaptcha = () => {
   return new Promise((resolve, reject) => {
     if (window.grecaptcha) {
       resolve()
       return
     }
-
     const script = document.createElement('script')
     script.src = 'https://www.google.com/recaptcha/api.js?render=explicit'
     script.async = true
@@ -269,18 +309,13 @@ const loadRecaptcha = () => {
   })
 }
 
-// Initialize reCAPTCHA
 const initRecaptcha = async () => {
   if (!recaptchaSiteKey.value) return
-
   try {
     await loadRecaptcha()
-
-    // Wait for grecaptcha to be ready
     const checkReady = setInterval(() => {
       if (window.grecaptcha && window.grecaptcha.render) {
         clearInterval(checkReady)
-
         if (recaptchaElement.value) {
           recaptchaWidgetId = window.grecaptcha.render(recaptchaElement.value, {
             sitekey: recaptchaSiteKey.value,
@@ -300,8 +335,6 @@ const initRecaptcha = async () => {
         }
       }
     }, 100)
-
-    // Timeout after 5 seconds
     setTimeout(() => clearInterval(checkReady), 5000)
   } catch (error) {
     console.error('Error loading reCAPTCHA:', error)
@@ -322,7 +355,6 @@ const submitForm = async () => {
     return
   }
 
-  // Validate reCAPTCHA
   if (recaptchaSiteKey.value && !recaptchaToken.value) {
     recaptchaError.value = 'Per favore completa il reCAPTCHA'
     return
@@ -333,19 +365,25 @@ const submitForm = async () => {
   errorMessage.value = ''
 
   try {
+    // Mappa i campi con standard_field alle colonne dedicate del lead
+    const standardData = {}
+    ;(props.block.content.fields || []).forEach(field => {
+      if (field.standard_field && field.standard_field !== '' && field.name in formData) {
+        standardData[field.standard_field] = formData[field.name]
+      }
+    })
+
     await pageStore.submitLead({
       page_id: pageStore.currentPage?.id,
       privacy_accepted: privacyAccepted.value,
       recaptcha_token: recaptchaToken.value,
-      ...formData
+      ...formData,      // campi raw → metadata per i campi non standard
+      ...standardData   // colonne dedicate (name, phone, message, email)
     })
 
-    // Reindirizza a pagina di ringraziamento
     if (props.block.content.thankYouUrl && props.block.content.thankYouUrl.trim() !== '') {
-      // URL personalizzato configurato
       window.location.href = props.block.content.thankYouUrl
     } else {
-      // Usa la pagina di ringraziamento di default
       router.push('/thank-you')
     }
   } catch (error) {
@@ -361,7 +399,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  // Cleanup reCAPTCHA if needed
   if (recaptchaWidgetId !== null && window.grecaptcha) {
     try {
       window.grecaptcha.reset(recaptchaWidgetId)

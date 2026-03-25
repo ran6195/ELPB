@@ -152,6 +152,16 @@ export const usePageStore = defineStore('page', {
       }
     },
 
+    async addLeadNote(leadId, note) {
+      const response = await apiClient.post(`/leads/${leadId}/notes`, { note })
+      return response.data
+    },
+
+    async updateLeadAppointment(leadId, appointment) {
+      const response = await apiClient.put(`/leads/${leadId}/appointment`, appointment)
+      return response.data
+    },
+
     async deleteLead(leadId) {
       this.loading = true
       this.error = null

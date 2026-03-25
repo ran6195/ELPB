@@ -6,7 +6,7 @@
         v-if="block.content.title"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
-        :style="{ color: block.content.titleColor || blockStyles.color }"
+        :style="featuresSectionTitleStyles"
         class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
       >
         {{ block.content.title }}
@@ -86,6 +86,16 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
+const featuresSectionTitleStyles = computed(() => {
+  const s = {}
+  const effectiveColor = props.block.content.titleColor || (props.block.styles || {}).textColor
+  if (effectiveColor) s.color = effectiveColor
+  const fs = titleSizeMap[props.block.content.titleSize]
+  if (fs) s.fontSize = fs
+  return s
+})
 
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}

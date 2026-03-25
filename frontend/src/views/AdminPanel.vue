@@ -385,11 +385,33 @@
 
       <!-- TAB: LEADS -->
       <div v-if="activeTab === 'leads'" class="bg-white rounded-lg shadow">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-medium text-gray-900">Gestione Leads</h2>
-          <p class="text-sm text-gray-500 mt-1">Visualizza e gestisci i contatti acquisiti dai form</p>
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-medium text-gray-900">Gestione Leads</h2>
+            <p class="text-sm text-gray-500 mt-1">Visualizza e gestisci i contatti acquisiti dai form</p>
+          </div>
+          <div class="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-medium">
+            <button
+              @click="leadsView = 'lista'"
+              :class="leadsView === 'lista' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+              class="px-4 py-2 transition-colors"
+            >Lista</button>
+            <button
+              @click="leadsView = 'calendario'"
+              :class="leadsView === 'calendario' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+              class="px-4 py-2 border-l border-gray-300 transition-colors"
+            >Calendario</button>
+          </div>
         </div>
         <div class="p-6">
+          <!-- Vista Calendario -->
+          <LeadsCalendar
+            v-if="leadsView === 'calendario'"
+            :leads="leads"
+            @show-lead="showLeadDetails"
+          />
+
+          <template v-if="leadsView === 'lista'">
           <div v-if="loading" class="text-center py-8">
             <p class="text-gray-500">Caricamento...</p>
           </div>
@@ -397,15 +419,70 @@
             <p class="text-gray-500">Nessun lead presente</p>
           </div>
           <div v-else class="overflow-x-auto">
-            <div class="mb-4 space-y-2">
-              <div class="flex justify-between items-center">
-                <p class="text-sm text-gray-600">Totale: <span class="font-semibold">{{ leads.length }}</span> leads</p>
+            <div class="mb-4 space-y-3">
+              <!-- Riga 1: search + export + contatore -->
+              <div class="flex items-center gap-3">
+                <div class="relative flex-1 max-w-sm">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  <input
+                    v-model="filterText"
+                    type="text"
+                    placeholder="Cerca per nome, email, telefono..."
+                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <span class="text-sm text-gray-600 whitespace-nowrap">
+                  <span v-if="hasActiveFilters">{{ filteredLeads.length }} di </span>{{ leads.length }} leads
+                </span>
+                <button
+                  v-if="hasActiveFilters"
+                  @click="resetFilters"
+                  class="text-sm text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+                >Azzera filtri</button>
+                <div class="flex-1"></div>
                 <button
                   @click="exportLeads"
-                  class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   Esporta CSV
                 </button>
+              </div>
+              <!-- Riga 2: filtri colonna -->
+              <div class="flex items-center gap-3 flex-wrap">
+                <select
+                  v-model="filterPage"
+                  class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Tutte le pagine</option>
+                  <option v-for="p in availablePages" :key="p.id" :value="p.id">{{ p.title }}</option>
+                </select>
+                <select
+                  v-model="filterStatus"
+                  class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Tutti gli stati</option>
+                  <option value="published">Pubblicata</option>
+                  <option value="unpublished">Non pubblicata</option>
+                </select>
+                <select
+                  v-model="filterAppointment"
+                  class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Tutti i lead</option>
+                  <option value="with">Con appuntamento</option>
+                  <option value="without">Senza appuntamento</option>
+                </select>
+                <select
+                  v-model="leadsPerPage"
+                  class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option :value="10">10 per pagina</option>
+                  <option :value="20">20 per pagina</option>
+                  <option :value="50">50 per pagina</option>
+                  <option :value="100">100 per pagina</option>
+                </select>
               </div>
               <p class="text-xs text-gray-500 italic">
                 ℹ️ L'accettazione della privacy policy è gestita lato client prima dell'invio del form
@@ -424,12 +501,25 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="lead in leads" :key="lead.id" class="hover:bg-gray-50">
+                <tr v-for="lead in paginatedLeads" :key="lead.id" class="hover:bg-gray-50">
                   <td class="px-4 py-4 text-sm text-gray-500">
                     {{ formatDate(lead.created_at) }}
                   </td>
                   <td class="px-4 py-4 text-sm font-medium text-gray-900">
-                    {{ lead.name || '-' }}
+                    <div class="flex items-center gap-2">
+                      <span>{{ lead.name || '-' }}</span>
+                      <span
+                        v-if="lead.metadata?._appointment?.date"
+                        class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-medium px-1.5 py-0.5 rounded-full"
+                        :title="`Appuntamento: ${lead.metadata._appointment.date}${lead.metadata._appointment.time ? ' ' + lead.metadata._appointment.time : ''}`"
+                      >
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {{ lead.metadata._appointment.date }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-4 py-4 text-sm text-gray-500">
                     <a :href="`mailto:${lead.email}`" class="text-blue-600 hover:text-blue-800 break-words">
@@ -449,12 +539,12 @@
                   <td class="px-4 py-4 text-sm">
                     <span
                       :class="{
-                        'bg-green-100 text-green-700': lead.page_published,
-                        'bg-gray-100 text-gray-700': !lead.page_published
+                        'bg-green-100 text-green-700': lead.page?.is_published,
+                        'bg-gray-100 text-gray-700': !lead.page?.is_published
                       }"
                       class="px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap inline-block"
                     >
-                      {{ lead.page_published ? 'Pubblicata' : 'Non pubblicata' }}
+                      {{ lead.page?.is_published ? 'Pubblicata' : 'Non pubblicata' }}
                     </span>
                   </td>
                   <td class="px-4 py-4 text-right text-sm font-medium space-x-2">
@@ -481,7 +571,54 @@
                 </tr>
               </tbody>
             </table>
+            <!-- Paginazione -->
+            <div v-if="totalPages > 1" class="mt-4 flex items-center justify-between">
+              <p class="text-sm text-gray-500">
+                Pagina {{ currentPage }} di {{ totalPages }}
+              </p>
+              <div class="flex items-center gap-1">
+                <button
+                  @click="currentPage = 1"
+                  :disabled="currentPage === 1"
+                  class="px-2 py-1.5 rounded-md text-sm border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                  title="Prima pagina"
+                >«</button>
+                <button
+                  @click="currentPage--"
+                  :disabled="currentPage === 1"
+                  class="px-3 py-1.5 rounded-md text-sm border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                >‹</button>
+                <template v-for="p in totalPages" :key="p">
+                  <button
+                    v-if="p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2"
+                    @click="currentPage = p"
+                    :class="[
+                      'px-3 py-1.5 rounded-md text-sm border transition-colors',
+                      p === currentPage
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-300 hover:bg-gray-50'
+                    ]"
+                  >{{ p }}</button>
+                  <span
+                    v-else-if="p === currentPage - 3 || p === currentPage + 3"
+                    class="px-1 text-gray-400"
+                  >…</span>
+                </template>
+                <button
+                  @click="currentPage++"
+                  :disabled="currentPage === totalPages"
+                  class="px-3 py-1.5 rounded-md text-sm border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                >›</button>
+                <button
+                  @click="currentPage = totalPages"
+                  :disabled="currentPage === totalPages"
+                  class="px-2 py-1.5 rounded-md text-sm border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                  title="Ultima pagina"
+                >»</button>
+              </div>
+            </div>
           </div>
+          </template>
         </div>
       </div>
 
@@ -539,22 +676,149 @@
               </div>
               <div>
                 <label class="text-sm font-medium text-gray-500">Stato Pagina</label>
-                <p class="text-gray-900">{{ selectedLead.page_published ? 'Pubblicata' : 'Non pubblicata' }}</p>
+                <p class="text-gray-900">{{ selectedLead.page?.is_published ? 'Pubblicata' : 'Non pubblicata' }}</p>
               </div>
             </div>
             <div v-if="selectedLead.message">
               <label class="text-sm font-medium text-gray-500">Messaggio</label>
               <p class="text-gray-900 mt-1 p-3 bg-gray-50 rounded-md">{{ selectedLead.message }}</p>
             </div>
-            <div v-if="selectedLead.metadata && Object.keys(selectedLead.metadata).length > 0">
+            <div v-if="selectedLead.metadata && Object.keys(selectedLead.metadata).filter(k => k !== '_notes' && k !== '_appointment').length > 0">
               <label class="text-sm font-medium text-gray-500">Dati Extra</label>
               <div class="mt-1 p-3 bg-gray-50 rounded-md space-y-2">
                 <div v-for="(value, key) in selectedLead.metadata" :key="key" class="flex justify-between">
-                  <span class="text-gray-600 font-medium">{{ key }}:</span>
-                  <span class="text-gray-900">{{ value }}</span>
+                  <template v-if="key !== '_notes' && key !== '_appointment'">
+                    <span class="text-gray-600 font-medium">{{ key }}:</span>
+                    <span class="text-gray-900">{{ value }}</span>
+                  </template>
                 </div>
               </div>
             </div>
+          </div>
+          <!-- Appuntamento -->
+          <div class="px-6 pb-4 space-y-3 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium text-gray-500">Appuntamento</label>
+              <button
+                v-if="selectedLead.metadata?._appointment && !editingAppointment"
+                @click="editingAppointment = true"
+                class="text-xs text-primary-600 hover:text-primary-800 font-medium"
+              >Modifica</button>
+            </div>
+
+            <!-- Appuntamento esistente (sola lettura) -->
+            <div
+              v-if="selectedLead.metadata?._appointment && !editingAppointment"
+              class="p-3 bg-blue-50 border border-blue-100 rounded-md space-y-1"
+            >
+              <p class="text-sm font-medium text-blue-900">
+                📅 {{ selectedLead.metadata._appointment.date }}
+                <span v-if="selectedLead.metadata._appointment.time"> — 🕐 {{ selectedLead.metadata._appointment.time }}</span>
+              </p>
+              <p v-if="selectedLead.metadata._appointment.notes" class="text-sm text-blue-700">{{ selectedLead.metadata._appointment.notes }}</p>
+              <p class="text-xs text-gray-400">Impostato da {{ selectedLead.metadata._appointment.set_by }}</p>
+            </div>
+
+            <!-- Form aggiungi/modifica appuntamento -->
+            <div v-if="!selectedLead.metadata?._appointment || editingAppointment" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Data *</label>
+                  <input
+                    v-model="appointmentForm.date"
+                    type="date"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Ora</label>
+                  <input
+                    v-model="appointmentForm.time"
+                    type="time"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                  />
+                </div>
+              </div>
+              <input
+                v-model="appointmentForm.notes"
+                type="text"
+                placeholder="Note appuntamento (opzionale)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+              />
+              <div class="flex gap-2">
+                <button
+                  @click="saveAppointment"
+                  :disabled="!appointmentForm.date || savingAppointment"
+                  class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {{ savingAppointment ? 'Salvataggio...' : (selectedLead.metadata?._appointment ? 'Aggiorna' : 'Salva appuntamento') }}
+                </button>
+                <button
+                  v-if="editingAppointment"
+                  @click="editingAppointment = false"
+                  class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium"
+                >Annulla</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div class="px-6 pb-4 space-y-3">
+            <label class="text-sm font-medium text-gray-500">Note</label>
+            <div v-if="selectedLead.metadata?._notes?.length" class="space-y-2">
+              <div
+                v-for="note in selectedLead.metadata._notes"
+                :key="note.timestamp"
+                class="p-3 bg-amber-50 border border-amber-100 rounded-md"
+              >
+                <p class="text-sm text-gray-800 whitespace-pre-wrap">{{ note.text }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ formatDate(note.timestamp) }} — {{ note.author }}</p>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <textarea
+                v-model="newNoteText"
+                rows="2"
+                placeholder="Aggiungi una nota..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none resize-none"
+              ></textarea>
+              <button
+                @click="saveNote"
+                :disabled="!newNoteText.trim() || savingNote"
+                class="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg v-if="!savingNote" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ savingNote ? 'Salvataggio...' : 'Aggiungi nota' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
+            <a
+              :href="`mailto:${selectedLead.email}`"
+              class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              Invia Email
+            </a>
+            <a
+              v-if="selectedLead.phone"
+              :href="`tel:${selectedLead.phone}`"
+              class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
+              Telefona
+            </a>
           </div>
         </div>
       </div>
@@ -563,23 +827,124 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { usePageStore } from '../stores/pageStore'
+import LeadsCalendar from '../components/LeadsCalendar.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const pageStore = usePageStore()
 
 const activeTab = ref('users')
+const leadsView = ref('lista')
 const loading = ref(false)
 const users = ref([])
 const companies = ref([])
 const leads = ref([])
 const editingUser = ref(null)
 const selectedLead = ref(null)
+const newNoteText = ref('')
+const savingNote = ref(false)
+const editingAppointment = ref(false)
+const savingAppointment = ref(false)
+const appointmentForm = ref({ date: '', time: '', notes: '' })
+
+const saveAppointment = async () => {
+  if (!appointmentForm.value.date || !selectedLead.value) return
+  savingAppointment.value = true
+  try {
+    const result = await pageStore.updateLeadAppointment(selectedLead.value.id, appointmentForm.value)
+    selectedLead.value.metadata = result.metadata
+    editingAppointment.value = false
+    appointmentForm.value = { date: '', time: '', notes: '' }
+  } catch (e) {
+    console.error('Errore salvataggio appuntamento:', e)
+  } finally {
+    savingAppointment.value = false
+  }
+}
+
+const saveNote = async () => {
+  if (!newNoteText.value.trim() || !selectedLead.value) return
+  savingNote.value = true
+  try {
+    const result = await pageStore.addLeadNote(selectedLead.value.id, newNoteText.value.trim())
+    selectedLead.value.metadata = result.metadata
+    newNoteText.value = ''
+  } catch (e) {
+    console.error('Errore salvataggio nota:', e)
+  } finally {
+    savingNote.value = false
+  }
+}
 const successMessage = ref('')
+
+// Filtri leads
+const filterText = ref('')
+const filterPage = ref('')
+const filterStatus = ref('')
+const filterAppointment = ref('')
+const leadsPerPage = ref(20)
+const currentPage = ref(1)
+
+const availablePages = computed(() => {
+  const pages = {}
+  leads.value.forEach(l => {
+    if (l.page) pages[l.page.id] = l.page.title
+  })
+  return Object.entries(pages).map(([id, title]) => ({ id, title }))
+})
+
+const hasActiveFilters = computed(() =>
+  filterText.value || filterPage.value || filterStatus.value || filterAppointment.value
+)
+
+const filteredLeads = computed(() => {
+  let result = leads.value
+  if (filterText.value) {
+    const q = filterText.value.toLowerCase()
+    result = result.filter(l =>
+      (l.name || '').toLowerCase().includes(q) ||
+      (l.email || '').toLowerCase().includes(q) ||
+      (l.phone || '').toLowerCase().includes(q)
+    )
+  }
+  if (filterPage.value) {
+    result = result.filter(l => l.page?.id == filterPage.value)
+  }
+  if (filterStatus.value === 'published') {
+    result = result.filter(l => l.page?.is_published)
+  } else if (filterStatus.value === 'unpublished') {
+    result = result.filter(l => !l.page?.is_published)
+  }
+  if (filterAppointment.value === 'with') {
+    result = result.filter(l => l.metadata?._appointment?.date)
+  } else if (filterAppointment.value === 'without') {
+    result = result.filter(l => !l.metadata?._appointment?.date)
+  }
+  return result
+})
+
+const totalPages = computed(() => Math.ceil(filteredLeads.value.length / leadsPerPage.value))
+
+const paginatedLeads = computed(() => {
+  const start = (currentPage.value - 1) * leadsPerPage.value
+  return filteredLeads.value.slice(start, start + leadsPerPage.value)
+})
+
+const resetFilters = () => {
+  filterText.value = ''
+  filterPage.value = ''
+  filterStatus.value = ''
+  filterAppointment.value = ''
+  currentPage.value = 1
+}
+
+watch([filterText, filterPage, filterStatus, filterAppointment], () => {
+  currentPage.value = 1
+})
 
 // Watch activeTab per ricaricare i leads quando si clicca sul tab
 watch(activeTab, async (newTab) => {
@@ -741,6 +1106,13 @@ const handleDeleteLead = async (leadId) => {
 
 const showLeadDetails = (lead) => {
   selectedLead.value = lead
+  editingAppointment.value = false
+  const existing = lead.metadata?._appointment
+  appointmentForm.value = {
+    date: existing?.date || '',
+    time: existing?.time || '',
+    notes: existing?.notes || ''
+  }
 }
 
 const formatDate = (dateString) => {
@@ -755,26 +1127,45 @@ const formatDate = (dateString) => {
 }
 
 const exportLeads = () => {
-  // Prepare CSV data
-  const headers = ['Data', 'Nome', 'Email', 'Telefono', 'Messaggio', 'Pagina', 'Stato Pagina']
-  const rows = leads.value.map(lead => [
-    formatDate(lead.created_at),
-    lead.name || '',
-    lead.email,
-    lead.phone || '',
-    lead.message || '',
-    lead.page?.title || '',
-    lead.page_published ? 'Pubblicata' : 'Non pubblicata'
-  ])
+  const EXCLUDE_META_KEYS = ['privacy_accepted', 'recaptcha_token', '_notes']
 
-  // Convert to CSV
+  // Raccogli tutte le chiavi metadata uniche tra i lead filtrati
+  const metaKeys = []
+  filteredLeads.value.forEach(lead => {
+    if (lead.metadata && typeof lead.metadata === 'object') {
+      Object.keys(lead.metadata).forEach(key => {
+        if (!EXCLUDE_META_KEYS.includes(key) && !metaKeys.includes(key)) {
+          metaKeys.push(key)
+        }
+      })
+    }
+  })
+
+  const metaHeaders = metaKeys.map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
+
+  const headers = ['Data', 'Nome', 'Email', 'Telefono', 'Messaggio', 'Pagina', ...metaHeaders, 'Note']
+
+  const rows = filteredLeads.value.map(lead => {
+    const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {}
+    const notes = (meta._notes || []).map(n => `[${formatDate(n.timestamp)}] ${n.text}`).join(' | ')
+    return [
+      formatDate(lead.created_at),
+      lead.name || '',
+      lead.email,
+      lead.phone || '',
+      lead.message || '',
+      lead.page?.title || '',
+      ...metaKeys.map(k => meta[k] ?? ''),
+      notes
+    ]
+  })
+
   const csvContent = [
     headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
   ].join('\n')
 
-  // Download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
   link.setAttribute('href', url)

@@ -18,6 +18,7 @@
         class="text-3xl md:text-4xl font-bold text-center mb-12"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.textContent)"
+        :style="titleFontSize ? { fontSize: titleFontSize } : {}"
       >
         {{ block.content.title }}
       </h2>
@@ -178,6 +179,9 @@ const props = defineProps({
 })
 
 const modules = [Navigation, Pagination, Autoplay]
+
+const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
+const titleFontSize = computed(() => titleSizeMap[props.block.content.titleSize] || null)
 
 // Calcola se il loop mode può essere abilitato
 // Per funzionare correttamente, Swiper necessita di almeno slidesPerView * 2 slide

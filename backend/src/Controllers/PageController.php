@@ -765,9 +765,19 @@ class PageController
             }
 
             // Salva le impostazioni notifiche
+            $confirmationEmail = $data['confirmation_email'] ?? [];
             $page->notification_settings = [
                 'enabled' => (bool) $data['enabled'],
-                'additional_emails' => $data['additional_emails'] ?? ''
+                'additional_emails' => $data['additional_emails'] ?? '',
+                'confirmation_email' => [
+                    'enabled' => (bool) ($confirmationEmail['enabled'] ?? false),
+                    'subject' => $confirmationEmail['subject'] ?? '',
+                    'body' => $confirmationEmail['body'] ?? '',
+                    'from_name' => $confirmationEmail['from_name'] ?? '',
+                    'from_address' => $confirmationEmail['from_address'] ?? '',
+                    'header_color' => $confirmationEmail['header_color'] ?? '#667eea',
+                    'header_color_end' => $confirmationEmail['header_color_end'] ?? '#764ba2'
+                ]
             ];
             $page->save();
 

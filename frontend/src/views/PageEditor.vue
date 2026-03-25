@@ -198,10 +198,11 @@
         >
           <template #item="{ element, index }">
             <div
+              :id="element.content?.anchor || undefined"
               :class="[
                 'relative',
                 !cleanView && 'group border-2 border-transparent hover:border-primary-300 transition-colors',
-                !cleanView && (element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move')
+                !cleanView && (['header', 'footer', 'legal-footer'].includes(element.type) ? 'cursor-default' : 'cursor-move')
               ]"
             >
               <!-- Controlli blocco -->
@@ -280,10 +281,11 @@
               >
                 <template #item="{ element, index }">
                   <div
+                    :id="element.content?.anchor || undefined"
                     :class="[
                       'relative',
                       !cleanView && 'group border-2 border-transparent hover:border-primary-300 transition-colors',
-                      !cleanView && (element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move')
+                      !cleanView && (['header', 'footer', 'legal-footer'].includes(element.type) ? 'cursor-default' : 'cursor-move')
                     ]"
                   >
                     <!-- Controlli blocco -->
@@ -366,10 +368,11 @@
               >
                 <template #item="{ element, index }">
                   <div
+                    :id="element.content?.anchor || undefined"
                     :class="[
                       'relative',
                       !cleanView && 'group border-2 border-transparent hover:border-primary-300 transition-colors',
-                      !cleanView && (element.type === 'header' || element.type === 'footer' ? 'cursor-not-allowed' : 'cursor-move')
+                      !cleanView && (['header', 'footer', 'legal-footer'].includes(element.type) ? 'cursor-default' : 'cursor-move')
                     ]"
                   >
                     <!-- Controlli blocco -->
@@ -434,6 +437,7 @@
         <BlockEditor
           v-if="selectedBlockIndex !== null"
           :block="page.blocks[selectedBlockIndex]"
+          :page-blocks="page.blocks"
           @update="updateBlock"
         />
       </div>
@@ -471,9 +475,11 @@ import { usePageStore } from '../stores/pageStore'
 import draggable from 'vuedraggable'
 import HeaderBlock from '../components/blocks/HeaderBlock.vue'
 import HeroBlock from '../components/blocks/HeroBlock.vue'
+import HeroWideBlock from '../components/blocks/HeroWideBlock.vue'
 import ImageSlideBlock from '../components/blocks/ImageSlideBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
+import AdvancedFormBlock from '../components/blocks/AdvancedFormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
 import TwoColumnImageText from '../components/blocks/TwoColumnImageText.vue'
 import VideoBlock from '../components/blocks/VideoBlock.vue'
@@ -554,6 +560,7 @@ let isInitialLoad = ref(true)
 const blockTypes = [
   { type: 'header', name: 'Intestazione', description: 'Header/Navbar con logo' },
   { type: 'hero', name: 'Hero', description: 'Sezione principale con titolo e CTA' },
+  { type: 'hero-wide', name: 'Hero Larghezza Variabile', description: 'Hero con larghezza del blocco personalizzabile' },
   { type: 'image-slide', name: 'Diapositiva Immagine', description: 'Immagine a schermo intero con overlay opzionale' },
   { type: 'video', name: 'Video', description: 'Video a schermo intero senza testo' },
   { type: 'text', name: 'Testo', description: 'Blocco di testo semplice' },
@@ -567,6 +574,7 @@ const blockTypes = [
   { type: 'map', name: 'Mappa Google', description: 'Mappa di Google Maps con info contatto' },
   { type: 'social', name: 'Social Media', description: 'Link a social media con icone personalizzabili' },
   { type: 'form', name: 'Form', description: 'Form di contatto per lead' },
+  { type: 'form-avanzato', name: 'Form Avanzato', description: 'Form con campi completamente personalizzabili' },
   { type: 'footer', name: 'Footer', description: 'Footer con info azienda e contatti' },
   { type: 'legal-footer', name: 'Footer Legale', description: 'Footer con link legali e informazioni aziendali' }
 ]
@@ -851,6 +859,26 @@ const getDefaultContent = (type) => {
         shadow: 'md'
       }
     },
+    'hero-wide': {
+      title: 'Titolo Hero',
+      subtitle: 'Sottotitolo',
+      buttonText: 'Call to Action',
+      buttonLink: '#',
+      backgroundImage: '',
+      height: '400px',
+      blockWidth: '50%',
+      buttonStyle: {
+        backgroundColor: '#4F46E5',
+        textColor: '#FFFFFF',
+        fontSize: '16px',
+        padding: '12px 32px',
+        borderRadius: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderStyle: 'solid',
+        shadow: 'md'
+      }
+    },
     text: {
       title: 'Titolo Sezione',
       text: '<p>Inserisci qui il tuo testo...</p>',
@@ -981,6 +1009,34 @@ const getDefaultContent = (type) => {
       privacyTextColor: '#374151',
       thankYouUrl: ''
     },
+    'form-avanzato': {
+      title: 'Compila il form',
+      caption: 'Ti ricontatteremo al più presto',
+      fields: [
+        { id: 'f1', name: 'nome_cognome', label: 'Nome e Cognome', type: 'text', required: true, colSpan: 'full', placeholder: 'Nome e Cognome *', standard_field: 'name' },
+        { id: 'f2', name: 'email', label: 'Email', type: 'email', required: true, colSpan: 'half', placeholder: 'Email *', standard_field: 'email' },
+        { id: 'f3', name: 'telefono', label: 'Telefono', type: 'tel', required: true, colSpan: 'half', placeholder: 'Telefono *', standard_field: 'phone' },
+        { id: 'f4', name: 'messaggio', label: 'Messaggio', type: 'textarea', required: false, colSpan: 'full', placeholder: 'Scrivi il tuo messaggio qui (opzionale)', standard_field: 'message' }
+      ],
+      buttonText: 'Invia',
+      buttonLayout: 'full',
+      fieldBorderRadius: 'lg',
+      buttonStyle: {
+        backgroundColor: '#4F46E5',
+        textColor: '#FFFFFF',
+        fontSize: '16px',
+        padding: '12px 32px',
+        borderRadius: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderStyle: 'solid',
+        shadow: 'md'
+      },
+      showPrivacy: true,
+      privacyLink: '/privacy-policy',
+      privacyTextColor: '#374151',
+      thankYouUrl: ''
+    },
     'video-info': {
       videoUrl: '',
       title: 'Visita il nostro Showroom',
@@ -1077,6 +1133,7 @@ const getBlockComponent = (type) => {
   const components = {
     header: HeaderBlock,
     hero: HeroBlock,
+    'hero-wide': HeroWideBlock,
     'image-slide': ImageSlideBlock,
     video: VideoBlock,
     text: TextBlock,
@@ -1090,6 +1147,7 @@ const getBlockComponent = (type) => {
     map: MapBlock,
     social: SocialBlock,
     form: FormBlock,
+    'form-avanzato': AdvancedFormBlock,
     footer: FooterBlock,
     'legal-footer': LegalFooterBlock
   }
@@ -1247,6 +1305,12 @@ const updatePageSettings = (updatedPage) => {
   /* Forza tutte le grid a 1 colonna nelle viste mobile/tablet */
   grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   gap: 1.5rem !important; /* 24px - equivalente a gap-6 */
+}
+
+/* Azzera col-span nelle viste simulate (evita colonne implicite) */
+.viewport-mobile :deep([class*="col-span"]),
+.viewport-tablet :deep([class*="col-span"]) {
+  grid-column: span 1 / span 1 !important;
 }
 
 /* Forza anche padding e font size ridotti */

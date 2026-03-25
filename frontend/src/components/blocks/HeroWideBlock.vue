@@ -1,57 +1,59 @@
 <template>
-  <div class="hero-block" :style="wrapperStyles">
-    <!-- Layer 1: immagine di sfondo con opacità -->
-    <div
-      v-if="block.content.backgroundImage"
-      :style="bgImageStyles"
-    ></div>
-    <!-- Layer 2: overlay colorato -->
-    <div
-      v-if="block.content.overlayEnabled"
-      :style="overlayStyles"
-    ></div>
-    <!-- Layer 3: contenuto posizionato -->
-    <div
-      :class="['px-6 py-20', roundedCorners ? 'rounded-lg' : '']"
-      :style="contentWrapperStyles"
-    >
-      <h1
-        v-if="editable"
-        contenteditable="true"
-        @blur="updateContent('title', $event.target.textContent)"
-        class="text-5xl font-bold mb-4 outline-none"
-        :style="titleStyles"
+  <div :style="outerWrapperStyles">
+    <div class="hero-block" :style="wrapperStyles">
+      <!-- Layer 1: immagine di sfondo con opacità -->
+      <div
+        v-if="block.content.backgroundImage"
+        :style="bgImageStyles"
+      ></div>
+      <!-- Layer 2: overlay colorato -->
+      <div
+        v-if="block.content.overlayEnabled"
+        :style="overlayStyles"
+      ></div>
+      <!-- Layer 3: contenuto posizionato -->
+      <div
+        :class="['px-6 py-20', roundedCorners ? 'rounded-lg' : '']"
+        :style="contentWrapperStyles"
       >
-        {{ block.content.title }}
-      </h1>
-      <h1 v-else class="text-5xl font-bold mb-4"
-        :style="titleStyles"
-      >
-        {{ block.content.title }}
-      </h1>
+        <h1
+          v-if="editable"
+          contenteditable="true"
+          @blur="updateContent('title', $event.target.textContent)"
+          class="text-5xl font-bold mb-4 outline-none"
+          :style="titleStyles"
+        >
+          {{ block.content.title }}
+        </h1>
+        <h1 v-else class="text-5xl font-bold mb-4"
+          :style="titleStyles"
+        >
+          {{ block.content.title }}
+        </h1>
 
-      <p
-        v-if="editable"
-        contenteditable="true"
-        @blur="updateContent('subtitle', $event.target.textContent)"
-        class="text-xl mb-8 outline-none"
-        :style="block.content.subtitleColor ? { color: block.content.subtitleColor } : {}"
-      >
-        {{ block.content.subtitle }}
-      </p>
-      <p v-else class="text-xl mb-8"
-        :style="block.content.subtitleColor ? { color: block.content.subtitleColor } : {}"
-      >
-        {{ block.content.subtitle }}
-      </p>
+        <p
+          v-if="editable"
+          contenteditable="true"
+          @blur="updateContent('subtitle', $event.target.textContent)"
+          class="text-xl mb-8 outline-none"
+          :style="block.content.subtitleColor ? { color: block.content.subtitleColor } : {}"
+        >
+          {{ block.content.subtitle }}
+        </p>
+        <p v-else class="text-xl mb-8"
+          :style="block.content.subtitleColor ? { color: block.content.subtitleColor } : {}"
+        >
+          {{ block.content.subtitle }}
+        </p>
 
-      <a
-        :href="block.content.buttonLink"
-        class="inline-block font-semibold transition-all hover:opacity-90"
-        :style="buttonStyles"
-      >
-        {{ block.content.buttonText }}
-      </a>
+        <a
+          :href="block.content.buttonLink"
+          class="inline-block font-semibold transition-all hover:opacity-90"
+          :style="buttonStyles"
+        >
+          {{ block.content.buttonText }}
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -87,6 +89,15 @@ const titleStyles = computed(() => {
 
 const justifyMap = { left: 'flex-start', center: 'center', right: 'flex-end' }
 const alignMap   = { top: 'flex-start', middle: 'center', bottom: 'flex-end' }
+
+// Wrapper esterno: controlla la larghezza del blocco e lo centra
+const outerWrapperStyles = computed(() => {
+  const blockWidth = props.block.content.blockWidth || '100%'
+  return {
+    width: blockWidth,
+    margin: '0 auto'
+  }
+})
 
 const wrapperStyles = computed(() => {
   const blockStyles = props.block.styles || {}

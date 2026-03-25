@@ -1,7 +1,47 @@
 <template>
   <div class="video-block" ref="videoContainer">
     <div :class="[fullWidth ? '' : 'max-w-7xl mx-auto', roundedCorners ? 'rounded-lg overflow-hidden' : '']" :style="blockStyles">
+      <!-- Instagram Reel: portrait centrato -->
       <div
+        v-if="block.content.videoUrl && isInstagram"
+        class="w-full flex justify-center items-center py-6"
+      >
+        <!-- Solo video: crop CSS per nascondere header/footer Instagram -->
+        <div
+          v-if="block.content.instagramCleanMode"
+          style="position:relative; overflow:hidden; width:400px; max-width:100%; height:500px; border-radius:4px;"
+        >
+          <iframe
+            :src="embedUrlWithId"
+            frameborder="0"
+            scrolling="no"
+            allowtransparency="true"
+            allowfullscreen
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            style="position:absolute; top:-56px; left:0; width:400px; height:750px; border:none;"
+          ></iframe>
+        </div>
+
+        <!-- UI completa Instagram -->
+        <iframe
+          v-else
+          :src="embedUrlWithId"
+          width="400"
+          height="700"
+          frameborder="0"
+          scrolling="no"
+          allowtransparency="true"
+          allowfullscreen
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          style="max-width: 100%;"
+        ></iframe>
+      </div>
+
+      <!-- YouTube / Vimeo / File diretto -->
+      <div
+        v-else
         class="relative w-full overflow-hidden"
         :style="{ height: block.content.height || '600px', minHeight: block.content.height || '600px' }"
       >
@@ -40,8 +80,8 @@
             <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
-            <p class="text-lg font-medium">Inserisci URL video o YouTube</p>
-            <p class="text-sm mt-2">Supporta: YouTube, Vimeo, MP4, WebM</p>
+            <p class="text-lg font-medium">Inserisci URL video o Instagram Reel</p>
+            <p class="text-sm mt-2">Supporta: YouTube, Vimeo, Instagram, MP4, WebM</p>
           </div>
         </div>
       </div>
@@ -94,7 +134,14 @@ const shouldAutoplay = computed(() => {
   return props.block.content.autoplay
 })
 
-// Rileva se l'URL è YouTube o Vimeo
+// Rileva se l'URL è Instagram Reel/Post
+const isInstagram = computed(() => {
+  const url = props.block.content.videoUrl
+  if (!url) return false
+  return url.includes('instagram.com/reel/') || url.includes('instagram.com/p/')
+})
+
+// Rileva se l'URL è YouTube, Vimeo (non Instagram — gestita separatamente)
 const isEmbedUrl = computed(() => {
   const url = props.block.content.videoUrl
   if (!url) return false
@@ -104,10 +151,22 @@ const isEmbedUrl = computed(() => {
          url.includes('vimeo.com')
 })
 
-// Converte URL YouTube/Vimeo in formato embed
+// Converte URL in formato embed
 const embedUrlWithId = computed(() => {
   const url = props.block.content.videoUrl
   if (!url) return ''
+
+  // Instagram Reel
+  if (url.includes('instagram.com/reel/')) {
+    const reelId = url.split('/reel/')[1].split('/')[0].split('?')[0]
+    if (reelId) return `https://www.instagram.com/reel/${reelId}/embed/`
+  }
+
+  // Instagram Post
+  if (url.includes('instagram.com/p/')) {
+    const postId = url.split('/p/')[1].split('/')[0].split('?')[0]
+    if (postId) return `https://www.instagram.com/p/${postId}/embed/`
+  }
 
   // YouTube
   if (url.includes('youtube.com') || url.includes('youtu.be')) {

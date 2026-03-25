@@ -58,3 +58,7 @@ MIGRATION_SQL_MANUAL.sql
 *.tmp
 *.temp
 *.bak
+
+# Dev server PID files (generati da /avvia, usati da /stop)
+.claude/.dev-pids-backend
+.claude/.dev-pids-frontend
