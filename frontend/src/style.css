@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -11,3 +15,23 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
+
+/* Heading styles inside .prose containers
+   Tailwind Preflight resetta h1-h6 a font-size/weight: inherit.
+   Senza @tailwindcss/typography instalato, li ripristiniamo manualmente
+   così i blocchi con contenuto VueQuill (CTA, Text, ecc.) li mostrano correttamente. */
+.prose h1 { font-size: 2.25em; font-weight: 700; line-height: 1.2; margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose h2 { font-size: 1.75em; font-weight: 700; line-height: 1.25; margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose h3 { font-size: 1.35em; font-weight: 600; line-height: 1.3;  margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose p  { margin-bottom: 0.75em; }
+.prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+.prose li { margin-bottom: 0.25em; }
+.prose strong, .prose b { font-weight: 700; }
+.prose em { font-style: italic; }
+.prose u  { text-decoration: underline; }
+.prose s, .prose del { text-decoration: line-through; }
+.prose a  { color: #3b82f6; text-decoration: underline; }
+.prose blockquote { border-left: 4px solid #d1d5db; padding-left: 1em; margin-left: 0; font-style: italic; color: #6b7280; margin-bottom: 1em; }
+.prose .ql-align-center  { text-align: center; }
+.prose .ql-align-right   { text-align: right; }
+.prose .ql-align-justify { text-align: justify; }

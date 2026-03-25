@@ -110,21 +110,11 @@
           v-model="fontFamily"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         >
-          <option value="">Default (System)</option>
-          <option value="Roboto">Roboto</option>
-          <option value="Open Sans">Open Sans</option>
-          <option value="Lato">Lato</option>
-          <option value="Montserrat">Montserrat</option>
-          <option value="Poppins">Poppins</option>
-          <option value="Raleway">Raleway</option>
-          <option value="Playfair Display">Playfair Display</option>
-          <option value="Merriweather">Merriweather</option>
-          <option value="Inter">Inter</option>
-          <option value="Nunito">Nunito</option>
-          <option value="Oswald">Oswald</option>
-          <option value="PT Sans">PT Sans</option>
-          <option value="Source Sans Pro">Source Sans Pro</option>
-          <option value="Ubuntu">Ubuntu</option>
+          <option
+            v-for="font in popularGoogleFonts"
+            :key="font.value"
+            :value="font.value"
+          >{{ font.name }}</option>
         </select>
         <p class="text-xs text-gray-500 mt-1">Font da Google Fonts applicato a tutta la pagina</p>
       </div>
@@ -597,6 +587,110 @@
           </p>
         </div>
 
+        <!-- Separatore email di cortesia -->
+        <div class="border-t border-gray-200 pt-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <label class="text-sm font-medium text-gray-700">Email di cortesia al cliente</label>
+              <p class="text-xs text-gray-500 mt-0.5">Invia una conferma automatica al cliente</p>
+            </div>
+            <button
+              type="button"
+              @click="notificationSettings.confirmation_email.enabled = !notificationSettings.confirmation_email.enabled"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none',
+                notificationSettings.confirmation_email.enabled ? 'bg-primary-600' : 'bg-gray-200'
+              ]"
+            >
+              <span :class="[
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                notificationSettings.confirmation_email.enabled ? 'translate-x-6' : 'translate-x-1'
+              ]" />
+            </button>
+          </div>
+
+          <div v-if="notificationSettings.confirmation_email.enabled" class="space-y-3">
+            <!-- Oggetto -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Oggetto email</label>
+              <input
+                v-model="notificationSettings.confirmation_email.subject"
+                type="text"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+
+            <!-- Corpo -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Testo email</label>
+              <p class="text-xs text-gray-400 mb-1">Puoi usare <code class="bg-gray-100 px-1 rounded">{name}</code> per il nome del cliente</p>
+              <textarea
+                v-model="notificationSettings.confirmation_email.body"
+                rows="5"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Mittente (opzionale) -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Nome mittente (opzionale)</label>
+              <input
+                v-model="notificationSettings.confirmation_email.from_name"
+                type="text"
+                placeholder="Es: Mario Rossi - Azienda Srl"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Indirizzo mittente (opzionale)</label>
+              <input
+                v-model="notificationSettings.confirmation_email.from_address"
+                type="email"
+                placeholder="Es: info@azienda.it"
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+              />
+              <p class="text-xs text-gray-500 mt-1">Se vuoto usa il mittente di default del sistema</p>
+            </div>
+
+            <!-- Colori header email -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Colore header email</label>
+              <div class="flex gap-3 items-center">
+                <div class="flex items-center gap-2 flex-1">
+                  <input
+                    v-model="notificationSettings.confirmation_email.header_color"
+                    type="color"
+                    class="w-10 h-10 rounded border border-gray-300 cursor-pointer p-0.5"
+                  />
+                  <input
+                    v-model="notificationSettings.confirmation_email.header_color"
+                    type="text"
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-200"
+                  />
+                </div>
+                <span class="text-xs text-gray-400">→</span>
+                <div class="flex items-center gap-2 flex-1">
+                  <input
+                    v-model="notificationSettings.confirmation_email.header_color_end"
+                    type="color"
+                    class="w-10 h-10 rounded border border-gray-300 cursor-pointer p-0.5"
+                  />
+                  <input
+                    v-model="notificationSettings.confirmation_email.header_color_end"
+                    type="text"
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-200"
+                  />
+                </div>
+              </div>
+              <!-- Anteprima gradiente -->
+              <div
+                class="mt-2 h-8 rounded-lg"
+                :style="`background: linear-gradient(135deg, ${notificationSettings.confirmation_email.header_color} 0%, ${notificationSettings.confirmation_email.header_color_end} 100%)`"
+              ></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Pulsante salva -->
         <button
           @click="saveNotificationSettings"
@@ -623,8 +717,11 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { usePageStore } from '../stores/pageStore'
+import { useAuthStore } from '../stores/authStore'
+import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
 
 const pageStore = usePageStore()
+const authStore = useAuthStore()
 
 const props = defineProps({
   page: {
@@ -755,6 +852,7 @@ const fontFamily = computed({
       localPage.value.styles = {}
     }
     localPage.value.styles.fontFamily = value
+    if (value) loadGoogleFont(value)
   }
 })
 
@@ -1029,9 +1127,25 @@ const phoneText = computed({
 // NOTIFICHE EMAIL
 // ========================================
 
+const DEFAULT_CONFIRMATION_SUBJECT = 'Abbiamo ricevuto la tua richiesta'
+const DEFAULT_CONFIRMATION_BODY = `Ciao {name},
+
+grazie per averci contattato. Abbiamo ricevuto la tua richiesta e ti risponderemo al più presto.
+
+A presto!`
+
 const notificationSettings = ref({
   enabled: props.page.notification_settings?.enabled || false,
-  additional_emails: props.page.notification_settings?.additional_emails || ''
+  additional_emails: props.page.notification_settings?.additional_emails || '',
+  confirmation_email: {
+    enabled: props.page.notification_settings?.confirmation_email?.enabled || false,
+    subject: props.page.notification_settings?.confirmation_email?.subject || DEFAULT_CONFIRMATION_SUBJECT,
+    body: props.page.notification_settings?.confirmation_email?.body || DEFAULT_CONFIRMATION_BODY,
+    from_name: props.page.notification_settings?.confirmation_email?.from_name || '',
+    from_address: props.page.notification_settings?.confirmation_email?.from_address || '',
+    header_color: props.page.notification_settings?.confirmation_email?.header_color || '#667eea',
+    header_color_end: props.page.notification_settings?.confirmation_email?.header_color_end || '#764ba2'
+  }
 })
 
 const savingNotifications = ref(false)
@@ -1039,7 +1153,7 @@ const notificationMessage = ref({ text: '', type: '' })
 
 // Computed per email utente corrente
 const currentUserEmail = computed(() => {
-  return pageStore.currentUser?.email || 'Non disponibile'
+  return authStore.user?.email || 'Non disponibile'
 })
 
 // Aggiorna settings quando cambia la pagina
@@ -1047,7 +1161,16 @@ watch(() => props.page.notification_settings, (newSettings) => {
   if (newSettings) {
     notificationSettings.value = {
       enabled: newSettings.enabled || false,
-      additional_emails: newSettings.additional_emails || ''
+      additional_emails: newSettings.additional_emails || '',
+      confirmation_email: {
+        enabled: newSettings.confirmation_email?.enabled || false,
+        subject: newSettings.confirmation_email?.subject || DEFAULT_CONFIRMATION_SUBJECT,
+        body: newSettings.confirmation_email?.body || DEFAULT_CONFIRMATION_BODY,
+        from_name: newSettings.confirmation_email?.from_name || '',
+        from_address: newSettings.confirmation_email?.from_address || '',
+        header_color: newSettings.confirmation_email?.header_color || '#667eea',
+        header_color_end: newSettings.confirmation_email?.header_color_end || '#764ba2'
+      }
     }
   }
 }, { deep: true })

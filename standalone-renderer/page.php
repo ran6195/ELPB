@@ -179,7 +179,7 @@ function renderPage($page) {
     // Inizia output
     ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" style="scroll-behavior: smooth">
 <head>
     <?php if ($gtmEnabled && !empty($gtmId)): ?>
     <!-- Google Tag Manager -->
@@ -234,6 +234,13 @@ function renderPage($page) {
         h1, h2, h3 {
             font-weight: 600;
         }
+        /* Font size per heading dentro contenuto Quill (.prose) — Tailwind CDN resetta font-size a inherit */
+        .prose h1 { font-size: 2.25em; font-weight: 700; line-height: 1.2;  margin-top: 0.5em; margin-bottom: 0.5em; }
+        .prose h2 { font-size: 1.75em; font-weight: 700; line-height: 1.25; margin-top: 0.5em; margin-bottom: 0.5em; }
+        .prose h3 { font-size: 1.35em; font-weight: 600; line-height: 1.3;  margin-top: 0.5em; margin-bottom: 0.5em; }
+        .prose p  { margin-bottom: 0.75em; }
+        .prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+        .prose li { margin-bottom: 0.25em; }
         /* Grassetto normale per paragrafi e liste */
         p strong, p b,
         li strong, li b {
@@ -344,6 +351,19 @@ function renderPage($page) {
     }
     ?>
 
+    <!-- Reset form quando il cliente torna indietro dal browser (bfcache) -->
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                document.querySelectorAll('form.landing-page-form').forEach(function(form) {
+                    form.reset();
+                    var msg = form.querySelector('[id$="-message"]');
+                    if (msg) msg.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+
     <!-- Swiper JS per slider -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
@@ -415,12 +435,12 @@ function renderPage($page) {
 /**
  * Renderizza la thank-you page con header e footer della landing page originale
  */
-function renderThankYouPage($page) {
+function renderThankYouPage($page, $homeUrl = '') {
     if (!$page) {
         // Fallback: pagina statica semplice senza header/footer
         ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" style="scroll-behavior: smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -438,7 +458,12 @@ function renderThankYouPage($page) {
             </div>
             <h1 class="text-3xl font-bold text-gray-900 mb-4">Grazie per averci contattato!</h1>
             <p class="text-lg text-gray-600 mb-8">La tua richiesta è stata inviata con successo. Ti risponderemo al più presto.</p>
-            <button onclick="window.history.back()" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors">Torna indietro</button>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="window.history.back()" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors">Torna indietro</button>
+                <?php if (!empty($homeUrl)): ?>
+                <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="inline-block bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-8 py-3 rounded-lg transition-colors">Torna alla home</a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </body>
@@ -497,7 +522,7 @@ function renderThankYouPage($page) {
 
     ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" style="scroll-behavior: smooth">
 <head>
     <?php if ($gtmEnabled && !empty($gtmId)): ?>
     <!-- Google Tag Manager -->
@@ -559,7 +584,12 @@ function renderThankYouPage($page) {
             </div>
             <h1 class="text-3xl font-bold text-gray-900 mb-4">Grazie per averci contattato!</h1>
             <p class="text-lg text-gray-600 mb-8">La tua richiesta è stata inviata con successo. Ti risponderemo al più presto.</p>
-            <button onclick="window.history.back()" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors">Torna indietro</button>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="window.history.back()" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors">Torna indietro</button>
+                <?php if (!empty($homeUrl)): ?>
+                <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="inline-block bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-8 py-3 rounded-lg transition-colors">Torna alla home</a>
+                <?php endif; ?>
+            </div>
         </div>
     </main>
 
@@ -614,7 +644,8 @@ try {
     if (isset($_GET['_mode']) && $_GET['_mode'] === 'thankyou') {
         $slug = isset($_GET['slug']) ? sanitizeSlug($_GET['slug']) : '';
         $page = !empty($slug) ? fetchPage($slug) : null;
-        renderThankYouPage($page);
+        $homeUrl = $_ENV['HOME_URL'] ?? '';
+        renderThankYouPage($page, $homeUrl);
         exit;
     }
 

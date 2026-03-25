@@ -4,9 +4,11 @@
       <!-- Titolo -->
       <h2
         v-if="block.content.title"
+        ref="titleRef"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
         class="text-3xl md:text-4xl font-bold mb-6 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
+        :style="titleFontSize ? { fontSize: titleFontSize } : {}"
       >
         {{ block.content.title }}
       </h2>
@@ -25,6 +27,7 @@
         class="inline-block font-semibold transition-colors"
       >
         <span
+          ref="buttonTextRef"
           :contenteditable="editable"
           @blur="updateContent('buttonText', $event.target.innerText)"
           class="outline-none"
@@ -36,6 +39,7 @@
       <!-- Testo secondario opzionale -->
       <p
         v-if="block.content.secondaryText"
+        ref="secondaryTextRef"
         :contenteditable="editable"
         @blur="updateContent('secondaryText', $event.target.innerText)"
         class="mt-4 text-sm text-gray-500 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
@@ -47,7 +51,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onUpdated } from 'vue'
 
 const props = defineProps({
   block: {
@@ -65,6 +69,28 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update'])
+
+const titleRef = ref(null)
+const buttonTextRef = ref(null)
+const secondaryTextRef = ref(null)
+
+// Sincronizza il DOM degli elementi contenteditable dopo ogni aggiornamento Vue.
+// Necessario perché Vue non aggiorna il contenuto degli elementi contenteditable
+// già modificati dal browser. Salta l'elemento se ha il focus (utente sta digitando).
+onUpdated(() => {
+  const syncEl = (el, value) => {
+    if (el && document.activeElement !== el) {
+      const current = el.innerText.replace(/\n$/, '')
+      if (current !== (value || '')) el.innerText = value || ''
+    }
+  }
+  syncEl(titleRef.value, props.block.content.title)
+  syncEl(buttonTextRef.value, props.block.content.buttonText)
+  syncEl(secondaryTextRef.value, props.block.content.secondaryText)
+})
+
+const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
+const titleFontSize = computed(() => titleSizeMap[props.block.content.titleSize] || null)
 
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}
@@ -132,4 +158,5 @@ const updateContent = (field, value) => {
 [contenteditable="true"]:hover {
   background: rgba(14, 165, 233, 0.05);
 }
+
 </style>
