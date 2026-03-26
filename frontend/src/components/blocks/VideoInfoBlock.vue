@@ -10,41 +10,42 @@
       <div class="max-w-7xl mx-auto">
         <div class="grid md:grid-cols-2 gap-0">
           <!-- Colonna video (sinistra) -->
-          <div class="flex items-center justify-center p-8 bg-gray-900">
-            <div class="w-full">
-              <!-- YouTube embed -->
-              <div
-                v-if="youtubeEmbedUrl"
-                class="relative w-full"
-                style="padding-top: 56.25%"
-              >
-                <iframe
-                  :src="youtubeEmbedUrl"
-                  class="absolute inset-0 w-full h-full rounded"
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowfullscreen
-                ></iframe>
+          <div class="relative overflow-hidden bg-gray-900" style="min-height: 200px;">
+            <!-- YouTube embed: riempie tutta la colonna -->
+            <iframe
+              v-if="youtubeEmbedUrl && !isVerticalVideo"
+              ref="iframeRef"
+              :src="youtubeEmbedUrl"
+              class="absolute inset-0 w-full h-full"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+            <!-- YouTube Shorts (verticale): centrato con aspect ratio fisso -->
+            <div v-else-if="youtubeEmbedUrl && isVerticalVideo" class="flex items-center justify-center h-full p-4">
+              <div style="max-width: 280px; width: 100%;">
+                <div class="relative w-full" style="padding-top: 177.78%;">
+                  <iframe
+                    :src="youtubeEmbedUrl"
+                    class="absolute inset-0 w-full h-full rounded"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
               </div>
-              <!-- File video -->
-              <video
-                v-else-if="block.content.videoUrl"
-                controls
-                autoplay
-                muted
-                playsinline
-                loop
-                class="w-full h-auto mx-auto max-w-md"
-              >
-                <source :src="block.content.videoUrl" type="video/mp4">
-                Il tuo browser non supporta il tag video.
-              </video>
-              <div
-                v-else
-                class="w-full h-96 bg-gray-800 flex items-center justify-center rounded"
-              >
-                <p class="text-gray-400">Inserisci URL video</p>
-              </div>
+            </div>
+            <!-- File video -->
+            <video
+              v-else-if="block.content.videoUrl"
+              controls autoplay muted playsinline loop
+              class="absolute inset-0 w-full h-full object-cover"
+            >
+              <source :src="block.content.videoUrl" type="video/mp4">
+            </video>
+            <!-- Placeholder -->
+            <div v-else class="absolute inset-0 flex items-center justify-center bg-gray-800">
+              <p class="text-gray-400">Inserisci URL video</p>
             </div>
           </div>
 
@@ -107,7 +108,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   block: {
@@ -126,12 +127,16 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
-// Estrae l'ID YouTube da qualsiasi formato di URL e restituisce l'URL embed.
-// Funziona sia con videoType='youtube' sia auto-rilevando l'URL.
+// Rileva se il video è verticale (YouTube Shorts = 9:16)
+const isVerticalVideo = computed(() => {
+  const url = props.block.content.videoUrl || ''
+  return url.includes('youtube.com/shorts/')
+})
+
+// Estrae l'ID YouTube da qualsiasi formato di URL e restituisce l'URL embed con parametri.
 const youtubeEmbedUrl = computed(() => {
   const url = props.block.content.videoUrl || ''
   if (!url) return null
-  // Auto-detect: se l'URL non contiene youtube o youtu.be, non è un video YouTube
   if (!url.includes('youtube.com') && !url.includes('youtu.be')) return null
   let id = null
   try {
@@ -139,11 +144,35 @@ const youtubeEmbedUrl = computed(() => {
     if (u.hostname.includes('youtu.be')) {
       id = u.pathname.slice(1).split('?')[0]
     } else if (u.hostname.includes('youtube.com')) {
-      id = u.searchParams.get('v') || u.pathname.split('/embed/')[1]?.split('/')[0]
+      id = u.searchParams.get('v')
+        || u.pathname.split('/embed/')[1]?.split('/')[0]
+        || (u.pathname.includes('/shorts/') ? u.pathname.split('/shorts/')[1]?.split('/')[0] : null)
     }
   } catch (_) { /* URL non valido */ }
-  return id ? `https://www.youtube.com/embed/${id}` : null
+  if (!id) return null
+
+  const params = ['enablejsapi=1']
+  if (props.block.content.autoplay && !props.block.content.playOnScroll) params.push('autoplay=1')
+  if (props.block.content.loop) { params.push('loop=1'); params.push(`playlist=${id}`) }
+  if (props.block.content.muted) params.push('mute=1')
+  if (props.block.content.showControls === false) params.push('controls=0')
+
+  return `https://www.youtube.com/embed/${id}?${params.join('&')}`
 })
+
+// playOnScroll: avvia il video quando entra nel viewport
+const iframeRef = ref(null)
+let observer = null
+onMounted(() => {
+  if (!props.block.content.playOnScroll) return
+  observer = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && iframeRef.value) {
+      iframeRef.value.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*')
+    }
+  }, { threshold: 0.5 })
+  if (iframeRef.value) observer.observe(iframeRef.value)
+})
+onUnmounted(() => { observer?.disconnect() })
 
 const titleSizeMap = { xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem', '5xl': '3rem', '6xl': '3.75rem' }
 const videoInfoTitleStyles = computed(() => {

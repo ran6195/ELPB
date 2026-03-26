@@ -184,6 +184,10 @@ const embedUrlWithId = computed(() => {
     else if (url.includes('youtube.com/embed/')) {
       return url
     }
+    // https://www.youtube.com/shorts/VIDEO_ID
+    else if (url.includes('youtube.com/shorts/')) {
+      videoId = url.split('youtube.com/shorts/')[1].split('?')[0]
+    }
 
     if (videoId) {
       // Aggiungi parametri per autoplay, loop, muted

@@ -1746,9 +1746,85 @@
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         />
         <p v-if="localBlock.content.videoType === 'youtube'" class="text-xs text-gray-500 mt-1">
-          Accetta URL del tipo: youtube.com/watch?v=... oppure youtu.be/...
+          Accetta URL del tipo: youtube.com/watch?v=... oppure youtu.be/... oppure youtube.com/shorts/...
         </p>
       </div>
+
+      <div class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3">Opzioni Video</h5>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm text-gray-700">Mostra controlli</label>
+            <button
+              @click="localBlock.content.showControls = !localBlock.content.showControls"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                localBlock.content.showControls !== false ? 'bg-primary-600' : 'bg-gray-200'
+              ]"
+            >
+              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform', localBlock.content.showControls !== false ? 'translate-x-6' : 'translate-x-1']" />
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <label class="text-sm text-gray-700">Autoplay</label>
+              <p class="text-xs text-gray-500">Parte automaticamente al caricamento</p>
+            </div>
+            <button
+              @click="localBlock.content.autoplay = !localBlock.content.autoplay"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                localBlock.content.autoplay ? 'bg-primary-600' : 'bg-gray-200'
+              ]"
+            >
+              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform', localBlock.content.autoplay ? 'translate-x-6' : 'translate-x-1']" />
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <label class="text-sm text-gray-700">Riproduci quando visibile</label>
+              <p class="text-xs text-gray-500">Parte solo quando appare durante lo scroll</p>
+            </div>
+            <button
+              @click="localBlock.content.playOnScroll = !localBlock.content.playOnScroll"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                localBlock.content.playOnScroll ? 'bg-primary-600' : 'bg-gray-200'
+              ]"
+            >
+              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform', localBlock.content.playOnScroll ? 'translate-x-6' : 'translate-x-1']" />
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <label class="text-sm text-gray-700">Loop (ripeti)</label>
+            <button
+              @click="localBlock.content.loop = !localBlock.content.loop"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                localBlock.content.loop ? 'bg-primary-600' : 'bg-gray-200'
+              ]"
+            >
+              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform', localBlock.content.loop ? 'translate-x-6' : 'translate-x-1']" />
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <label class="text-sm text-gray-700">Muted (senza audio)</label>
+            <button
+              @click="localBlock.content.muted = !localBlock.content.muted"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                localBlock.content.muted ? 'bg-primary-600' : 'bg-gray-200'
+              ]"
+            >
+              <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform', localBlock.content.muted ? 'translate-x-6' : 'translate-x-1']" />
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            Nota: Per l'autoplay è necessario attivare anche "Muted" in molti browser
+          </p>
+        </div>
+      </div>
+
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Titolo</label>
         <input

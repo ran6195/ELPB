@@ -200,6 +200,11 @@ class BlockRenderer
                 $id = explode('/embed/', $parsed['path'])[1] ?? null;
                 $id = explode('/', $id ?? '')[0] ?: null;
             }
+            if (!$id && str_contains($parsed['path'] ?? '', '/shorts/')) {
+                $id = explode('/shorts/', $parsed['path'])[1] ?? null;
+                $id = explode('/', $id ?? '')[0] ?: null;
+                $id = explode('?', $id ?? '')[0] ?: null;
+            }
         }
         return ($id && preg_match('/^[a-zA-Z0-9_-]{11}$/', $id)) ? $id : null;
     }
@@ -643,6 +648,11 @@ HTML;
             // https://www.youtube.com/embed/VIDEO_ID (già embed)
             else if (strpos($url, 'youtube.com/embed/') !== false) {
                 return $url;
+            }
+            // https://www.youtube.com/shorts/VIDEO_ID
+            else if (strpos($url, 'youtube.com/shorts/') !== false) {
+                $parts = explode('youtube.com/shorts/', $url);
+                $videoId = explode('?', $parts[1])[0];
             }
 
             if ($videoId) {
@@ -1171,23 +1181,46 @@ HTML;
 
         $videoHtml = '';
         // Auto-detect YouTube dall'URL (funziona anche senza videoType='youtube')
+        $autoplay = !empty($content['autoplay']);
+        $loop = !empty($content['loop']);
+        $muted = !empty($content['muted']);
+        $showControls = $content['showControls'] ?? true;
+        $playOnScroll = !empty($content['playOnScroll']);
+
+        $iframeId = 'vi-iframe-' . uniqid();
+        $containerId = 'vi-container-' . uniqid();
+
         $youtubeId = !empty($content['videoUrl']) ? self::extractYoutubeId($content['videoUrl']) : null;
-        if ($youtubeId) {
-            $embedUrl = 'https://www.youtube.com/embed/' . $youtubeId;
+        $isShort = str_contains($content['videoUrl'] ?? '', '/shorts/');
+        if ($youtubeId && !$isShort) {
+            $embedUrl = htmlspecialchars(self::getEmbedUrl($content['videoUrl'], $autoplay, $loop, $muted, $showControls, $playOnScroll));
             $videoHtml = <<<HTML
-                <div style="position:relative; width:100%; padding-top:56.25%;">
-                    <iframe src="{$embedUrl}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:0.25rem;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <iframe id="{$iframeId}" src="{$embedUrl}" style="position:absolute;inset:0;width:100%;height:100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+HTML;
+        } elseif ($youtubeId && $isShort) {
+            $embedUrl = htmlspecialchars(self::getEmbedUrl($content['videoUrl'], $autoplay, $loop, $muted, $showControls, $playOnScroll));
+            $videoHtml = <<<HTML
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:1rem;">
+                    <div style="max-width:280px;width:100%;">
+                        <div style="position:relative;width:100%;padding-top:177.78%;">
+                            <iframe id="{$iframeId}" src="{$embedUrl}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:0.25rem;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
                 </div>
 HTML;
         } elseif (!empty($videoUrl)) {
+            $videoUrlEscaped = htmlspecialchars($videoUrl);
+            $autoplayAttr = $autoplay ? 'autoplay' : '';
+            $loopAttr = $loop ? 'loop' : '';
+            $mutedAttr = $muted ? 'muted' : '';
+            $controlsAttr = $showControls ? 'controls' : '';
             $videoHtml = <<<HTML
-                <video controls autoplay muted playsinline loop class="w-full h-auto mx-auto max-w-md">
-                    <source src="{$videoUrl}" type="video/mp4">
-                    Il tuo browser non supporta il tag video.
+                <video id="{$iframeId}" {$autoplayAttr} {$loopAttr} {$mutedAttr} {$controlsAttr} playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                    <source src="{$videoUrlEscaped}" type="video/mp4">
                 </video>
 HTML;
         } else {
-            $videoHtml = '<div class="w-full h-96 bg-gray-800 flex items-center justify-center rounded"><p class="text-gray-400">Inserisci URL video</p></div>';
+            $videoHtml = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1f2937;"><p style="color:#9ca3af;">Inserisci URL video</p></div>';
         }
 
         $mapHtml = '';
@@ -1201,15 +1234,13 @@ HTML;
             $mapHtml = '<div class="w-3/4 h-48 bg-gray-800 flex items-center justify-center rounded"><p class="text-gray-400 text-sm">Carica immagine mappa</p></div>';
         }
 
-        return <<<HTML
-<section class="video-info-block w-full {$roundedClass}" {$blockStyle}>
+        $html = <<<HTML
+<section id="{$containerId}" class="video-info-block w-full {$roundedClass}" {$blockStyle}>
     <div class="max-w-7xl mx-auto">
         <div class="grid md:grid-cols-2 gap-0">
             <!-- Video Column -->
-            <div class="flex items-center justify-center p-8">
-                <div class="w-full">
-                    {$videoHtml}
-                </div>
+            <div style="position:relative;overflow:hidden;background:#111827;min-height:200px;">
+                {$videoHtml}
             </div>
             <!-- Info Column -->
             <div class="flex flex-col justify-center p-8">
@@ -1228,6 +1259,29 @@ HTML;
     </div>
 </section>
 HTML;
+
+        if ($playOnScroll && $youtubeId) {
+            $html .= <<<HTML
+
+<script>
+(function() {
+    var container = document.getElementById('{$containerId}');
+    var iframe = document.getElementById('{$iframeId}');
+    var hasPlayed = false;
+    if (container && iframe) {
+        new IntersectionObserver(function(entries) {
+            if (entries[0].isIntersecting && !hasPlayed) {
+                hasPlayed = true;
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+            }
+        }, { threshold: 0.5 }).observe(container);
+    }
+})();
+</script>
+HTML;
+        }
+
+        return $html;
     }
 
     /**
