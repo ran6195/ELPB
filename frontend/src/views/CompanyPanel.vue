@@ -711,7 +711,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { usePageStore } from '../stores/pageStore'
@@ -836,6 +836,33 @@ watch([filterText, filterPage, filterStatus, filterAppointment], () => {
   currentPage.value = 1
 })
 
+// Polling leads
+const LEADS_POLL_INTERVAL = 5000
+let leadsPollingInterval = null
+
+const refreshLeadsSilently = async () => {
+  try {
+    const leadsData = await pageStore.fetchLeads()
+    leads.value = leadsData || []
+  } catch (error) {
+    console.error('Error polling leads:', error)
+  }
+}
+
+const startLeadsPolling = () => {
+  stopLeadsPolling()
+  leadsPollingInterval = setInterval(refreshLeadsSilently, LEADS_POLL_INTERVAL)
+}
+
+const stopLeadsPolling = () => {
+  if (leadsPollingInterval) {
+    clearInterval(leadsPollingInterval)
+    leadsPollingInterval = null
+  }
+}
+
+onUnmounted(() => stopLeadsPolling())
+
 // Watch activeTab per ricaricare i leads quando si clicca sul tab
 watch(activeTab, async (newTab) => {
   if (newTab === 'leads') {
@@ -849,6 +876,9 @@ watch(activeTab, async (newTab) => {
     } finally {
       loading.value = false
     }
+    startLeadsPolling()
+  } else {
+    stopLeadsPolling()
   }
 })
 
