@@ -9,30 +9,8 @@
             <div class="flex items-center gap-3">
               <p class="text-gray-500 text-sm">Crea e gestisci le tue landing pages</p>
 
-              <!-- Badge: aggiornamento disponibile -->
-              <button
-                v-if="updateAvailable"
-                @click="reload"
-                class="group relative flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 hover:shadow-sm transition-all duration-200 ease-in-out animate-pulse"
-                style="animation-duration: 2.5s;"
-              >
-                <span class="relative flex h-1.5 w-1.5">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-                </span>
-                <svg class="w-3 h-3 transition-transform duration-500 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Aggiornamento disponibile</span>
-                <span class="text-amber-400 font-light">·</span>
-                <span class="font-semibold tracking-wide text-amber-800 underline underline-offset-2 decoration-dotted decoration-amber-400 group-hover:no-underline">Ricarica</span>
-              </button>
-
               <!-- Badge: versione corrente -->
-              <span
-                v-else
-                class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-mono px-2 py-0.5 rounded-md bg-gray-50 border border-gray-100 select-none"
-              >
+              <span class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-mono px-2 py-0.5 rounded-md bg-gray-50 border border-gray-100 select-none">
                 <span class="w-1.5 h-1.5 rounded-full bg-green-400 opacity-70"></span>
                 v{{ currentVersion }}
               </span>
@@ -389,12 +367,12 @@ import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePageStore } from '../stores/pageStore'
 import { useAuthStore } from '../stores/authStore'
-import { useVersionCheck } from '../composables/useVersionCheck'
+import pkg from '../../package.json'
 
 const router = useRouter()
 const pageStore = usePageStore()
 const authStore = useAuthStore()
-const { currentVersion, updateAvailable, reload } = useVersionCheck()
+const currentVersion = pkg.version
 
 // Filtri
 const filterStatus = ref('all')
