@@ -602,7 +602,8 @@ function renderThankYouPage($page, $homeUrl = '') {
         (function() {
             var slug = '<?php echo htmlspecialchars($pageSlug, ENT_QUOTES); ?>';
             if (slug && window.history && window.history.replaceState) {
-                window.history.replaceState(null, '', '/' + slug + '/thank-you');
+                var path = window.location.pathname.replace(/\/$/, '');
+                window.history.replaceState(null, '', path + '/thank-you');
             }
         })();
     </script>
