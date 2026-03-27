@@ -1750,6 +1750,41 @@
         </p>
       </div>
 
+      <div v-if="localBlock.content.videoType !== 'youtube'">
+        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un video</label>
+        <input
+          type="file"
+          accept="video/*"
+          @change="handleVideoUpload"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        />
+      </div>
+
+      <video
+        v-if="localBlock.content.videoType !== 'youtube' && localBlock.content.videoUrl"
+        :src="localBlock.content.videoUrl"
+        controls
+        class="h-auto rounded-lg border border-gray-300 block mx-auto"
+        :style="{ width: (localBlock.content.videoWidth || 100) + '%' }"
+      >
+        Il tuo browser non supporta il tag video.
+      </video>
+
+      <div v-if="localBlock.content.videoType !== 'youtube'">
+        <label class="block text-xs font-medium text-gray-700 mb-2">
+          Larghezza video: {{ localBlock.content.videoWidth || 100 }}%
+        </label>
+        <input
+          type="range"
+          min="10"
+          max="100"
+          step="5"
+          :value="localBlock.content.videoWidth || 100"
+          @input="localBlock.content.videoWidth = parseInt($event.target.value)"
+          class="w-full accent-primary-600"
+        />
+      </div>
+
       <div class="border-t border-gray-200 pt-4">
         <h5 class="text-xs font-semibold text-gray-700 mb-3">Opzioni Video</h5>
         <div class="space-y-3">

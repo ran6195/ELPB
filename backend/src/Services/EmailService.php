@@ -292,16 +292,11 @@ HTML;
     private function getLeadEmailTemplate($lead, $page)
     {
         $pageTitle = htmlspecialchars($page->title);
-        $pageSlug = htmlspecialchars($page->slug);
         $leadName = htmlspecialchars($lead->name ?? 'Non specificato');
         $leadEmail = htmlspecialchars($lead->email ?? 'Non specificata');
         $leadPhone = htmlspecialchars($lead->phone ?? 'Non specificato');
         $leadMessage = nl2br(htmlspecialchars($lead->message ?? 'Nessun messaggio'));
         $leadDate = date('d/m/Y H:i', strtotime($lead->created_at));
-
-        // URL pannello frontend per vedere i lead
-        $frontendUrl = $_ENV['FRONTEND_URL'] ?? $_ENV['APP_URL'] ?? 'http://localhost:3000';
-        $leadsUrl = rtrim($frontendUrl, '/')  . '/#/';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -380,16 +375,6 @@ HTML;
             font-size: 14px;
             font-weight: 600;
         }
-        .button {
-            display: inline-block;
-            background: #667eea;
-            color: white !important;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            margin-top: 20px;
-        }
         .footer {
             background: #f9fafb;
             padding: 20px;
@@ -397,10 +382,6 @@ HTML;
             font-size: 12px;
             color: #6b7280;
             border-top: 1px solid #e5e7eb;
-        }
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
         }
     </style>
 </head>
@@ -424,12 +405,9 @@ HTML;
                 <h3>💬 Messaggio</h3>
                 <p>{$leadMessage}</p>
             </div>
-
-            <a href="{$leadsUrl}" class="button">Visualizza tutti i lead</a>
         </div>
         <div class="footer">
             <p>Questa email è stata inviata automaticamente da <strong>Landing Page Builder</strong></p>
-            <p>Landing page: <a href="#">{$pageSlug}</a></p>
         </div>
     </div>
 </body>

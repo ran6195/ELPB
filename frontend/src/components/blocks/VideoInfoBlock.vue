@@ -10,7 +10,10 @@
       <div class="max-w-7xl mx-auto">
         <div class="grid md:grid-cols-2 gap-0">
           <!-- Colonna video (sinistra) -->
-          <div class="relative overflow-hidden bg-gray-900" style="min-height: 200px;">
+          <div
+            :class="['overflow-hidden bg-gray-900', youtubeEmbedUrl ? 'relative' : '']"
+            :style="youtubeEmbedUrl ? 'min-height: 200px' : ''"
+          >
             <!-- YouTube embed: riempie tutta la colonna -->
             <iframe
               v-if="youtubeEmbedUrl && !isVerticalVideo"
@@ -35,16 +38,17 @@
                 </div>
               </div>
             </div>
-            <!-- File video -->
+            <!-- File video: rispetta l'aspect ratio naturale -->
             <video
               v-else-if="block.content.videoUrl"
               controls autoplay muted playsinline loop
-              class="absolute inset-0 w-full h-full object-cover"
+              class="h-auto block mx-auto"
+              :style="{ width: (block.content.videoWidth || 100) + '%' }"
             >
               <source :src="block.content.videoUrl" type="video/mp4">
             </video>
             <!-- Placeholder -->
-            <div v-else class="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <div v-else class="flex items-center justify-center bg-gray-800" style="min-height: 200px;">
               <p class="text-gray-400">Inserisci URL video</p>
             </div>
           </div>

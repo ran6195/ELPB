@@ -1217,8 +1217,9 @@ HTML;
             $loopAttr = $loop ? 'loop' : '';
             $mutedAttr = $muted ? 'muted' : '';
             $controlsAttr = $showControls ? 'controls' : '';
+            $videoWidth = isset($content['videoWidth']) ? (int)$content['videoWidth'] : 100;
             $videoHtml = <<<HTML
-                <video id="{$iframeId}" {$autoplayAttr} {$loopAttr} {$mutedAttr} {$controlsAttr} playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+                <video id="{$iframeId}" {$autoplayAttr} {$loopAttr} {$mutedAttr} {$controlsAttr} playsinline style="width:{$videoWidth}%;height:auto;display:block;margin:0 auto;">
                     <source src="{$videoUrlEscaped}" type="video/mp4">
                 </video>
 HTML;
@@ -1237,12 +1238,17 @@ HTML;
             $mapHtml = '<div class="w-3/4 h-48 bg-gray-800 flex items-center justify-center rounded"><p class="text-gray-400 text-sm">Carica immagine mappa</p></div>';
         }
 
+        $isFileVideo = !$youtubeId && !empty($videoUrl);
+        $videoColStyle = $isFileVideo
+            ? 'overflow:hidden;background:#111827;'
+            : 'position:relative;overflow:hidden;background:#111827;min-height:200px;';
+
         $html = <<<HTML
 <section id="{$containerId}" class="video-info-block w-full {$roundedClass}" {$blockStyle} style="background-color: {$bgColor}; color: {$textColor};">
     <div class="max-w-7xl mx-auto">
         <div class="grid md:grid-cols-2 gap-0">
             <!-- Video Column -->
-            <div style="position:relative;overflow:hidden;background:#111827;min-height:200px;">
+            <div style="{$videoColStyle}">
                 {$videoHtml}
             </div>
             <!-- Info Column -->

@@ -82,6 +82,59 @@
       </div>
     </div>
 
+    <!-- FILTRI -->
+    <div class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-8 py-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- Filtro stato -->
+          <div class="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+            <button
+              @click="filterStatus = 'all'"
+              :class="filterStatus === 'all' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+              class="px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+            >
+              Tutte
+            </button>
+            <button
+              @click="filterStatus = 'published'"
+              :class="filterStatus === 'published' ? 'bg-white shadow text-green-700' : 'text-gray-500 hover:text-gray-700'"
+              class="px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+            >
+              Pubblicate
+            </button>
+            <button
+              @click="filterStatus = 'draft'"
+              :class="filterStatus === 'draft' ? 'bg-white shadow text-gray-700' : 'text-gray-500 hover:text-gray-700'"
+              class="px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+            >
+              Bozze
+            </button>
+          </div>
+
+          <!-- Filtro azienda (solo admin) -->
+          <select
+            v-if="authStore.isAdmin"
+            v-model="filterCompany"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Tutte le aziende</option>
+            <option
+              v-for="company in availableCompanies"
+              :key="company.id"
+              :value="company.id"
+            >
+              {{ company.name }}
+            </option>
+          </select>
+
+          <!-- Contatore risultati -->
+          <span class="text-sm text-gray-400 ml-auto">
+            {{ filteredPages.length }} {{ filteredPages.length === 1 ? 'pagina' : 'pagine' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- CONTENUTO CON PADDING -->
     <div class="max-w-7xl mx-auto px-8 py-8">
 
@@ -96,7 +149,7 @@
       <!-- GRIGLIA CARDS CON SPAZIATURA -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         <div
-          v-for="page in pageStore.pages"
+          v-for="page in filteredPages"
           :key="page.id"
           class="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow"
         >
@@ -217,16 +270,27 @@
       </div>
 
       <!-- EMPTY STATE -->
-      <div v-if="!pageStore.loading && pageStore.pages.length === 0" class="text-center py-20">
+      <div v-if="!pageStore.loading && filteredPages.length === 0" class="text-center py-20">
         <div class="bg-white rounded-lg border border-gray-200 p-12 max-w-md mx-auto shadow-sm">
-          <p class="text-gray-600 mb-6 text-lg">Nessuna pagina trovata</p>
-          <button
-            @click="createNewPage"
-            class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2 mx-auto"
-          >
-            <span class="text-lg">+</span>
-            <span>Crea la tua prima pagina</span>
-          </button>
+          <template v-if="filterStatus !== 'all' || filterCompany">
+            <p class="text-gray-600 mb-6 text-lg">Nessuna pagina corrisponde ai filtri</p>
+            <button
+              @click="filterStatus = 'all'; filterCompany = ''"
+              class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md mx-auto"
+            >
+              Rimuovi filtri
+            </button>
+          </template>
+          <template v-else>
+            <p class="text-gray-600 mb-6 text-lg">Nessuna pagina trovata</p>
+            <button
+              @click="createNewPage"
+              class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2 mx-auto"
+            >
+              <span class="text-lg">+</span>
+              <span>Crea la tua prima pagina</span>
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -291,7 +355,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePageStore } from '../stores/pageStore'
 import { useAuthStore } from '../stores/authStore'
@@ -299,6 +363,29 @@ import { useAuthStore } from '../stores/authStore'
 const router = useRouter()
 const pageStore = usePageStore()
 const authStore = useAuthStore()
+
+// Filtri
+const filterStatus = ref('all')
+const filterCompany = ref('')
+
+const availableCompanies = computed(() => {
+  const map = new Map()
+  for (const page of pageStore.pages) {
+    if (page.company) {
+      map.set(page.company.id, page.company)
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const filteredPages = computed(() => {
+  return pageStore.pages.filter(page => {
+    if (filterStatus.value === 'published' && !page.is_published) return false
+    if (filterStatus.value === 'draft' && page.is_published) return false
+    if (filterCompany.value && page.company?.id !== filterCompany.value) return false
+    return true
+  })
+})
 
 // Import dialog state
 const showImportDialog = ref(false)
