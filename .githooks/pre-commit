@@ -1,0 +1,33 @@
+#!/bin/sh
+# Auto-bump version in frontend/package.json ad ogni commit.
+# Uso: BUMP=minor git commit -m "..."   (patch è il default)
+
+PACKAGE_JSON="frontend/package.json"
+BUMP=${BUMP:-patch}
+
+# Leggi versione corrente
+CURRENT=$(node -p "require('./$PACKAGE_JSON').version")
+
+# Calcola nuova versione in base al tipo di bump
+NEW=$(node -p "
+  const v = '$CURRENT'.split('.').map(Number);
+  switch ('$BUMP') {
+    case 'major': v[0]++; v[1]=0; v[2]=0; break;
+    case 'minor': v[1]++; v[2]=0; break;
+    default:      v[2]++; break;
+  }
+  v.join('.');
+")
+
+# Aggiorna package.json
+node -e "
+  const fs = require('fs');
+  const pkg = JSON.parse(fs.readFileSync('$PACKAGE_JSON', 'utf8'));
+  pkg.version = '$NEW';
+  fs.writeFileSync('$PACKAGE_JSON', JSON.stringify(pkg, null, 2) + '\n');
+"
+
+# Includi package.json nel commit
+git add $PACKAGE_JSON
+
+echo "📦 Versione ($BUMP): $CURRENT → $NEW"

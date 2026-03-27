@@ -1,8 +1,26 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { readFileSync, writeFileSync } from 'fs'
+import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'))
+
+function versionPlugin() {
+  return {
+    name: 'version-file',
+    buildStart() {
+      writeFileSync(
+        resolve(__dirname, 'public/version.json'),
+        JSON.stringify({ version: pkg.version, buildTime: new Date().toISOString() })
+      )
+    }
+  }
+}
 
 export default defineConfig(({ mode }) => ({
-  plugins: [vue()],
+  plugins: [vue(), versionPlugin()],
   base: '/',
   server: {
     port: 3000,
