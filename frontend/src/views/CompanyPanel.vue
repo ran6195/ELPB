@@ -64,7 +64,13 @@
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             ]"
           >
-            Leads
+            <span class="flex items-center gap-2">
+              Leads
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                live
+              </span>
+            </span>
           </button>
         </nav>
       </div>
