@@ -1,9 +1,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
+import pkg from '../../package.json'
+
+// Versione del bundle correntemente caricato nel browser
+const bundleVersion = pkg.version
 
 export function useVersionCheck() {
-  const currentVersion = ref('')
   const updateAvailable = ref(false)
-  let initialBuildTime = null
   let intervalId = null
 
   async function checkVersion() {
@@ -11,13 +13,8 @@ export function useVersionCheck() {
       const res = await fetch('/version.json?t=' + Date.now(), { cache: 'no-store' })
       if (!res.ok) return
       const data = await res.json()
-
-      if (initialBuildTime === null) {
-        // Prima fetch: memorizza il buildTime corrente e mostra la versione
-        initialBuildTime = data.buildTime
-        currentVersion.value = data.version || ''
-      } else if (data.buildTime !== initialBuildTime) {
-        // buildTime cambiato: è stato deployato un nuovo build
+      // Se il server ha una versione diversa da quella del bundle caricato → aggiornamento disponibile
+      if (data.version && data.version !== bundleVersion) {
         updateAvailable.value = true
       }
     } catch (_) {}
@@ -38,5 +35,5 @@ export function useVersionCheck() {
     window.removeEventListener('focus', checkVersion)
   })
 
-  return { currentVersion, updateAvailable, reload }
+  return { updateAvailable, reload }
 }
