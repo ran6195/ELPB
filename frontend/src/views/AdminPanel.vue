@@ -494,9 +494,37 @@
                 ℹ️ L'accettazione della privacy policy è gestita lato client prima dell'invio del form
               </p>
             </div>
+
+            <!-- Toolbar azioni batch -->
+            <div v-if="selectedLeadIds.length > 0" class="mb-3 flex items-center gap-3 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <span class="text-sm font-medium text-blue-800">{{ selectedLeadIds.length }} lead selezionati</span>
+              <div class="flex-1"></div>
+              <button @click="selectedLeadIds = []" class="text-sm text-gray-500 hover:text-gray-700 underline">
+                Deseleziona tutto
+              </button>
+              <button
+                @click="handleBatchDelete"
+                class="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Elimina selezionati
+              </button>
+            </div>
+
             <table class="w-full divide-y divide-gray-200 table-auto">
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      :checked="allPageSelected"
+                      :ref="el => { if (el) el.indeterminate = somePageSelected }"
+                      @change="toggleSelectAll"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
@@ -507,7 +535,15 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="lead in paginatedLeads" :key="lead.id" class="hover:bg-gray-50">
+                <tr v-for="lead in paginatedLeads" :key="lead.id" :class="['hover:bg-gray-50', selectedLeadIds.includes(lead.id) ? 'bg-blue-50' : '']">
+                  <td class="px-4 py-4 w-10">
+                    <input
+                      type="checkbox"
+                      :checked="selectedLeadIds.includes(lead.id)"
+                      @change="toggleSelectLead(lead.id)"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </td>
                   <td class="px-4 py-4 text-sm text-gray-500">
                     {{ formatDate(lead.created_at) }}
                   </td>
@@ -849,6 +885,7 @@ const loading = ref(false)
 const users = ref([])
 const companies = ref([])
 const leads = ref([])
+const selectedLeadIds = ref([])
 const editingUser = ref(null)
 const selectedLead = ref(null)
 const newNoteText = ref('')
@@ -940,6 +977,48 @@ const paginatedLeads = computed(() => {
   return filteredLeads.value.slice(start, start + leadsPerPage.value)
 })
 
+const allPageSelected = computed(() =>
+  paginatedLeads.value.length > 0 &&
+  paginatedLeads.value.every(l => selectedLeadIds.value.includes(l.id))
+)
+const somePageSelected = computed(() =>
+  paginatedLeads.value.some(l => selectedLeadIds.value.includes(l.id)) && !allPageSelected.value
+)
+
+const toggleSelectLead = (id) => {
+  if (selectedLeadIds.value.includes(id)) {
+    selectedLeadIds.value = selectedLeadIds.value.filter(x => x !== id)
+  } else {
+    selectedLeadIds.value = [...selectedLeadIds.value, id]
+  }
+}
+
+const toggleSelectAll = () => {
+  const pageIds = paginatedLeads.value.map(l => l.id)
+  if (allPageSelected.value) {
+    selectedLeadIds.value = selectedLeadIds.value.filter(id => !pageIds.includes(id))
+  } else {
+    const merged = new Set([...selectedLeadIds.value, ...pageIds])
+    selectedLeadIds.value = [...merged]
+  }
+}
+
+const handleBatchDelete = async () => {
+  const count = selectedLeadIds.value.length
+  if (!count) return
+  if (!confirm(`Sei sicuro di voler eliminare ${count} lead selezionati?`)) return
+  try {
+    await Promise.all(selectedLeadIds.value.map(id => pageStore.deleteLead(id)))
+    selectedLeadIds.value = []
+    successMessage.value = `${count} lead eliminati con successo`
+    setTimeout(() => successMessage.value = '', 3000)
+    const leadsData = await pageStore.fetchLeads()
+    leads.value = leadsData || []
+  } catch (error) {
+    console.error('Error batch deleting leads:', error)
+  }
+}
+
 const resetFilters = () => {
   filterText.value = ''
   filterPage.value = ''
@@ -960,6 +1039,10 @@ const refreshLeadsSilently = async () => {
   try {
     const leadsData = await pageStore.fetchLeads()
     leads.value = leadsData || []
+    if (selectedLeadIds.value.length > 0) {
+      const existingIds = new Set((leadsData || []).map(l => l.id))
+      selectedLeadIds.value = selectedLeadIds.value.filter(id => existingIds.has(id))
+    }
   } catch (error) {
     console.error('Error polling leads:', error)
   }
