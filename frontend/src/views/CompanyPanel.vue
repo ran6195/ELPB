@@ -1104,7 +1104,7 @@ const formatDate = (dateString) => {
 }
 
 const exportLeads = () => {
-  const EXCLUDE_META_KEYS = ['privacy_accepted', 'recaptcha_token', '_notes']
+  const EXCLUDE_META_KEYS = ['privacy_accepted', 'recaptcha_token', '_notes', '_appointment']
 
   // Raccogli tutte le chiavi metadata uniche tra i lead filtrati
   const metaKeys = []
@@ -1120,10 +1120,14 @@ const exportLeads = () => {
 
   const metaHeaders = metaKeys.map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
 
-  const headers = ['Data', 'Nome', 'Email', 'Telefono', 'Messaggio', 'Pagina', ...metaHeaders, 'Note']
+  const headers = ['Data', 'Nome', 'Email', 'Telefono', 'Messaggio', 'Pagina', ...metaHeaders, 'Appuntamento', 'Note']
 
   const rows = filteredLeads.value.map(lead => {
     const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {}
+    const appt = meta._appointment
+    const appointment = appt
+      ? [appt.date, appt.time, appt.notes].filter(Boolean).join(' ')
+      : ''
     const notes = (meta._notes || []).map(n => `[${formatDate(n.timestamp)}] ${n.text}`).join(' | ')
     return [
       formatDate(lead.created_at),
@@ -1133,6 +1137,7 @@ const exportLeads = () => {
       lead.message || '',
       lead.page?.title || '',
       ...metaKeys.map(k => meta[k] ?? ''),
+      appointment,
       notes
     ]
   })
