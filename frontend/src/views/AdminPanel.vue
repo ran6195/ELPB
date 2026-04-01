@@ -462,7 +462,7 @@
                   class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Tutte le pagine</option>
-                  <option v-for="p in availablePages" :key="p.id" :value="p.id">{{ p.title }}</option>
+                  <option v-for="p in availablePages" :key="p.id" :value="p.id">{{ p.title }} (#{{ p.id }}-{{ p.slug }})</option>
                 </select>
                 <select
                   v-model="filterStatus"
@@ -530,6 +530,7 @@
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagina</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Pagina</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
                   <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                 </tr>
@@ -577,6 +578,15 @@
                   <td class="px-4 py-4 text-sm text-gray-500">
                     <span v-if="lead.page" class="text-gray-700">{{ lead.page.title }}</span>
                     <span v-else class="text-gray-400">-</span>
+                  </td>
+                  <td class="px-4 py-4 text-sm text-gray-500">
+                    <span
+                      v-if="lead.page"
+                      class="font-mono text-xs text-gray-500 cursor-pointer hover:text-gray-700"
+                      @click="copyPageId(`#${lead.page.id}-${lead.page.slug}`)"
+                      :title="`Clicca per copiare: #${lead.page.id}-${lead.page.slug}`"
+                    >#{{ lead.page.id }}-{{ lead.page.slug }}</span>
+                    <span v-else class="text-gray-400">—</span>
                   </td>
                   <td class="px-4 py-4 text-sm">
                     <span
@@ -935,9 +945,9 @@ const currentPage = ref(1)
 const availablePages = computed(() => {
   const pages = {}
   leads.value.forEach(l => {
-    if (l.page) pages[l.page.id] = l.page.title
+    if (l.page) pages[l.page.id] = { title: l.page.title, slug: l.page.slug }
   })
-  return Object.entries(pages).map(([id, title]) => ({ id, title }))
+  return Object.entries(pages).map(([id, { title, slug }]) => ({ id, title, slug }))
 })
 
 const hasActiveFilters = computed(() =>
@@ -948,11 +958,14 @@ const filteredLeads = computed(() => {
   let result = leads.value
   if (filterText.value) {
     const q = filterText.value.toLowerCase()
-    result = result.filter(l =>
-      (l.name || '').toLowerCase().includes(q) ||
-      (l.email || '').toLowerCase().includes(q) ||
-      (l.phone || '').toLowerCase().includes(q)
-    )
+    result = result.filter(l => {
+      const pageId = l.page ? `#${l.page.id}-${l.page.slug}` : ''
+      return (l.name || '').toLowerCase().includes(q) ||
+        (l.email || '').toLowerCase().includes(q) ||
+        (l.phone || '').toLowerCase().includes(q) ||
+        (l.page?.slug || '').toLowerCase().includes(q) ||
+        pageId.toLowerCase().includes(q)
+    })
   }
   if (filterPage.value) {
     result = result.filter(l => l.page?.id == filterPage.value)
@@ -1017,6 +1030,10 @@ const handleBatchDelete = async () => {
   } catch (error) {
     console.error('Error batch deleting leads:', error)
   }
+}
+
+const copyPageId = (text) => {
+  navigator.clipboard.writeText(text).catch(() => {})
 }
 
 const resetFilters = () => {
