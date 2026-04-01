@@ -2102,7 +2102,7 @@ HTML;
                     </svg>
                     <div>
                         <h4 class="font-semibold mb-1">Telefono</h4>
-                        <p class="text-gray-600">{$phone}</p>
+                        <p class="text-gray-600"><a href="tel:{$phone}" class="hover:underline">{$phone}</a></p>
                     </div>
                 </div>
 HTML;
@@ -2118,7 +2118,7 @@ HTML;
                     </svg>
                     <div>
                         <h4 class="font-semibold mb-1">Email</h4>
-                        <p class="text-gray-600">{$email}</p>
+                        <p class="text-gray-600"><a href="mailto:{$email}" class="hover:underline">{$email}</a></p>
                     </div>
                 </div>
 HTML;

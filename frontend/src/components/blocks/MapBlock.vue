@@ -96,7 +96,8 @@
               @blur="updateContent('phone', $event.target.innerText)"
               class="text-gray-600 outline-none focus:ring-2 focus:ring-primary-300 rounded px-1"
             >
-              {{ block.content.phone }}
+              <a v-if="!editable" :href="`tel:${block.content.phone}`" class="hover:underline">{{ block.content.phone }}</a>
+              <template v-else>{{ block.content.phone }}</template>
             </p>
           </div>
         </div>
@@ -113,7 +114,8 @@
               @blur="updateContent('email', $event.target.innerText)"
               class="text-gray-600 outline-none focus:ring-2 focus:ring-primary-300 rounded px-1"
             >
-              {{ block.content.email }}
+              <a v-if="!editable" :href="`mailto:${block.content.email}`" class="hover:underline">{{ block.content.email }}</a>
+              <template v-else>{{ block.content.email }}</template>
             </p>
           </div>
         </div>
