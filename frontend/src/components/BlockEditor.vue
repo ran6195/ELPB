@@ -454,6 +454,23 @@
         </select>
         <p class="text-xs text-gray-500 mt-1">Controlla la distanza tra le righe di testo</p>
       </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Spazio sotto il Titolo</label>
+        <select
+          v-model="localBlock.content.titleMarginBottom"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="">Predefinito</option>
+          <option value="0.25rem">Minimo</option>
+          <option value="0.5rem">Molto Ridotto</option>
+          <option value="0.75rem">Ridotto</option>
+          <option value="1rem">Normale</option>
+          <option value="1.5rem">Comodo</option>
+          <option value="2rem">Spazioso</option>
+          <option value="2.5rem">Molto Spazioso</option>
+          <option value="3rem">Massimo</option>
+        </select>
+      </div>
     </div>
 
     <!-- Image Slide Block Editor -->
@@ -1475,6 +1492,23 @@
           <option value="4xl">Molto grande</option>
           <option value="5xl">Enorme</option>
           <option value="6xl">Gigante</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Spazio sotto il Titolo</label>
+        <select
+          v-model="localBlock.content.titleMarginBottom"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="">Predefinito</option>
+          <option value="0.25rem">Minimo</option>
+          <option value="0.5rem">Molto Ridotto</option>
+          <option value="0.75rem">Ridotto</option>
+          <option value="1rem">Normale</option>
+          <option value="1.5rem">Comodo</option>
+          <option value="2rem">Spazioso</option>
+          <option value="2.5rem">Molto Spazioso</option>
+          <option value="3rem">Massimo</option>
         </select>
       </div>
 

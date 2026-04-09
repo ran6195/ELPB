@@ -925,6 +925,12 @@ HTML;
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
         $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleMarginBottom = htmlspecialchars($content['titleMarginBottom'] ?? '');
+        if ($titleMarginBottom) {
+            $titleStyle = $titleStyle
+                ? substr($titleStyle, 0, -1) . "margin-bottom:{$titleMarginBottom};\""
+                : " style=\"margin-bottom:{$titleMarginBottom};\"";
+        }
 
         $html = <<<HTML
 <div class="cta-block">
@@ -1084,9 +1090,15 @@ HTML;
 
         $blockStyle = self::getBlockStyle($styles);
         $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleMarginBottom = htmlspecialchars($content['titleMarginBottom'] ?? '');
 
         $titleHtml = '';
         if (!empty($title)) {
+            if ($titleMarginBottom) {
+                $titleStyle = $titleStyle
+                    ? substr($titleStyle, 0, -1) . "margin-bottom:{$titleMarginBottom};\""
+                    : " style=\"margin-bottom:{$titleMarginBottom};\"";
+            }
             $titleHtml = "<h2 class=\"text-3xl font-bold mb-4\"{$titleStyle}>{$title}</h2>";
         }
 

@@ -8,7 +8,7 @@
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.innerText)"
         class="text-3xl md:text-4xl font-bold mb-6 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
-        :style="titleFontSize ? { fontSize: titleFontSize } : {}"
+        :style="{ ...(titleFontSize ? { fontSize: titleFontSize } : {}), marginBottom: block.content.titleMarginBottom || undefined }"
       >
         {{ block.content.title }}
       </h2>
