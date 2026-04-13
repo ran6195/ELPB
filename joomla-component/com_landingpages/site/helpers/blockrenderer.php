@@ -1002,6 +1002,11 @@ HTML;
         if (!empty($styles['fontFamily'])) {
             $wrapperStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
         }
+        $backgroundContained = !empty($content['backgroundContained']);
+        $containerClass = $backgroundContained ? ' max-w-7xl' : '';
+        if ($backgroundContained) {
+            $wrapperStyles[] = 'margin: 0 auto';
+        }
         $wrapperAttr = 'style="' . implode('; ', $wrapperStyles) . '"';
 
         // Layer 1: background image with opacity
@@ -1063,7 +1068,7 @@ HTML;
         $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
 
         return <<<HTML
-<div class="hero-block" {$wrapperAttr}>
+<div class="hero-block{$containerClass}" {$wrapperAttr}>
     {$bgImageHtml}
     {$overlayHtml}
     <div class="{$roundedClass}" {$contentStyleAttr}>

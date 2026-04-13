@@ -1,5 +1,5 @@
 <template>
-  <div class="hero-block" :style="wrapperStyles">
+  <div class="hero-block" :class="{ 'max-w-7xl mx-auto': block.content.backgroundContained }" :style="wrapperStyles">
     <!-- Layer 1: immagine di sfondo con opacità -->
     <div
       v-if="block.content.backgroundImage"

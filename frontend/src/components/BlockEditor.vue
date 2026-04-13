@@ -70,6 +70,18 @@
         <p class="text-xs text-gray-500 mt-1">Altezza minima del blocco hero</p>
       </div>
 
+      <div class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="hero-background-contained"
+          v-model="localBlock.content.backgroundContained"
+          class="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-200"
+        />
+        <label for="hero-background-contained" class="text-xs font-medium text-gray-700 cursor-pointer">
+          Limita sfondo alla larghezza del container
+        </label>
+      </div>
+
       <div v-if="block.type === 'hero-wide'">
         <label class="block text-xs font-medium text-gray-700 mb-2">Larghezza Blocco</label>
         <select
