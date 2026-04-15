@@ -507,6 +507,39 @@
         </select>
         <p class="text-xs text-gray-500 mt-1">Controlla la distanza tra le righe di testo</p>
       </div>
+      <div class="flex items-center justify-between">
+        <label class="text-xs font-medium text-gray-700">Centra verticalmente</label>
+        <button
+          type="button"
+          @click="localBlock.content.verticalCenter = !localBlock.content.verticalCenter"
+          :class="[
+            'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none',
+            localBlock.content.verticalCenter ? 'bg-primary-500' : 'bg-gray-300'
+          ]"
+        >
+          <span
+            :class="[
+              'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+              localBlock.content.verticalCenter ? 'translate-x-4' : 'translate-x-1'
+            ]"
+          ></span>
+        </button>
+      </div>
+      <div v-if="localBlock.content.verticalCenter">
+        <label class="block text-xs font-medium text-gray-700 mb-2">Altezza Minima</label>
+        <select
+          v-model="localBlock.content.minHeight"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="150px">Piccola (150px)</option>
+          <option value="200px">Ridotta (200px)</option>
+          <option value="300px">Normale (300px)</option>
+          <option value="400px">Media (400px)</option>
+          <option value="500px">Alta (500px)</option>
+          <option value="600px">Molto Alta (600px)</option>
+          <option value="100vh">Schermo Intero</option>
+        </select>
+      </div>
     </div>
 
     <!-- Image Slide Block Editor -->

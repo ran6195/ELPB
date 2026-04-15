@@ -1128,9 +1128,22 @@ HTML;
         // Don't escape HTML in text content - it contains formatted HTML
         $text = $content['text'] ?? '<p>Testo</p>';
         $lineHeight = htmlspecialchars($content['lineHeight'] ?? '1.625');
+        $verticalCenter = !empty($content['verticalCenter']);
+        $minHeight = htmlspecialchars($content['minHeight'] ?? '300px');
         $roundedClass = $this->getRoundedClass();
 
         $blockStyle = $this->getBlockStyle($styles);
+
+        // Aggiungi stili per centratura verticale
+        if ($verticalCenter) {
+            $flexStyle = "display:flex; align-items:center; min-height:{$minHeight};";
+            if ($blockStyle) {
+                // Inserisce gli stili flex prima della chiusura del style=""
+                $blockStyle = substr($blockStyle, 0, -1) . ' ' . $flexStyle . '"';
+            } else {
+                $blockStyle = "style=\"{$flexStyle}\"";
+            }
+        }
 
         return <<<HTML
 <div class="rich-text-only-block">

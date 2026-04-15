@@ -32,11 +32,19 @@ const props = defineProps({
 
 const blockStyles = computed(() => {
   const styles = props.block.styles || {}
+  const verticalCenter = props.block.content.verticalCenter
+  const minHeight = props.block.content.minHeight || '300px'
+
   return {
     backgroundColor: styles.backgroundColor || 'transparent',
     color: styles.textColor || 'inherit',
     padding: styles.padding || undefined,
-    fontFamily: styles.fontFamily || undefined
+    fontFamily: styles.fontFamily || undefined,
+    ...(verticalCenter ? {
+      display: 'flex',
+      alignItems: 'center',
+      minHeight: minHeight
+    } : {})
   }
 })
 
