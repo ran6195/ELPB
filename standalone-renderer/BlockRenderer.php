@@ -1139,7 +1139,8 @@ HTML;
         if (!empty($styles['fontFamily']))      $outerCss[] = "font-family:'" . $styles['fontFamily'] . "',sans-serif";
         if ($verticalCenter) {
             $outerCss[] = 'display:flex';
-            $outerCss[] = 'align-items:center';
+            $outerCss[] = 'flex-direction:column';
+            $outerCss[] = 'justify-content:center';
             $outerCss[] = "min-height:{$minHeight}";
         }
         $outerStyle = !empty($outerCss) ? 'style="' . implode(';', $outerCss) . '"' : '';

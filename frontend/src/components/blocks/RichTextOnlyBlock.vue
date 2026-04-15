@@ -41,7 +41,8 @@ const outerStyles = computed(() => {
     fontFamily: styles.fontFamily || undefined,
     ...(verticalCenter ? {
       display: 'flex',
-      alignItems: 'center',
+      flexDirection: 'column',
+      justifyContent: 'center',
       minHeight: minHeight
     } : {})
   }
@@ -70,6 +71,10 @@ const textStyles = computed(() => {
 
 :deep(.prose p) {
   margin-bottom: 1em;
+}
+
+:deep(.prose p:last-child) {
+  margin-bottom: 0;
 }
 
 :deep(.prose h1) {
