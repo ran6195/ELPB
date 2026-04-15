@@ -31,26 +31,25 @@ const props = defineProps({
 })
 
 const outerStyles = computed(() => {
-  const styles = props.block.styles || {}
   const verticalCenter = props.block.content.verticalCenter
   const minHeight = props.block.content.minHeight || '150px'
 
+  if (!verticalCenter) return {}
+
   return {
-    backgroundColor: styles.backgroundColor || 'transparent',
-    color: styles.textColor || 'inherit',
-    fontFamily: styles.fontFamily || undefined,
-    ...(verticalCenter ? {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      minHeight: minHeight
-    } : {})
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    minHeight: minHeight
   }
 })
 
 const innerStyles = computed(() => {
   const styles = props.block.styles || {}
   return {
+    backgroundColor: styles.backgroundColor || 'transparent',
+    color: styles.textColor || 'inherit',
+    fontFamily: styles.fontFamily || undefined,
     padding: styles.padding || '48px 24px'
   }
 })

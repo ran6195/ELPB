@@ -1132,11 +1132,8 @@ HTML;
         $minHeight = htmlspecialchars($content['minHeight'] ?? '150px');
         $roundedClass = $this->getRoundedClass();
 
-        // Stili wrapper esterno: sfondo, colore, font + eventuale flex per centratura verticale
+        // Stili wrapper esterno: solo flex per centratura verticale (il blocco rimane dentro il container)
         $outerCss = [];
-        if (!empty($styles['backgroundColor'])) $outerCss[] = 'background-color:' . $styles['backgroundColor'];
-        if (!empty($styles['textColor']))       $outerCss[] = 'color:' . $styles['textColor'];
-        if (!empty($styles['fontFamily']))      $outerCss[] = "font-family:'" . $styles['fontFamily'] . "',sans-serif";
         if ($verticalCenter) {
             $outerCss[] = 'display:flex';
             $outerCss[] = 'flex-direction:column';
@@ -1145,9 +1142,14 @@ HTML;
         }
         $outerStyle = !empty($outerCss) ? 'style="' . implode(';', $outerCss) . '"' : '';
 
-        // Padding sul div interno
+        // Sfondo, colore, font e padding sull'inner div (rispetta il container della pagina)
+        $innerCss = [];
+        if (!empty($styles['backgroundColor'])) $innerCss[] = 'background-color:' . $styles['backgroundColor'];
+        if (!empty($styles['textColor']))       $innerCss[] = 'color:' . $styles['textColor'];
+        if (!empty($styles['fontFamily']))      $innerCss[] = "font-family:'" . $styles['fontFamily'] . "',sans-serif";
         $padding = htmlspecialchars($styles['padding'] ?? '48px 24px');
-        $innerStyle = "style=\"padding:{$padding}\"";
+        $innerCss[] = "padding:{$padding}";
+        $innerStyle = 'style="' . implode(';', $innerCss) . '"';
 
         return <<<HTML
 <div class="rich-text-only-block" {$outerStyle}>
