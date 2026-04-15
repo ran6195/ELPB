@@ -1,11 +1,11 @@
 <template>
-  <div class="rich-text-only-block">
+  <div class="rich-text-only-block" :style="outerStyles">
     <div
       :class="[
-        'max-w-7xl mx-auto px-6 py-12',
+        'max-w-7xl mx-auto w-full',
         roundedCorners ? 'rounded-lg' : ''
       ]"
-      :style="blockStyles"
+      :style="innerStyles"
     >
       <div class="text-lg prose max-w-none" :style="textStyles" v-html="block.content.text"></div>
     </div>
@@ -30,7 +30,7 @@ const props = defineProps({
   }
 })
 
-const blockStyles = computed(() => {
+const outerStyles = computed(() => {
   const styles = props.block.styles || {}
   const verticalCenter = props.block.content.verticalCenter
   const minHeight = props.block.content.minHeight || '300px'
@@ -38,13 +38,19 @@ const blockStyles = computed(() => {
   return {
     backgroundColor: styles.backgroundColor || 'transparent',
     color: styles.textColor || 'inherit',
-    padding: styles.padding || undefined,
     fontFamily: styles.fontFamily || undefined,
     ...(verticalCenter ? {
       display: 'flex',
       alignItems: 'center',
       minHeight: minHeight
     } : {})
+  }
+})
+
+const innerStyles = computed(() => {
+  const styles = props.block.styles || {}
+  return {
+    padding: styles.padding || '48px 24px'
   }
 })
 

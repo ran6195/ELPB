@@ -1132,22 +1132,25 @@ HTML;
         $minHeight = htmlspecialchars($content['minHeight'] ?? '300px');
         $roundedClass = $this->getRoundedClass();
 
-        $blockStyle = $this->getBlockStyle($styles);
-
-        // Aggiungi stili per centratura verticale
+        // Stili wrapper esterno: sfondo, colore, font + eventuale flex per centratura verticale
+        $outerCss = [];
+        if (!empty($styles['backgroundColor'])) $outerCss[] = 'background-color:' . $styles['backgroundColor'];
+        if (!empty($styles['textColor']))       $outerCss[] = 'color:' . $styles['textColor'];
+        if (!empty($styles['fontFamily']))      $outerCss[] = "font-family:'" . $styles['fontFamily'] . "',sans-serif";
         if ($verticalCenter) {
-            $flexStyle = "display:flex; align-items:center; min-height:{$minHeight};";
-            if ($blockStyle) {
-                // Inserisce gli stili flex prima della chiusura del style=""
-                $blockStyle = substr($blockStyle, 0, -1) . ' ' . $flexStyle . '"';
-            } else {
-                $blockStyle = "style=\"{$flexStyle}\"";
-            }
+            $outerCss[] = 'display:flex';
+            $outerCss[] = 'align-items:center';
+            $outerCss[] = "min-height:{$minHeight}";
         }
+        $outerStyle = !empty($outerCss) ? 'style="' . implode(';', $outerCss) . '"' : '';
+
+        // Padding sul div interno
+        $padding = htmlspecialchars($styles['padding'] ?? '48px 24px');
+        $innerStyle = "style=\"padding:{$padding}\"";
 
         return <<<HTML
-<div class="rich-text-only-block">
-    <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
+<div class="rich-text-only-block" {$outerStyle}>
+    <div class="max-w-7xl mx-auto w-full {$roundedClass}" {$innerStyle}>
         <div class="text-lg prose max-w-none" style="line-height: {$lineHeight};">{$text}</div>
     </div>
 </div>
