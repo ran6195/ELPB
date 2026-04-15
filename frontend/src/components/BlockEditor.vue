@@ -531,6 +531,7 @@
           v-model="localBlock.content.minHeight"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
         >
+          <option value="50px">Minima (50px)</option>
           <option value="150px">Piccola (150px)</option>
           <option value="200px">Ridotta (200px)</option>
           <option value="300px">Normale (300px)</option>
