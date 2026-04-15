@@ -51,6 +51,7 @@ import HeroBlock from '../components/blocks/HeroBlock.vue'
 import HeroWideBlock from '../components/blocks/HeroWideBlock.vue'
 import ImageSlideBlock from '../components/blocks/ImageSlideBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
+import RichTextOnlyBlock from '../components/blocks/RichTextOnlyBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
 import AdvancedFormBlock from '../components/blocks/AdvancedFormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
@@ -138,6 +139,7 @@ const getBlockComponent = (type) => {
     'image-slide': ImageSlideBlock,
     video: VideoBlock,
     text: TextBlock,
+    'rich-text': RichTextOnlyBlock,
     features: FeaturesBlock,
     'services-grid': ServicesGridBlock,
     cta: CtaBlock,
