@@ -485,6 +485,30 @@
       </div>
     </div>
 
+    <!-- Rich Text Only Block Editor -->
+    <div v-else-if="block.type === 'rich-text'" class="space-y-5">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Testo</label>
+        <RichTextEditor v-model="localBlock.content.text" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-2">Spaziatura Verticale Linee</label>
+        <select
+          v-model="localBlock.content.lineHeight"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+        >
+          <option value="1">Compatta (1)</option>
+          <option value="1.25">Stretta (1.25)</option>
+          <option value="1.375">Normale Stretta (1.375)</option>
+          <option value="1.5">Normale (1.5)</option>
+          <option value="1.625">Comoda (1.625)</option>
+          <option value="1.75">Spaziosa (1.75)</option>
+          <option value="2">Molto Spaziosa (2)</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Controlla la distanza tra le righe di testo</p>
+      </div>
+    </div>
+
     <!-- Image Slide Block Editor -->
     <div v-else-if="block.type === 'image-slide'" class="space-y-5">
       <div>

@@ -1121,6 +1121,27 @@ HTML;
     }
 
     /**
+     * Render Rich Text Only block
+     */
+    protected function renderRichtext($content, $styles, $block)
+    {
+        // Don't escape HTML in text content - it contains formatted HTML
+        $text = $content['text'] ?? '<p>Testo</p>';
+        $lineHeight = htmlspecialchars($content['lineHeight'] ?? '1.625');
+        $roundedClass = $this->getRoundedClass();
+
+        $blockStyle = $this->getBlockStyle($styles);
+
+        return <<<HTML
+<div class="rich-text-only-block">
+    <div class="max-w-7xl mx-auto px-6 py-12 {$roundedClass}" {$blockStyle}>
+        <div class="text-lg prose max-w-none" style="line-height: {$lineHeight};">{$text}</div>
+    </div>
+</div>
+HTML;
+    }
+
+    /**
      * Render Two Column Text-Image block
      */
     protected function renderTwocolumntextimage($content, $styles, $block)

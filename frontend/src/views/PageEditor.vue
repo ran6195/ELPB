@@ -478,6 +478,7 @@ import HeroBlock from '../components/blocks/HeroBlock.vue'
 import HeroWideBlock from '../components/blocks/HeroWideBlock.vue'
 import ImageSlideBlock from '../components/blocks/ImageSlideBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
+import RichTextOnlyBlock from '../components/blocks/RichTextOnlyBlock.vue'
 import FormBlock from '../components/blocks/FormBlock.vue'
 import AdvancedFormBlock from '../components/blocks/AdvancedFormBlock.vue'
 import TwoColumnTextImage from '../components/blocks/TwoColumnTextImage.vue'
@@ -564,6 +565,7 @@ const blockTypes = [
   { type: 'image-slide', name: 'Diapositiva Immagine', description: 'Immagine a schermo intero con overlay opzionale' },
   { type: 'video', name: 'Video', description: 'Video a schermo intero senza testo' },
   { type: 'text', name: 'Testo', description: 'Blocco di testo semplice' },
+  { type: 'rich-text', name: 'Solo Testo', description: 'Blocco con solo editor di testo ricco, senza titolo' },
   { type: 'features', name: 'Vantaggi', description: 'Griglia 3 colonne con icone e testo' },
   { type: 'services-grid', name: 'Griglia Servizi', description: 'Griglia servizi con immagini' },
   { type: 'cta', name: 'Call to Action', description: 'Sezione con pulsante CTA centrato' },
@@ -884,6 +886,10 @@ const getDefaultContent = (type) => {
       text: '<p>Inserisci qui il tuo testo...</p>',
       lineHeight: '1.625'
     },
+    'rich-text': {
+      text: '<p>Inserisci il tuo testo...</p>',
+      lineHeight: '1.625'
+    },
     'image-slide': {
       image: '',
       alt: 'Immagine diapositiva',
@@ -1137,6 +1143,7 @@ const getBlockComponent = (type) => {
     'image-slide': ImageSlideBlock,
     video: VideoBlock,
     text: TextBlock,
+    'rich-text': RichTextOnlyBlock,
     features: FeaturesBlock,
     'services-grid': ServicesGridBlock,
     cta: CtaBlock,
