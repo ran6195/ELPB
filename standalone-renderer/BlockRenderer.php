@@ -1129,7 +1129,7 @@ HTML;
         $text = $content['text'] ?? '<p>Testo</p>';
         $lineHeight = htmlspecialchars($content['lineHeight'] ?? '1.625');
         $verticalCenter = !empty($content['verticalCenter']);
-        $minHeight = htmlspecialchars($content['minHeight'] ?? '300px');
+        $minHeight = htmlspecialchars($content['minHeight'] ?? '150px');
         $roundedClass = $this->getRoundedClass();
 
         // Stili wrapper esterno: sfondo, colore, font + eventuale flex per centratura verticale

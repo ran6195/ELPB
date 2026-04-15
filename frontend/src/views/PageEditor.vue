@@ -888,7 +888,8 @@ const getDefaultContent = (type) => {
     },
     'rich-text': {
       text: '<p>Inserisci il tuo testo...</p>',
-      lineHeight: '1.625'
+      lineHeight: '1.625',
+      minHeight: '150px'
     },
     'image-slide': {
       image: '',

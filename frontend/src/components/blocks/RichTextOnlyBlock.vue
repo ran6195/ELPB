@@ -33,7 +33,7 @@ const props = defineProps({
 const outerStyles = computed(() => {
   const styles = props.block.styles || {}
   const verticalCenter = props.block.content.verticalCenter
-  const minHeight = props.block.content.minHeight || '300px'
+  const minHeight = props.block.content.minHeight || '150px'
 
   return {
     backgroundColor: styles.backgroundColor || 'transparent',
