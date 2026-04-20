@@ -750,6 +750,15 @@ class PageController
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
+            // Valida owner_email se fornita
+            if (!empty($data['owner_email']) && !filter_var($data['owner_email'], FILTER_VALIDATE_EMAIL)) {
+                $response->getBody()->write(json_encode([
+                    'error' => 'Validation failed',
+                    'message' => "Email notifiche non valida: {$data['owner_email']}"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            }
+
             // Valida email aggiuntive se presenti
             if (!empty($data['additional_emails'])) {
                 $emails = array_map('trim', explode(',', $data['additional_emails']));
@@ -768,6 +777,7 @@ class PageController
             $confirmationEmail = $data['confirmation_email'] ?? [];
             $page->notification_settings = [
                 'enabled' => (bool) $data['enabled'],
+                'owner_email' => $data['owner_email'] ?? '',
                 'additional_emails' => $data['additional_emails'] ?? '',
                 'confirmation_email' => [
                     'enabled' => (bool) ($confirmationEmail['enabled'] ?? false),

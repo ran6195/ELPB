@@ -555,19 +555,19 @@
       </div>
 
       <div v-if="notificationSettings.enabled" class="space-y-4 mt-4 pt-4 border-t border-gray-200">
-        <!-- Email proprietario (automatica) -->
+        <!-- Email notifiche (modificabile, obbligatoria) -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-2">
-            Email proprietario pagina
+            Email notifiche <span class="text-red-500">*</span>
           </label>
           <input
             type="email"
-            :value="currentUserEmail"
-            disabled
-            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
+            v-model="notificationSettings.owner_email"
+            :placeholder="currentUserEmail"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
           />
           <p class="text-xs text-gray-500 mt-1">
-            ✓ Riceverai sempre notifiche a questo indirizzo
+            Riceverai sempre le notifiche a questo indirizzo. Se lasci vuoto, viene usata automaticamente l'email del tuo account (<span class="font-medium">{{ currentUserEmail }}</span>).
           </p>
         </div>
 
@@ -1136,6 +1136,7 @@ A presto!`
 
 const notificationSettings = ref({
   enabled: props.page.notification_settings?.enabled || false,
+  owner_email: props.page.notification_settings?.owner_email || '',
   additional_emails: props.page.notification_settings?.additional_emails || '',
   confirmation_email: {
     enabled: props.page.notification_settings?.confirmation_email?.enabled || false,
@@ -1161,6 +1162,7 @@ watch(() => props.page.notification_settings, (newSettings) => {
   if (newSettings) {
     notificationSettings.value = {
       enabled: newSettings.enabled || false,
+      owner_email: newSettings.owner_email || '',
       additional_emails: newSettings.additional_emails || '',
       confirmation_email: {
         enabled: newSettings.confirmation_email?.enabled || false,

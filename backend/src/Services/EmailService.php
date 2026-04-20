@@ -263,9 +263,13 @@ HTML;
     {
         $recipients = [];
 
-        // 1. Email owner della pagina (sempre incluso se presente)
-        if (!empty($page->user->email)) {
-            $recipients[] = $page->user->email;
+        // 1. Email owner: usa owner_email da settings se presente, altrimenti fallback a user->email
+        $ownerEmail = !empty($notificationSettings['owner_email'])
+            ? $notificationSettings['owner_email']
+            : ($page->user->email ?? null);
+
+        if ($ownerEmail) {
+            $recipients[] = $ownerEmail;
         }
 
         // 2. Email aggiuntive custom (se configurate)
