@@ -49,15 +49,7 @@ class BlockRenderer
         $method = 'render' . str_replace('-', '', ucwords($type, '-'));
 
         if (method_exists($this, $method)) {
-            $html = $this->$method($content, $styles, $block);
-
-            // Aggiungi id ancora se presente
-            if (!empty($content['anchor'])) {
-                $anchor = htmlspecialchars($content['anchor']);
-                $html = preg_replace('/^(<(?:div|nav|section|footer|header|article|main|aside)\b)/', '$1 id="' . $anchor . '"', $html, 1);
-            }
-
-            return $html;
+            return $this->$method($content, $styles, $block);
         }
 
         return '<!-- Unknown block type: ' . htmlspecialchars($type) . ' -->';

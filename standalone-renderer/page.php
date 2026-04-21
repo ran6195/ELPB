@@ -239,6 +239,7 @@ function renderPage($page) {
         .prose h2 { font-size: 1.75em; font-weight: 700; line-height: 1.25; margin-top: 0.5em; margin-bottom: 0.5em; }
         .prose h3 { font-size: 1.35em; font-weight: 600; line-height: 1.3;  margin-top: 0.5em; margin-bottom: 0.5em; }
         .prose p  { margin-bottom: 0.75em; }
+        .prose p:last-child { margin-bottom: 0; }
         .prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 0.75em; }
         .prose li { margin-bottom: 0.25em; }
         /* Grassetto normale per paragrafi e liste */
@@ -334,7 +335,8 @@ function renderPage($page) {
     <?php
     // Renderizza tutti i blocchi
     foreach ($blocks as $block) {
-        echo '<div class="block-container">';
+        $anchorAttr = !empty($block['content']['anchor']) ? ' id="' . htmlspecialchars($block['content']['anchor']) . '"' : '';
+        echo '<div class="block-container"' . $anchorAttr . '>';
         echo $renderer->render($block, $roundedCorners);
         echo '</div>';
     }
