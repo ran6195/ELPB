@@ -1188,6 +1188,10 @@ async function saveNotificationSettings() {
   try {
     await pageStore.updateNotificationSettings(props.page.id, notificationSettings.value)
 
+    // Aggiorna localPage così il parent (PageEditor) riceve i nuovi valori
+    // e quando il pannello viene riaperto i campi mostrano i dati salvati
+    localPage.value = { ...localPage.value, notification_settings: notificationSettings.value }
+
     notificationMessage.value = {
       text: 'Impostazioni notifiche salvate con successo!',
       type: 'success'
