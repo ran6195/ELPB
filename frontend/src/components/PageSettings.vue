@@ -1134,20 +1134,25 @@ grazie per averci contattato. Abbiamo ricevuto la tua richiesta e ti risponderem
 
 A presto!`
 
-const notificationSettings = ref({
-  enabled: props.page.notification_settings?.enabled || false,
-  owner_email: props.page.notification_settings?.owner_email || '',
-  additional_emails: props.page.notification_settings?.additional_emails || '',
-  confirmation_email: {
-    enabled: props.page.notification_settings?.confirmation_email?.enabled || false,
-    subject: props.page.notification_settings?.confirmation_email?.subject || DEFAULT_CONFIRMATION_SUBJECT,
-    body: props.page.notification_settings?.confirmation_email?.body || DEFAULT_CONFIRMATION_BODY,
-    from_name: props.page.notification_settings?.confirmation_email?.from_name || '',
-    from_address: props.page.notification_settings?.confirmation_email?.from_address || '',
-    header_color: props.page.notification_settings?.confirmation_email?.header_color || '#667eea',
-    header_color_end: props.page.notification_settings?.confirmation_email?.header_color_end || '#764ba2'
+function buildNotificationSettings(src) {
+  return {
+    enabled: src?.enabled || false,
+    owner_email: src?.owner_email || '',
+    additional_emails: src?.additional_emails || '',
+    confirmation_email: {
+      enabled: src?.confirmation_email?.enabled || false,
+      subject: src?.confirmation_email?.subject || DEFAULT_CONFIRMATION_SUBJECT,
+      body: src?.confirmation_email?.body || DEFAULT_CONFIRMATION_BODY,
+      from_name: src?.confirmation_email?.from_name || '',
+      from_address: src?.confirmation_email?.from_address || '',
+      header_color: src?.confirmation_email?.header_color || '#667eea',
+      header_color_end: src?.confirmation_email?.header_color_end || '#764ba2'
+    }
   }
-})
+}
+
+// Usa currentPage dello store come source of truth (viene aggiornato dopo ogni save)
+const notificationSettings = ref(buildNotificationSettings(pageStore.currentPage?.notification_settings))
 
 const savingNotifications = ref(false)
 const notificationMessage = ref({ text: '', type: '' })
@@ -1157,24 +1162,9 @@ const currentUserEmail = computed(() => {
   return authStore.user?.email || 'Non disponibile'
 })
 
-// Aggiorna settings quando cambia la pagina
-watch(() => props.page.notification_settings, (newSettings) => {
-  if (newSettings) {
-    notificationSettings.value = {
-      enabled: newSettings.enabled || false,
-      owner_email: newSettings.owner_email || '',
-      additional_emails: newSettings.additional_emails || '',
-      confirmation_email: {
-        enabled: newSettings.confirmation_email?.enabled || false,
-        subject: newSettings.confirmation_email?.subject || DEFAULT_CONFIRMATION_SUBJECT,
-        body: newSettings.confirmation_email?.body || DEFAULT_CONFIRMATION_BODY,
-        from_name: newSettings.confirmation_email?.from_name || '',
-        from_address: newSettings.confirmation_email?.from_address || '',
-        header_color: newSettings.confirmation_email?.header_color || '#667eea',
-        header_color_end: newSettings.confirmation_email?.header_color_end || '#764ba2'
-      }
-    }
-  }
+// Sincronizza quando lo store aggiorna currentPage (es. dopo salvataggio o reload)
+watch(() => pageStore.currentPage?.notification_settings, (newSettings) => {
+  notificationSettings.value = buildNotificationSettings(newSettings)
 }, { deep: true })
 
 function toggleNotifications() {
@@ -1187,12 +1177,8 @@ async function saveNotificationSettings() {
 
   try {
     await pageStore.updateNotificationSettings(props.page.id, notificationSettings.value)
-
-    // Propaga immediatamente al parent (PageEditor) senza aspettare il debounce del watch
-    if (updateTimeout) clearTimeout(updateTimeout)
-    emit('update', { ...props.page, notification_settings: notificationSettings.value })
-    // Aggiorna anche localPage per coerenza interna
-    localPage.value = { ...localPage.value, notification_settings: notificationSettings.value }
+    // Lo store aggiorna currentPage con la risposta del server;
+    // il watch su pageStore.currentPage.notification_settings ricarica notificationSettings
 
     notificationMessage.value = {
       text: 'Impostazioni notifiche salvate con successo!',
