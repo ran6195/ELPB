@@ -341,7 +341,11 @@ export const usePageStore = defineStore('page', {
       this.loading = true
       this.error = null
       try {
+        console.log('[NOTIF DEBUG] Invio dati:', JSON.stringify(notificationSettings))
         const response = await apiClient.post(`/pages/${pageId}/notification-settings`, notificationSettings)
+
+        console.log('[NOTIF DEBUG] Risposta server notification_settings:', JSON.stringify(response.data.page?.notification_settings))
+        console.log('[NOTIF DEBUG] currentPage.id:', this.currentPage?.id, '=== pageId:', pageId, '?', this.currentPage?.id === pageId)
 
         // Aggiorna la pagina nella lista locale
         const index = this.pages.findIndex(p => p.id === pageId)
@@ -352,6 +356,9 @@ export const usePageStore = defineStore('page', {
         // Aggiorna anche currentPage se è quella modificata
         if (this.currentPage && this.currentPage.id === pageId) {
           this.currentPage = response.data.page
+          console.log('[NOTIF DEBUG] currentPage aggiornato, owner_email:', this.currentPage.notification_settings?.owner_email)
+        } else {
+          console.warn('[NOTIF DEBUG] currentPage NON aggiornato! currentPage.id:', this.currentPage?.id, 'pageId:', pageId)
         }
 
         return response.data

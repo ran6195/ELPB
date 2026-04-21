@@ -1152,7 +1152,9 @@ function buildNotificationSettings(src) {
 }
 
 // Usa currentPage dello store come source of truth (viene aggiornato dopo ogni save)
+console.log('[NOTIF DEBUG] PageSettings mount - currentPage.notification_settings:', JSON.stringify(pageStore.currentPage?.notification_settings))
 const notificationSettings = ref(buildNotificationSettings(pageStore.currentPage?.notification_settings))
+console.log('[NOTIF DEBUG] PageSettings mount - notificationSettings iniziale:', JSON.stringify(notificationSettings.value))
 
 const savingNotifications = ref(false)
 const notificationMessage = ref({ text: '', type: '' })
@@ -1164,6 +1166,7 @@ const currentUserEmail = computed(() => {
 
 // Sincronizza quando lo store aggiorna currentPage (es. dopo salvataggio o reload)
 watch(() => pageStore.currentPage?.notification_settings, (newSettings) => {
+  console.log('[NOTIF DEBUG] watch currentPage.notification_settings fired:', JSON.stringify(newSettings))
   notificationSettings.value = buildNotificationSettings(newSettings)
 }, { deep: true })
 
