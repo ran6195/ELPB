@@ -654,32 +654,37 @@
 
             <!-- Colori header email -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">Colore header email</label>
-              <div class="flex gap-3 items-center">
-                <div class="flex items-center gap-2 flex-1">
-                  <input
-                    v-model="notificationSettings.confirmation_email.header_color"
-                    type="color"
-                    class="w-10 h-10 rounded border border-gray-300 cursor-pointer p-0.5"
-                  />
-                  <input
-                    v-model="notificationSettings.confirmation_email.header_color"
-                    type="text"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-200"
-                  />
+              <label class="block text-xs font-medium text-gray-700 mb-2">Colore header email (gradiente)</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <span class="text-xs text-gray-400 mb-1 block">Inizio</span>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="notificationSettings.confirmation_email.header_color"
+                      type="color"
+                      class="w-9 h-9 rounded border border-gray-300 cursor-pointer p-0.5 shrink-0"
+                    />
+                    <input
+                      v-model="notificationSettings.confirmation_email.header_color"
+                      type="text"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary-200 min-w-0"
+                    />
+                  </div>
                 </div>
-                <span class="text-xs text-gray-400">→</span>
-                <div class="flex items-center gap-2 flex-1">
-                  <input
-                    v-model="notificationSettings.confirmation_email.header_color_end"
-                    type="color"
-                    class="w-10 h-10 rounded border border-gray-300 cursor-pointer p-0.5"
-                  />
-                  <input
-                    v-model="notificationSettings.confirmation_email.header_color_end"
-                    type="text"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-200"
-                  />
+                <div>
+                  <span class="text-xs text-gray-400 mb-1 block">Fine</span>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="notificationSettings.confirmation_email.header_color_end"
+                      type="color"
+                      class="w-9 h-9 rounded border border-gray-300 cursor-pointer p-0.5 shrink-0"
+                    />
+                    <input
+                      v-model="notificationSettings.confirmation_email.header_color_end"
+                      type="text"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary-200 min-w-0"
+                    />
+                  </div>
                 </div>
               </div>
               <!-- Anteprima gradiente -->
