@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout title="COM_LANDINGPAGES_PAGE_VIEW_DEFAULT_TITLE" option="COM_LANDINGPAGES_PAGE_VIEW_DEFAULT_OPTION">
+        <message>
+            <![CDATA[COM_LANDINGPAGES_PAGE_VIEW_DEFAULT_DESC]]>
+        </message>
+    </layout>
+
+    <!-- Request parameters -->
+    <fields name="request">
+        <fieldset name="request" label="COM_LANDINGPAGES_FIELDSET_REQUEST_LABEL">
+            <field
+                name="slug"
+                type="text"
+                label="COM_LANDINGPAGES_FIELD_SLUG_LABEL"
+                description="COM_LANDINGPAGES_FIELD_SLUG_DESC"
+                required="true"
+                size="40"
+            />
+        </fieldset>
+    </fields>
+</metadata>

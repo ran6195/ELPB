@@ -1,0 +1,167 @@
+/**
+ * Landing Page Styles
+ * Basic styling for landing pages when not using Joomla template
+ */
+
+/* Reset and base styles */
+.landing-page-container * {
+    box-sizing: border-box;
+}
+
+/* Block spacing */
+.landing-page-container section {
+    position: relative;
+}
+
+/* Form styles */
+.landing-page-form input,
+.landing-page-form textarea {
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.landing-page-form input:focus,
+.landing-page-form textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.landing-page-form button[type="submit"] {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.landing-page-form button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Image responsiveness */
+.two-column-text-image img,
+.two-column-image-text img {
+    object-fit: cover;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Footer */
+.footer-block {
+    margin-top: auto;
+}
+
+/* Utility classes (if Tailwind is not available) */
+@supports not (display: grid) {
+    .grid {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .grid > div {
+        flex: 1;
+        min-width: 300px;
+    }
+}
+
+/* Prose styles for Text block HTML content */
+.prose {
+    color: inherit;
+}
+
+.prose p {
+    margin-bottom: 1em;
+}
+
+.prose h1 {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    margin-top: 1em;
+}
+
+.prose h2 {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    margin-top: 0.8em;
+}
+
+.prose h3 {
+    font-size: 1.25em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    margin-top: 0.6em;
+}
+
+.prose ul,
+.prose ol {
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.prose li {
+    margin-bottom: 0.25em;
+}
+
+.prose a {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+.prose a:hover {
+    color: #2563eb;
+}
+
+.prose strong {
+    font-weight: bold;
+}
+
+.prose em {
+    font-style: italic;
+}
+
+.prose u {
+    text-decoration: underline;
+}
+
+.prose blockquote {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 1em;
+    margin: 1em 0;
+    font-style: italic;
+    color: #6b7280;
+}
+
+.prose code {
+    background-color: #f3f4f6;
+    padding: 0.2em 0.4em;
+    border-radius: 0.25em;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.prose pre {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    padding: 1em;
+    border-radius: 0.5em;
+    overflow-x: auto;
+    margin: 1em 0;
+}
+
+.prose pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-block h1 {
+        font-size: 2rem;
+    }
+
+    .hero-block p {
+        font-size: 1rem;
+    }
+}

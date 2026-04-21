@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <fieldset name="component" label="COM_LANDINGPAGES_CONFIGURATION">
+        <field
+            name="api_url"
+            type="url"
+            label="COM_LANDINGPAGES_API_URL_LABEL"
+            description="COM_LANDINGPAGES_API_URL_DESC"
+            default="http://localhost:8000/api"
+            required="true"
+            size="60"
+        />
+
+        <field
+            name="api_token"
+            type="text"
+            label="COM_LANDINGPAGES_API_TOKEN_LABEL"
+            description="COM_LANDINGPAGES_API_TOKEN_DESC"
+            default=""
+            size="60"
+        />
+
+        <field
+            name="cache_enabled"
+            type="radio"
+            label="COM_LANDINGPAGES_CACHE_ENABLED_LABEL"
+            description="COM_LANDINGPAGES_CACHE_ENABLED_DESC"
+            default="1"
+            class="btn-group btn-group-yesno"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+        </field>
+
+        <field
+            name="cache_time"
+            type="number"
+            label="COM_LANDINGPAGES_CACHE_TIME_LABEL"
+            description="COM_LANDINGPAGES_CACHE_TIME_DESC"
+            default="300"
+            min="0"
+            max="3600"
+        />
+
+        <field
+            name="show_in_template"
+            type="radio"
+            label="COM_LANDINGPAGES_SHOW_IN_TEMPLATE_LABEL"
+            description="COM_LANDINGPAGES_SHOW_IN_TEMPLATE_DESC"
+            default="0"
+            class="btn-group btn-group-yesno"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+        </field>
+    </fieldset>
+</config>
