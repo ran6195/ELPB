@@ -471,6 +471,7 @@
                   <option value="">Tutti gli stati</option>
                   <option value="published">Pubblicata</option>
                   <option value="unpublished">Non pubblicata</option>
+                  <option value="archived">Archiviata</option>
                 </select>
                 <select
                   v-model="filterAppointment"
@@ -590,6 +591,13 @@
                   </td>
                   <td class="px-4 py-4 text-sm">
                     <span
+                      v-if="lead.page?.deleted_at"
+                      class="px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap inline-block bg-amber-100 text-amber-700"
+                    >
+                      Archiviata
+                    </span>
+                    <span
+                      v-else
                       :class="{
                         'bg-green-100 text-green-700': lead.page?.is_published,
                         'bg-gray-100 text-gray-700': !lead.page?.is_published
@@ -728,7 +736,9 @@
               </div>
               <div>
                 <label class="text-sm font-medium text-gray-500">Stato Pagina</label>
-                <p class="text-gray-900">{{ selectedLead.page?.is_published ? 'Pubblicata' : 'Non pubblicata' }}</p>
+                <p class="text-gray-900">
+                  {{ selectedLead.page?.deleted_at ? 'Archiviata' : selectedLead.page?.is_published ? 'Pubblicata' : 'Non pubblicata' }}
+                </p>
               </div>
             </div>
             <div v-if="selectedLead.message">
@@ -971,9 +981,11 @@ const filteredLeads = computed(() => {
     result = result.filter(l => l.page?.id == filterPage.value)
   }
   if (filterStatus.value === 'published') {
-    result = result.filter(l => l.page?.is_published)
+    result = result.filter(l => !l.page?.deleted_at && l.page?.is_published)
   } else if (filterStatus.value === 'unpublished') {
-    result = result.filter(l => !l.page?.is_published)
+    result = result.filter(l => !l.page?.deleted_at && !l.page?.is_published)
+  } else if (filterStatus.value === 'archived') {
+    result = result.filter(l => l.page?.deleted_at)
   }
   if (filterAppointment.value === 'with') {
     result = result.filter(l => l.metadata?._appointment?.date)

@@ -20,15 +20,16 @@ class LeadController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
         }
 
-        // If admin, get all leads
+        // If admin, get all leads (including those from archived pages)
         if ($user->role === 'admin') {
-            $leads = Lead::with('page')->orderBy('created_at', 'desc')->get();
+            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()])
+                ->orderBy('created_at', 'desc')->get();
         }
-        // If company or user, get only leads from their company's pages
+        // If company or user, get only leads from their company's pages (including archived)
         else if ($user->company_id) {
-            $leads = Lead::with('page')
+            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()])
                 ->whereHas('page', function($query) use ($user) {
-                    $query->where('company_id', $user->company_id);
+                    $query->withTrashed()->where('company_id', $user->company_id);
                 })
                 ->orderBy('created_at', 'desc')
                 ->get();
