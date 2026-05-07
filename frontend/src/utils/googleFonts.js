@@ -3,11 +3,15 @@
  */
 export const popularGoogleFonts = [
   { name: 'Default (Ereditato)', value: '' },
+  { name: 'Exo 2', value: 'Exo 2' },
+  { name: 'IBM Plex Sans', value: 'IBM Plex Sans' },
+  { name: 'IBM Plex Serif', value: 'IBM Plex Serif' },
   { name: 'Inter', value: 'Inter' },
   { name: 'Roboto', value: 'Roboto' },
   { name: 'Open Sans', value: 'Open Sans' },
   { name: 'Lato', value: 'Lato' },
   { name: 'Montserrat', value: 'Montserrat' },
+  { name: 'Mulish', value: 'Mulish' },
   { name: 'Poppins', value: 'Poppins' },
   { name: 'Raleway', value: 'Raleway' },
   { name: 'Nunito', value: 'Nunito' },
