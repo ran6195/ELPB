@@ -4,6 +4,7 @@
 export const popularGoogleFonts = [
   { name: 'Default (Ereditato)', value: '' },
   { name: 'Exo 2', value: 'Exo 2' },
+  { name: 'Google Sans', value: 'Google Sans' },
   { name: 'IBM Plex Sans', value: 'IBM Plex Sans' },
   { name: 'IBM Plex Serif', value: 'IBM Plex Serif' },
   { name: 'Inter', value: 'Inter' },
