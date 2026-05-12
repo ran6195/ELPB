@@ -302,6 +302,23 @@ HTML;
         $leadMessage = nl2br(htmlspecialchars($lead->message ?? 'Nessun messaggio'));
         $leadDate = date('d/m/Y H:i', strtotime($lead->created_at));
 
+        $extraFieldsHtml = '';
+        $systemKeys = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
+        $metadata = $lead->metadata ?? [];
+        $extraFields = array_filter($metadata, function ($key) use ($systemKeys) {
+            return !in_array($key, $systemKeys) && strpos($key, '_') !== 0;
+        }, ARRAY_FILTER_USE_KEY);
+
+        if (!empty($extraFields)) {
+            $extraFieldsHtml = '<div class="info-box" style="margin-top:0">';
+            foreach ($extraFields as $key => $value) {
+                $label = htmlspecialchars(ucwords(str_replace('_', ' ', $key)));
+                $val = nl2br(htmlspecialchars((string) ($value ?? '')));
+                $extraFieldsHtml .= "<p><strong>{$label}:</strong> {$val}</p>";
+            }
+            $extraFieldsHtml .= '</div>';
+        }
+
         return <<<HTML
 <!DOCTYPE html>
 <html lang="it">
@@ -405,6 +422,8 @@ HTML;
                 <p><strong>Data:</strong> {$leadDate}</p>
             </div>
 
+            {$extraFieldsHtml}
+
             <div class="message-box">
                 <h3>💬 Messaggio</h3>
                 <p>{$leadMessage}</p>
@@ -431,6 +450,21 @@ HTML;
         $pageTitle = $page->title;
         $leadDate = date('d/m/Y H:i', strtotime($lead->created_at));
 
+        $extraFieldsPlain = '';
+        $systemKeys = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
+        $metadata = $lead->metadata ?? [];
+        $extraFields = array_filter($metadata, function ($key) use ($systemKeys) {
+            return !in_array($key, $systemKeys) && strpos($key, '_') !== 0;
+        }, ARRAY_FILTER_USE_KEY);
+
+        if (!empty($extraFields)) {
+            $extraFieldsPlain = "\nALTRI CAMPI:\n";
+            foreach ($extraFields as $key => $value) {
+                $label = ucwords(str_replace('_', ' ', $key));
+                $extraFieldsPlain .= "{$label}: " . ((string) ($value ?? '')) . "\n";
+            }
+        }
+
         return <<<TEXT
 NUOVO CONTATTO RICEVUTO
 
@@ -441,7 +475,7 @@ Nome: {$lead->name}
 Email: {$lead->email}
 Telefono: {$lead->phone}
 Data: {$leadDate}
-
+{$extraFieldsPlain}
 MESSAGGIO:
 {$lead->message}
 
