@@ -1740,18 +1740,21 @@ HTML;
             } elseif ($fieldType === 'date') {
                 $colClass = $colSpan === 'full' ? 'lg:col-span-2' : '';
                 $requiredSpan = !empty($field['required']) ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+                $todayMin = date('Y-m-d');
                 $html .= <<<HTML
 
                 <div class="{$colClass}">
                     <label class="block text-sm mb-1 opacity-80">{$placeholder}{$requiredSpan}</label>
-                    <input type="date" name="{$fieldName}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}>
+                    <input type="date" name="{$fieldName}" min="{$todayMin}" class="w-full px-4 py-3 border border-gray-300 {$fieldRoundedClass} focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none" style="color:#111827" {$fieldRequired}>
                 </div>
 HTML;
             } elseif ($fieldType === 'time') {
                 $colClass = $colSpan === 'full' ? 'lg:col-span-2' : '';
                 $requiredSpan = !empty($field['required']) ? '<span style="color:#ef4444;margin-left:2px">*</span>' : '';
+                $timeStartHour = isset($field['timeStart']) ? (int)explode(':', $field['timeStart'])[0] : 0;
+                $timeEndHour   = isset($field['timeEnd'])   ? (int)explode(':', $field['timeEnd'])[0]   : 23;
                 $hourOptions = '<option value="" disabled selected>-- Seleziona ora --</option>';
-                for ($h = 0; $h < 24; $h++) {
+                for ($h = $timeStartHour; $h <= $timeEndHour; $h++) {
                     $val = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
                     $hourOptions .= "<option value=\"{$val}\">{$val}</option>";
                 }

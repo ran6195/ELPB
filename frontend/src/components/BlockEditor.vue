@@ -1337,6 +1337,33 @@
               </select>
             </div>
 
+            <!-- Intervallo orario -->
+            <div v-if="field.type === 'time'" class="space-y-1.5">
+              <p class="text-xs text-gray-500 font-medium">Intervallo orari:</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-gray-400 mb-0.5 block">Apertura</label>
+                  <input
+                    v-model="field.timeStart"
+                    type="time"
+                    step="3600"
+                    placeholder="00:00"
+                    class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs text-gray-400 mb-0.5 block">Chiusura</label>
+                  <input
+                    v-model="field.timeEnd"
+                    type="time"
+                    step="3600"
+                    placeholder="23:00"
+                    class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
             <!-- Opzioni Select -->
             <div v-if="field.type === 'select'" class="space-y-1.5">
               <p class="text-xs text-gray-500 font-medium">Opzioni del menu a tendina:</p>

@@ -69,6 +69,7 @@
                 type="date"
                 v-model="formData[field.name]"
                 :required="field.required"
+                :min="today"
                 :class="['w-full px-4 py-3 border border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none', fieldBorderRadiusClass]"
                 style="color: #111827"
               />
@@ -90,8 +91,8 @@
                 style="color: #111827"
               >
                 <option value="" disabled>-- Seleziona ora --</option>
-                <option v-for="h in 24" :key="h - 1" :value="String(h - 1).padStart(2, '0') + ':00'">
-                  {{ String(h - 1).padStart(2, '0') }}:00
+                <option v-for="opt in getTimeOptions(field)" :key="opt" :value="opt">
+                  {{ opt }}
                 </option>
               </select>
             </div>
@@ -262,6 +263,18 @@ const recaptchaToken = ref('')
 const recaptchaError = ref('')
 const recaptchaElement = ref(null)
 let recaptchaWidgetId = null
+
+const today = computed(() => new Date().toISOString().split('T')[0])
+
+const getTimeOptions = (field) => {
+  const start = parseInt((field.timeStart || '00:00').split(':')[0])
+  const end = parseInt((field.timeEnd || '23:00').split(':')[0])
+  const options = []
+  for (let h = start; h <= end; h++) {
+    options.push(String(h).padStart(2, '0') + ':00')
+  }
+  return options
+}
 
 const recaptchaSiteKey = computed(() => {
   if (props.page?.recaptcha_settings?.enabled) {
