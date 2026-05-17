@@ -107,6 +107,11 @@ class EmailService
             $this->mailer->clearReplyTos();
             $this->mailer->clearCustomHeaders();
 
+            // Mittente personalizzato per notifiche (opzionale, fallback a config globale)
+            $fromName    = !empty($notificationSettings['from_name'])    ? $notificationSettings['from_name']    : $this->config['from_name'];
+            $fromAddress = !empty($notificationSettings['from_address']) ? $notificationSettings['from_address'] : $this->config['from_address'];
+            $this->mailer->setFrom($fromAddress, $fromName);
+
             // Aggiungi destinatari
             foreach ($recipients as $email) {
                 $this->mailer->addAddress($email);

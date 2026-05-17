@@ -587,6 +587,27 @@
           </p>
         </div>
 
+        <!-- Mittente notifiche admin -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Nome mittente notifiche (opzionale)</label>
+          <input
+            v-model="notificationSettings.from_name"
+            type="text"
+            placeholder="Es: Mario Rossi - Azienda Srl"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Indirizzo mittente notifiche (opzionale)</label>
+          <input
+            v-model="notificationSettings.from_address"
+            type="email"
+            placeholder="Es: info@azienda.it"
+            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+          />
+          <p class="text-xs text-gray-500 mt-1">Se vuoto usa il mittente di sistema predefinito</p>
+        </div>
+
         <!-- Separatore email di cortesia -->
         <div class="border-t border-gray-200 pt-4">
           <div class="flex items-center justify-between mb-3">
@@ -1144,6 +1165,8 @@ function buildNotificationSettings(src) {
     enabled: src?.enabled || false,
     owner_email: src?.owner_email || '',
     additional_emails: src?.additional_emails || '',
+    from_name: src?.from_name || '',
+    from_address: src?.from_address || '',
     confirmation_email: {
       enabled: src?.confirmation_email?.enabled || false,
       subject: src?.confirmation_email?.subject || DEFAULT_CONFIRMATION_SUBJECT,

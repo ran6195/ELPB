@@ -759,6 +759,15 @@ class PageController
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
+            // Valida from_address notifiche se fornita
+            if (!empty($data['from_address']) && !filter_var($data['from_address'], FILTER_VALIDATE_EMAIL)) {
+                $response->getBody()->write(json_encode([
+                    'error' => 'Validation failed',
+                    'message' => "Indirizzo mittente non valido: {$data['from_address']}"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            }
+
             // Valida email aggiuntive se presenti
             if (!empty($data['additional_emails'])) {
                 $emails = array_map('trim', explode(',', $data['additional_emails']));
@@ -779,6 +788,8 @@ class PageController
                 'enabled' => (bool) $data['enabled'],
                 'owner_email' => $data['owner_email'] ?? '',
                 'additional_emails' => $data['additional_emails'] ?? '',
+                'from_name' => $data['from_name'] ?? '',
+                'from_address' => $data['from_address'] ?? '',
                 'confirmation_email' => [
                     'enabled' => (bool) ($confirmationEmail['enabled'] ?? false),
                     'subject' => $confirmationEmail['subject'] ?? '',
