@@ -1,191 +1,214 @@
 <?php
-/**
- * EmailService - Servizio centralizzato per invio email
- *
- * Responsabilità:
- * - Caricamento configurazione SMTP da .env
- * - Invio notifiche lead via PHPMailer
- * - Template HTML responsive
- * - Gestione errori con logging
- *
- * @version 1.0.0
- * @created 2026-02-05
- */
 
 namespace App\Services;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
 
 class EmailService
 {
-    private $mailer;
-    private $config;
+    private PHPMailer $mailer;
+    private array $config;
+    private EmailLogger $logger;
 
-    /**
-     * Constructor - inizializza PHPMailer con config da .env
-     */
     public function __construct()
     {
+        $this->logger = new EmailLogger();
+
         $this->config = [
-            'host' => $_ENV['MAIL_HOST'] ?? '',
-            'port' => $_ENV['MAIL_PORT'] ?? 587,
-            'username' => $_ENV['MAIL_USERNAME'] ?? '',
-            'password' => $_ENV['MAIL_PASSWORD'] ?? '',
-            'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
+            'host'         => $_ENV['MAIL_HOST'] ?? '',
+            'port'         => $_ENV['MAIL_PORT'] ?? 587,
+            'username'     => $_ENV['MAIL_USERNAME'] ?? '',
+            'password'     => $_ENV['MAIL_PASSWORD'] ?? '',
+            'encryption'   => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
             'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'noreply@example.com',
-            'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Landing Page Builder',
-            'timeout' => $_ENV['MAIL_TIMEOUT'] ?? 10,
+            'from_name'    => $_ENV['MAIL_FROM_NAME'] ?? 'Landing Page Builder',
+            'timeout'      => $_ENV['MAIL_TIMEOUT'] ?? 10,
         ];
 
         $this->initializeMailer();
     }
 
-    /**
-     * Inizializza PHPMailer con configurazione SMTP
-     */
-    private function initializeMailer()
+    private function initializeMailer(): void
     {
         $this->mailer = new PHPMailer(true);
 
-        // Server SMTP
         $this->mailer->isSMTP();
-        $this->mailer->Host = $this->config['host'];
-        $this->mailer->Port = $this->config['port'];
-        $this->mailer->SMTPAuth = true;
-        $this->mailer->Username = $this->config['username'];
-        $this->mailer->Password = $this->config['password'];
+        $this->mailer->Host       = $this->config['host'];
+        $this->mailer->Port       = (int) $this->config['port'];
+        $this->mailer->SMTPAuth   = true;
+        $this->mailer->Username   = $this->config['username'];
+        $this->mailer->Password   = $this->config['password'];
         $this->mailer->SMTPSecure = $this->config['encryption'];
-        $this->mailer->Timeout = $this->config['timeout'];
+        $this->mailer->Timeout    = (int) $this->config['timeout'];
 
-        // Opzioni SMTP avanzate per migliorare deliverability
-        $this->mailer->SMTPKeepAlive = true; // Mantieni connessione aperta
-        $this->mailer->SMTPAutoTLS = true;   // Auto TLS upgrade
+        $this->mailer->SMTPKeepAlive = true;
+        $this->mailer->SMTPAutoTLS   = true;
 
-        // Charset
-        $this->mailer->CharSet = 'UTF-8';
-        $this->mailer->Encoding = 'base64'; // Encoding più compatibile con Gmail
+        $this->mailer->CharSet  = 'UTF-8';
+        $this->mailer->Encoding = 'base64';
 
-        // Mittente predefinito
         $this->mailer->setFrom($this->config['from_address'], $this->config['from_name']);
-
-        // Header anti-spam per migliorare deliverability con Gmail
-        $this->mailer->XMailer = ' '; // Rimuovi X-Mailer header che può triggerare spam filter
-
-        // Priorità normale (non alta, evita spam flag)
+        $this->mailer->XMailer  = ' ';
         $this->mailer->Priority = 3;
 
-        // Debug (disabilitato in produzione)
-        $this->mailer->SMTPDebug = 0;
+        if ($this->logger->isDebug()) {
+            // Cattura dialogo SMTP completo nel log file (non su stdout)
+            $this->mailer->SMTPDebug  = SMTP::DEBUG_SERVER;
+            $this->mailer->Debugoutput = [$this->logger, 'smtpOutput'];
+        } else {
+            $this->mailer->SMTPDebug = 0;
+        }
     }
 
     /**
      * Invia notifica email per nuovo lead
-     *
-     * @param object $lead Lead Eloquent model
-     * @param object $page Page Eloquent model (with user and company relations)
-     * @return bool True se invio riuscito, false altrimenti
      */
-    public function sendLeadNotification($lead, $page)
+    public function sendLeadNotification($lead, $page): bool
     {
-        try {
-            // Verifica che le notifiche siano abilitate
-            $notificationSettings = $page->notification_settings ?? [];
-            if (empty($notificationSettings['enabled'])) {
-                return false; // Notifiche disabilitate
-            }
+        $startTime = microtime(true);
 
-            // Determina destinatari
-            $recipients = $this->getRecipients($page, $notificationSettings);
-            if (empty($recipients)) {
-                error_log("EmailService: Nessun destinatario configurato per pagina {$page->id}");
+        try {
+            $notificationSettings = $page->notification_settings ?? [];
+
+            if (empty($notificationSettings['enabled'])) {
+                $this->logger->info('lead_notification_skipped', [
+                    'reason'  => 'notifications_disabled',
+                    'page_id' => $page->id,
+                    'lead_id' => $lead->id ?? null,
+                ]);
                 return false;
             }
 
-            // Prepara email
+            $recipients = $this->getRecipients($page, $notificationSettings);
+
+            if (empty($recipients)) {
+                $this->logger->error('lead_notification_failed', [
+                    'reason'  => 'no_recipients_configured',
+                    'page_id' => $page->id,
+                    'lead_id' => $lead->id ?? null,
+                ]);
+                return false;
+            }
+
+            $this->logger->debug('smtp_config', [
+                'host'       => $this->config['host'],
+                'port'       => $this->config['port'],
+                'encryption' => $this->config['encryption'],
+                'username'   => $this->config['username'],
+                'timeout'    => $this->config['timeout'] . 's',
+            ]);
+
             $this->mailer->clearAddresses();
             $this->mailer->clearReplyTos();
             $this->mailer->clearCustomHeaders();
 
-            // Mittente personalizzato per notifiche (opzionale, fallback a config globale)
             $fromName    = !empty($notificationSettings['from_name'])    ? $notificationSettings['from_name']    : $this->config['from_name'];
             $fromAddress = !empty($notificationSettings['from_address']) ? $notificationSettings['from_address'] : $this->config['from_address'];
             $this->mailer->setFrom($fromAddress, $fromName);
 
-            // Aggiungi destinatari
             foreach ($recipients as $email) {
                 $this->mailer->addAddress($email);
+                $this->logger->debug('recipient_added', [
+                    'type'    => 'lead_notification',
+                    'email'   => $email,
+                    'page_id' => $page->id,
+                ]);
             }
 
-            // Reply-to: email del lead (se presente e valida)
             if (!empty($lead->email) && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
                 $this->mailer->addReplyTo($lead->email, $lead->name ?? '');
             }
 
-            // Header custom per migliorare deliverability Gmail
-            $this->mailer->addCustomHeader('X-Priority', '3'); // Normale
             $this->mailer->addCustomHeader('X-MSMail-Priority', 'Normal');
             $this->mailer->addCustomHeader('Importance', 'Normal');
 
-            // Message-ID con dominio reale per evitare spam flag
-            $domain = parse_url($this->config['host'], PHP_URL_HOST) ?: $this->config['host'];
+            $domain    = parse_url($this->config['host'], PHP_URL_HOST) ?: $this->config['host'];
             $messageId = sprintf('<%s.%s@%s>', uniqid(), time(), $domain);
             $this->mailer->MessageID = $messageId;
 
-            // Oggetto chiaro e non spam-like
-            $this->mailer->Subject = "Nuovo contatto dalla landing page: {$page->title}";
+            $subject = "Nuovo contatto dalla landing page: {$page->title}";
+            $this->mailer->Subject = $subject;
 
-            // Corpo email HTML
+            $this->logger->debug('email_preparing', [
+                'type'       => 'lead_notification',
+                'page_id'    => $page->id,
+                'lead_id'    => $lead->id ?? null,
+                'subject'    => $subject,
+                'from'       => $fromAddress,
+                'to_count'   => count($recipients),
+                'message_id' => $messageId,
+            ]);
+
             $this->mailer->isHTML(true);
-            $this->mailer->Body = $this->getLeadEmailTemplate($lead, $page);
-
-            // Alternativa plain text (IMPORTANTE per Gmail)
+            $this->mailer->Body    = $this->getLeadEmailTemplate($lead, $page);
             $this->mailer->AltBody = $this->getLeadEmailPlainText($lead, $page);
 
-            // Invia
-            $result = $this->mailer->send();
+            $result   = $this->mailer->send();
+            $duration = (int) ((microtime(true) - $startTime) * 1000);
 
             if ($result) {
-                error_log("EmailService: Email lead #{$lead->id} inviata con successo a " . implode(', ', $recipients));
+                $this->logger->info('lead_notification_sent', [
+                    'page_id'  => $page->id,
+                    'lead_id'  => $lead->id ?? null,
+                    'to'       => implode(', ', EmailLogger::obfuscateEmails($recipients)),
+                    'subject'  => $subject,
+                    'duration' => $duration . 'ms',
+                ]);
             }
 
             return $result;
 
         } catch (Exception $e) {
-            error_log("EmailService: Errore invio email lead #{$lead->id}: " . $e->getMessage());
+            $duration = (int) ((microtime(true) - $startTime) * 1000);
+            $this->logger->error('lead_notification_failed', [
+                'page_id'   => $page->id ?? null,
+                'lead_id'   => $lead->id ?? null,
+                'error'     => $e->getMessage(),
+                'smtp_info' => $this->mailer->ErrorInfo ?? '',
+                'duration'  => $duration . 'ms',
+            ]);
             return false;
         }
     }
 
     /**
      * Invia email di cortesia al cliente che ha inviato il form
-     *
-     * @param object $lead
-     * @param object $page
-     * @return bool
      */
-    public function sendLeadConfirmation($lead, $page)
+    public function sendLeadConfirmation($lead, $page): bool
     {
+        $startTime = microtime(true);
+
         try {
             $confirmationSettings = $page->notification_settings['confirmation_email'] ?? [];
 
             if (empty($confirmationSettings['enabled'])) {
+                $this->logger->info('lead_confirmation_skipped', [
+                    'reason'  => 'confirmation_disabled',
+                    'page_id' => $page->id,
+                    'lead_id' => $lead->id ?? null,
+                ]);
                 return false;
             }
 
             if (empty($lead->email) || !filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
-                error_log("EmailService: Email cliente non valida per lead #{$lead->id}, skip email di cortesia");
+                $this->logger->warning('lead_confirmation_skipped', [
+                    'reason'  => 'invalid_lead_email',
+                    'page_id' => $page->id,
+                    'lead_id' => $lead->id ?? null,
+                    'email'   => $lead->email ?? '(empty)',
+                ]);
                 return false;
             }
 
-            $subject = $confirmationSettings['subject'] ?? 'Abbiamo ricevuto la tua richiesta';
-            $bodyTemplate = $confirmationSettings['body'] ?? "Ciao {name},\n\ngrazie per averci contattato. Abbiamo ricevuto la tua richiesta e ti risponderemo al più presto.\n\nA presto!";
-            $fromName = !empty($confirmationSettings['from_name']) ? $confirmationSettings['from_name'] : $this->config['from_name'];
-            $fromAddress = !empty($confirmationSettings['from_address']) ? $confirmationSettings['from_address'] : $this->config['from_address'];
-            $headerColor = $confirmationSettings['header_color'] ?? '#667eea';
+            $subject        = $confirmationSettings['subject']      ?? 'Abbiamo ricevuto la tua richiesta';
+            $bodyTemplate   = $confirmationSettings['body']         ?? "Ciao {name},\n\ngrazie per averci contattato. Abbiamo ricevuto la tua richiesta e ti risponderemo al più presto.\n\nA presto!";
+            $fromName       = !empty($confirmationSettings['from_name'])    ? $confirmationSettings['from_name']    : $this->config['from_name'];
+            $fromAddress    = !empty($confirmationSettings['from_address']) ? $confirmationSettings['from_address'] : $this->config['from_address'];
+            $headerColor    = $confirmationSettings['header_color']     ?? '#667eea';
             $headerColorEnd = $confirmationSettings['header_color_end'] ?? '#764ba2';
 
-            // Sostituisci placeholder
             $bodyText = str_replace('{name}', $lead->name ?? 'Cliente', $bodyTemplate);
 
             $this->mailer->clearAddresses();
@@ -195,21 +218,44 @@ class EmailService
             $this->mailer->setFrom($fromAddress, $fromName);
             $this->mailer->addAddress($lead->email, $lead->name ?? '');
 
+            $this->logger->debug('email_preparing', [
+                'type'    => 'lead_confirmation',
+                'page_id' => $page->id,
+                'lead_id' => $lead->id ?? null,
+                'subject' => $subject,
+                'from'    => $fromAddress,
+                'to'      => $lead->email,
+            ]);
+
             $this->mailer->Subject = $subject;
             $this->mailer->isHTML(true);
-            $this->mailer->Body = $this->getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor, $headerColorEnd);
+            $this->mailer->Body    = $this->getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor, $headerColorEnd);
             $this->mailer->AltBody = $bodyText;
 
-            $result = $this->mailer->send();
+            $result   = $this->mailer->send();
+            $duration = (int) ((microtime(true) - $startTime) * 1000);
 
             if ($result) {
-                error_log("EmailService: Email cortesia inviata a {$lead->email} per lead #{$lead->id}");
+                $this->logger->info('lead_confirmation_sent', [
+                    'page_id'  => $page->id,
+                    'lead_id'  => $lead->id ?? null,
+                    'to'       => EmailLogger::obfuscateEmail($lead->email),
+                    'subject'  => $subject,
+                    'duration' => $duration . 'ms',
+                ]);
             }
 
             return $result;
 
         } catch (Exception $e) {
-            error_log("EmailService: Errore email cortesia lead #{$lead->id}: " . $e->getMessage());
+            $duration = (int) ((microtime(true) - $startTime) * 1000);
+            $this->logger->error('lead_confirmation_failed', [
+                'page_id'   => $page->id ?? null,
+                'lead_id'   => $lead->id ?? null,
+                'error'     => $e->getMessage(),
+                'smtp_info' => $this->mailer->ErrorInfo ?? '',
+                'duration'  => $duration . 'ms',
+            ]);
             return false;
         }
     }
@@ -259,16 +305,11 @@ HTML;
 
     /**
      * Determina lista destinatari email
-     *
-     * @param object $page
-     * @param array $notificationSettings
-     * @return array Lista email destinatari
      */
-    private function getRecipients($page, $notificationSettings)
+    private function getRecipients($page, $notificationSettings): array
     {
         $recipients = [];
 
-        // 1. Email owner: usa owner_email da settings se presente, altrimenti fallback a user->email
         $ownerEmail = !empty($notificationSettings['owner_email'])
             ? $notificationSettings['owner_email']
             : ($page->user->email ?? null);
@@ -277,26 +318,28 @@ HTML;
             $recipients[] = $ownerEmail;
         }
 
-        // 2. Email aggiuntive custom (se configurate)
         if (!empty($notificationSettings['additional_emails'])) {
             $additionalEmails = array_map('trim', explode(',', $notificationSettings['additional_emails']));
             foreach ($additionalEmails as $email) {
+                if ($email === '') {
+                    continue;
+                }
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $recipients[] = $email;
+                } else {
+                    $this->logger->warning('invalid_additional_email_skipped', [
+                        'email'   => $email,
+                        'page_id' => $page->id,
+                    ]);
                 }
             }
         }
 
-        // Rimuovi duplicati
         return array_unique($recipients);
     }
 
     /**
      * Template HTML per email notifica lead
-     *
-     * @param object $lead
-     * @param object $page
-     * @return string HTML email
      */
     private function getLeadEmailTemplate($lead, $page)
     {
@@ -445,10 +488,6 @@ HTML;
 
     /**
      * Versione plain text dell'email
-     *
-     * @param object $lead
-     * @param object $page
-     * @return string Plain text email
      */
     private function getLeadEmailPlainText($lead, $page)
     {
