@@ -209,11 +209,35 @@ class EmailService
             $headerColor    = $confirmationSettings['header_color']     ?? '#667eea';
             $headerColorEnd = $confirmationSettings['header_color_end'] ?? '#764ba2';
 
+            // Allegato immagine opzionale
+            $attachmentImageUrl = $confirmationSettings['attachment_image'] ?? '';
+            $imageCid = null;
+            $imagePath = null;
+
+            if (!empty($attachmentImageUrl)) {
+                $uploadsDir = dirname(__DIR__, 2) . '/public/uploads/images/';
+                $filename   = basename(parse_url($attachmentImageUrl, PHP_URL_PATH));
+                $candidate  = $uploadsDir . $filename;
+
+                if ($filename && file_exists($candidate) && is_readable($candidate)) {
+                    $imagePath = $candidate;
+                    $imageCid  = 'confirmation_img_' . uniqid();
+                } else {
+                    $this->logger->warning('confirmation_attachment_not_found', [
+                        'url'     => $attachmentImageUrl,
+                        'path'    => $candidate,
+                        'page_id' => $page->id,
+                        'lead_id' => $lead->id ?? null,
+                    ]);
+                }
+            }
+
             $bodyText = str_replace('{name}', $lead->name ?? 'Cliente', $bodyTemplate);
 
             $this->mailer->clearAddresses();
             $this->mailer->clearReplyTos();
             $this->mailer->clearCustomHeaders();
+            $this->mailer->clearAttachments();
 
             $this->mailer->setFrom($fromAddress, $fromName);
             $this->mailer->addAddress($lead->email, $lead->name ?? '');
@@ -229,7 +253,15 @@ class EmailService
 
             $this->mailer->Subject = $subject;
             $this->mailer->isHTML(true);
-            $this->mailer->Body    = $this->getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor, $headerColorEnd);
+
+            // Aggiungi immagine embedded + allegato se presente
+            if ($imagePath && $imageCid) {
+                $imageFilename = basename($imagePath);
+                $this->mailer->addEmbeddedImage($imagePath, $imageCid, $imageFilename);
+                $this->mailer->addAttachment($imagePath, $imageFilename);
+            }
+
+            $this->mailer->Body    = $this->getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor, $headerColorEnd, $imageCid);
             $this->mailer->AltBody = $bodyText;
 
             $result   = $this->mailer->send();
@@ -263,12 +295,23 @@ class EmailService
     /**
      * Template HTML per email di cortesia al cliente
      */
-    private function getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor = '#667eea', $headerColorEnd = '#764ba2')
+    private function getConfirmationEmailTemplate($lead, $page, $bodyText, $headerColor = '#667eea', $headerColorEnd = '#764ba2', $imageCid = null)
     {
-        $pageTitle = htmlspecialchars($page->title);
-        $bodyHtml = nl2br(htmlspecialchars($bodyText));
-        $headerColor = htmlspecialchars($headerColor);
+        $pageTitle      = htmlspecialchars($page->title);
+        $bodyHtml       = nl2br(htmlspecialchars($bodyText));
+        $headerColor    = htmlspecialchars($headerColor);
         $headerColorEnd = htmlspecialchars($headerColorEnd);
+
+        $imageSection = '';
+        if ($imageCid) {
+            $cidEscaped   = htmlspecialchars($imageCid);
+            $imageSection = <<<IMG
+        <div style="text-align:center; padding: 0 20px 24px;">
+            <img src="cid:{$cidEscaped}" alt="Immagine allegata"
+                 style="max-width:100%; height:auto; border-radius:6px; display:block; margin:0 auto;" />
+        </div>
+IMG;
+        }
 
         return <<<HTML
 <!DOCTYPE html>
@@ -294,6 +337,7 @@ class EmailService
         <div class="content">
             <p>{$bodyHtml}</p>
         </div>
+        {$imageSection}
         <div class="footer">
             <p>Questa email è stata inviata automaticamente. Si prega di non rispondere a questa email.</p>
         </div>

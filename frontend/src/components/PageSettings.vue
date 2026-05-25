@@ -714,6 +714,67 @@
                 :style="`background: linear-gradient(135deg, ${notificationSettings.confirmation_email.header_color} 0%, ${notificationSettings.confirmation_email.header_color_end} 100%)`"
               ></div>
             </div>
+
+            <!-- Immagine allegata (opzionale) -->
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-sm font-medium text-gray-700">
+                  Immagine allegata
+                  <span class="text-gray-400 font-normal text-xs ml-1">(opzionale)</span>
+                </label>
+                <button
+                  v-if="notificationSettings.confirmation_email.attachment_image"
+                  type="button"
+                  @click="removeAttachmentImage"
+                  class="text-xs text-red-500 hover:text-red-700 transition-colors"
+                >
+                  Rimuovi
+                </button>
+              </div>
+
+              <!-- Anteprima immagine caricata -->
+              <div v-if="notificationSettings.confirmation_email.attachment_image" class="mb-3">
+                <img
+                  :src="notificationSettings.confirmation_email.attachment_image"
+                  alt="Anteprima immagine allegata"
+                  class="max-h-32 rounded border border-gray-200 object-contain"
+                />
+              </div>
+
+              <!-- Pulsante upload -->
+              <div v-if="!notificationSettings.confirmation_email.attachment_image">
+                <input
+                  type="file"
+                  ref="attachmentImageInput"
+                  accept="image/*"
+                  class="hidden"
+                  @change="uploadAttachmentImage"
+                />
+                <button
+                  type="button"
+                  @click="attachmentImageInput.click()"
+                  :disabled="uploadingAttachment"
+                  class="text-sm px-3 py-2 border border-dashed border-gray-300 rounded-lg hover:border-indigo-400 text-gray-500 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <svg v-if="!uploadingAttachment" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>{{ uploadingAttachment ? 'Caricamento...' : 'Carica immagine' }}</span>
+                </button>
+              </div>
+
+              <p class="text-xs text-gray-400 mt-2">
+                Verrà mostrata nel corpo dell'email e aggiunta come allegato scaricabile.
+              </p>
+
+              <!-- Messaggio errore upload -->
+              <p v-if="attachmentUploadError" class="text-xs text-red-500 mt-1">
+                {{ attachmentUploadError }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1174,7 +1235,8 @@ function buildNotificationSettings(src) {
       from_name: src?.confirmation_email?.from_name || '',
       from_address: src?.confirmation_email?.from_address || '',
       header_color: src?.confirmation_email?.header_color || '#667eea',
-      header_color_end: src?.confirmation_email?.header_color_end || '#764ba2'
+      header_color_end: src?.confirmation_email?.header_color_end || '#764ba2',
+      attachment_image: src?.confirmation_email?.attachment_image || ''
     }
   }
 }
@@ -1184,6 +1246,46 @@ const notificationSettings = ref(buildNotificationSettings(pageStore.currentPage
 
 const savingNotifications = ref(false)
 const notificationMessage = ref({ text: '', type: '' })
+
+// Upload allegato immagine email di cortesia
+const uploadingAttachment = ref(false)
+const attachmentUploadError = ref('')
+const attachmentImageInput = ref(null)
+
+async function uploadAttachmentImage(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  attachmentUploadError.value = ''
+  uploadingAttachment.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/upload/image`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authStore.token}` },
+      body: formData
+    })
+    const data = await response.json()
+    if (data.success) {
+      notificationSettings.value.confirmation_email.attachment_image = data.url
+    } else {
+      attachmentUploadError.value = data.error || 'Errore durante il caricamento.'
+    }
+  } catch (err) {
+    attachmentUploadError.value = 'Errore di rete durante il caricamento.'
+    console.error('Upload allegato fallito:', err)
+  } finally {
+    uploadingAttachment.value = false
+    if (attachmentImageInput.value) attachmentImageInput.value.value = ''
+  }
+}
+
+function removeAttachmentImage() {
+  notificationSettings.value.confirmation_email.attachment_image = ''
+  attachmentUploadError.value = ''
+}
 
 // Computed per email utente corrente
 const currentUserEmail = computed(() => {

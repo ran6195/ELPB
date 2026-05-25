@@ -797,7 +797,8 @@ class PageController
                     'from_name' => $confirmationEmail['from_name'] ?? '',
                     'from_address' => $confirmationEmail['from_address'] ?? '',
                     'header_color' => $confirmationEmail['header_color'] ?? '#667eea',
-                    'header_color_end' => $confirmationEmail['header_color_end'] ?? '#764ba2'
+                    'header_color_end' => $confirmationEmail['header_color_end'] ?? '#764ba2',
+                    'attachment_image' => $confirmationEmail['attachment_image'] ?? ''
                 ]
             ];
             $page->save();
