@@ -94,6 +94,19 @@
     <div class="bg-white border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-8 py-3">
         <div class="flex items-center gap-3 flex-wrap">
+          <!-- Ricerca per nome -->
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cerca per nome..."
+              class="pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 w-56"
+            />
+          </div>
+
           <!-- Filtro stato -->
           <div class="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
             <button
@@ -388,11 +401,17 @@ const availableCompanies = computed(() => {
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
 })
 
+const searchQuery = ref('')
+
 const filteredPages = computed(() => {
   return pageStore.pages.filter(page => {
     if (filterStatus.value === 'published' && !page.is_published) return false
     if (filterStatus.value === 'draft' && page.is_published) return false
     if (filterCompany.value && page.company?.id !== filterCompany.value) return false
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase()
+      if (!page.title?.toLowerCase().includes(q)) return false
+    }
     return true
   })
 })
