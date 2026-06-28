@@ -2525,6 +2525,18 @@
               class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
             />
           </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Colore Informazioni di Contatto</label>
+            <div class="flex items-center gap-3">
+              <input v-model="localBlock.content.contactColor" type="color"
+                class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300" />
+              <input v-model="localBlock.content.contactColor" type="text"
+                placeholder="#4B5563"
+                class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm" />
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Colore di indirizzo, telefono ed email</p>
+          </div>
         </div>
       </div>
     </div>
