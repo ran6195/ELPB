@@ -113,6 +113,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { titleShadowStyle } from '../../utils/titleStyle'
 
 const props = defineProps({
   block: {
@@ -184,6 +185,7 @@ const videoInfoTitleStyles = computed(() => {
   if (props.block.content.titleColor) s.color = props.block.content.titleColor
   const fs = titleSizeMap[props.block.content.titleSize]
   if (fs) s.fontSize = fs
+  Object.assign(s, titleShadowStyle(props.block.content))
   return s
 })
 

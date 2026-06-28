@@ -36,7 +36,7 @@
           :contenteditable="editable"
           @blur="updateContent('title', $event.target.innerText)"
           class="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4 outline-none focus:ring-2 focus:ring-primary-300 rounded px-2"
-          :style="titleFontSize ? { fontSize: titleFontSize } : {}"
+          :style="{ ...(titleFontSize ? { fontSize: titleFontSize } : {}), ...titleShadowStyle(block.content) }"
         >
           {{ block.content.title }}
         </h2>
@@ -55,6 +55,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { titleShadowStyle } from '../../utils/titleStyle'
 
 const props = defineProps({
   block: {

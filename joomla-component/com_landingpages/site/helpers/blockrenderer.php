@@ -153,13 +153,27 @@ class BlockRenderer
     /**
      * Build title style attribute with optional color and font-size
      */
-    protected static function buildTitleStyle($titleColor, $titleSize = '')
+    protected static function buildTitleStyle($titleColor, $titleSize = '', $titleShadow = null)
     {
         static $sizeMap = ['xl' => '1.25rem', '2xl' => '1.5rem', '3xl' => '1.875rem', '4xl' => '2.25rem', '5xl' => '3rem', '6xl' => '3.75rem'];
         $css = '';
         if ($titleColor) $css .= "color:{$titleColor};";
         if (!empty($titleSize) && isset($sizeMap[$titleSize])) $css .= "font-size:{$sizeMap[$titleSize]};";
+        $css .= self::buildTitleShadowCss($titleShadow);
         return $css ? " style=\"{$css}\"" : '';
+    }
+
+    /**
+     * Build text-shadow CSS from a titleShadow config array
+     */
+    protected static function buildTitleShadowCss($titleShadow)
+    {
+        if (!is_array($titleShadow) || empty($titleShadow['enabled'])) return '';
+        $x = floatval($titleShadow['offsetX'] ?? 2);
+        $y = floatval($titleShadow['offsetY'] ?? 2);
+        $blur = floatval($titleShadow['blur'] ?? 6);
+        $color = htmlspecialchars($titleShadow['color'] ?? 'rgba(0,0,0,0.5)', ENT_QUOTES);
+        return "text-shadow:{$x}px {$y}px {$blur}px {$color};";
     }
 
     /**
@@ -762,7 +776,7 @@ HTML;
         // Fallback to block text color if custom colors not set
         $defaultTextColor = $styles['textColor'] ?? '';
         $effectiveTitleColor = !empty($titleColor) ? $titleColor : $defaultTextColor;
-        $titleStyle = self::buildTitleStyle($effectiveTitleColor, $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle($effectiveTitleColor, $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $featureTitleStyle = !empty($featureTitleColor) ? "color: {$featureTitleColor};" : (!empty($defaultTextColor) ? "color: {$defaultTextColor};" : '');
 
         $html = <<<HTML
@@ -816,7 +830,7 @@ HTML;
         $services = $content['services'] ?? [];
         $roundedClass = self::getRoundedClass($block);
         $blockStyle = self::getBlockStyle($styles);
-        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
 
         $html = <<<HTML
 <div class="services-grid-block">
@@ -918,7 +932,7 @@ HTML;
 
         $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
 
-        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $titleMarginBottom = htmlspecialchars($content['titleMarginBottom'] ?? '');
         if ($titleMarginBottom) {
             $titleStyle = $titleStyle
@@ -1058,7 +1072,7 @@ HTML;
 
         $titleColor = htmlspecialchars($content['titleColor'] ?? '');
         $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
-        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
 
         return <<<HTML
@@ -1172,7 +1186,7 @@ HTML;
 
         $titleColor = htmlspecialchars($content['titleColor'] ?? '');
         $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
-        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
 
         return <<<HTML
@@ -1202,7 +1216,7 @@ HTML;
         $roundedClass = self::getRoundedClass($block);
 
         $blockStyle = self::getBlockStyle($styles);
-        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $titleMarginBottom = htmlspecialchars($content['titleMarginBottom'] ?? '');
 
         $titleHtml = '';
@@ -1235,7 +1249,7 @@ HTML;
         $image = htmlspecialchars($content['image'] ?? '');
         $roundedClass = self::getRoundedClass($block);
         $blockStyle = self::getBlockStyle($styles);
-        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
 
         return <<<HTML
 <section class="two-column-text-image py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
@@ -1264,7 +1278,7 @@ HTML;
         $image = htmlspecialchars($content['image'] ?? '');
         $roundedClass = self::getRoundedClass($block);
         $blockStyle = self::getBlockStyle($styles);
-        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
 
         return <<<HTML
 <section class="two-column-image-text py-8 sm:py-12 px-4 sm:px-6" {$blockStyle}>
@@ -1301,7 +1315,7 @@ HTML;
 
         $titleColor = htmlspecialchars($content['titleColor'] ?? '');
         $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
-        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
 
         $videoHtml = '';
@@ -1498,7 +1512,7 @@ HTML;
         }
 
         $titleColor = htmlspecialchars($content['titleColor'] ?? '');
-        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
 
         $html = <<<HTML
 <section class="form-block">
@@ -1720,7 +1734,7 @@ HTML;
         $showPagination = $content['showPagination'] ?? true;
         $roundedClass = self::getRoundedClass($block);
         $blockStyle = self::getBlockStyle($styles);
-        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle('', $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $sliderId = 'slider-' . uniqid();
 
         // Map aspect ratios to CSS classes
@@ -1856,7 +1870,7 @@ HTML;
 
         $titleColor = htmlspecialchars($content['titleColor'] ?? '');
         $descriptionColor = htmlspecialchars($content['descriptionColor'] ?? '');
-        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $titleStyle = self::buildTitleStyle($titleColor, $content['titleSize'] ?? '', $content['titleShadow'] ?? null);
         $descriptionStyle = $descriptionColor ? " style=\"color:{$descriptionColor}\"" : '';
 
         $html = <<<HTML

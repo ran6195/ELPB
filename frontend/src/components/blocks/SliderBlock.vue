@@ -18,7 +18,7 @@
         class="text-3xl md:text-4xl font-bold text-center mb-12"
         :contenteditable="editable"
         @blur="updateContent('title', $event.target.textContent)"
-        :style="titleFontSize ? { fontSize: titleFontSize } : {}"
+        :style="{ ...(titleFontSize ? { fontSize: titleFontSize } : {}), ...titleShadowStyle(block.content) }"
       >
         {{ block.content.title }}
       </h2>
@@ -157,6 +157,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { titleShadowStyle } from '../../utils/titleStyle'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'

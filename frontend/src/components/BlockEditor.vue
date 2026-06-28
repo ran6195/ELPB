@@ -3843,6 +3843,9 @@
       </div>
     </div>
 
+    <!-- Ombra Titolo (disponibile per i blocchi con titolo) -->
+    <TitleShadowEditor v-if="blockHasTitle" :content="localBlock.content" />
+
     <!-- Ancora sezione (disponibile per tutti i blocchi) -->
     <div class="border-t border-gray-200 pt-4 mt-2">
       <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Ancora Sezione</h5>
@@ -3870,6 +3873,7 @@
 import { ref, watch, computed } from 'vue'
 import draggable from 'vuedraggable'
 import RichTextEditor from './RichTextEditor.vue'
+import TitleShadowEditor from './TitleShadowEditor.vue'
 import apiClient from '../api/axios'
 import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
 import { usePageStore } from '../stores/pageStore'
@@ -3975,6 +3979,14 @@ const blockTypeNames = {
 const blockTypeName = computed(() => {
   return blockTypeNames[props.block.type] || props.block.type
 })
+
+// Tipi di blocco che hanno un titolo (per cui mostrare l'opzione Ombra Titolo)
+const blocksWithTitle = [
+  'hero', 'hero-wide', 'hero-video', 'text', 'features', 'services-grid',
+  'cta', 'two-column-text-image', 'two-column-image-text', 'video-info',
+  'form', 'form-avanzato', 'slider', 'map'
+]
+const blockHasTitle = computed(() => blocksWithTitle.includes(props.block.type))
 
 // Inizializza localBlock con styles se non esistono
 const initBlock = (block) => {

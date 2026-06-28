@@ -2,7 +2,7 @@
   <div class="form-block">
     <div :class="['max-w-7xl mx-auto px-6 py-16', roundedCorners ? 'rounded-lg' : '']" :style="blockStyles">
       <h2 v-if="block.content.title" class="text-3xl font-bold mb-2 text-center"
-        :style="block.content.titleColor ? { color: block.content.titleColor } : {}"
+        :style="{ ...(block.content.titleColor ? { color: block.content.titleColor } : {}), ...titleShadowStyle(block.content) }"
       >
         {{ block.content.title }}
       </h2>
@@ -172,6 +172,7 @@
 
 <script setup>
 import { ref, reactive, watch, computed, onMounted, onBeforeUnmount } from 'vue'
+import { titleShadowStyle } from '../../utils/titleStyle'
 import { usePageStore } from '../../stores/pageStore'
 import { useRouter } from 'vue-router'
 

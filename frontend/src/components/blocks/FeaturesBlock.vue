@@ -69,6 +69,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { titleShadowStyle } from '../../utils/titleStyle'
 
 const props = defineProps({
   block: {
@@ -94,6 +95,7 @@ const featuresSectionTitleStyles = computed(() => {
   if (effectiveColor) s.color = effectiveColor
   const fs = titleSizeMap[props.block.content.titleSize]
   if (fs) s.fontSize = fs
+  Object.assign(s, titleShadowStyle(props.block.content))
   return s
 })
 
