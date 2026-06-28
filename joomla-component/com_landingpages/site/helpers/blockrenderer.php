@@ -555,6 +555,8 @@ HTML;
         if ($playOnScroll && !empty($videoUrl)) {
             $isYoutube = strpos($videoUrl, 'youtube') !== false || strpos($videoUrl, 'youtu.be') !== false;
             $isVimeo = strpos($videoUrl, 'vimeo') !== false;
+            $isYoutubeJs = $isYoutube ? 'true' : 'false';
+            $isVimeoJs = $isVimeo ? 'true' : 'false';
 
             $html .= <<<HTML
 
@@ -578,12 +580,12 @@ HTML;
                     }
 
                     // Se è un iframe YouTube
-                    if (videoElement.tagName === 'IFRAME' && {$isYoutube}) {
+                    if (videoElement.tagName === 'IFRAME' && {$isYoutubeJs}) {
                         videoElement.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                     }
 
                     // Se è un iframe Vimeo
-                    if (videoElement.tagName === 'IFRAME' && {$isVimeo}) {
+                    if (videoElement.tagName === 'IFRAME' && {$isVimeoJs}) {
                         videoElement.contentWindow.postMessage('{"method":"play"}', '*');
                     }
                 }
