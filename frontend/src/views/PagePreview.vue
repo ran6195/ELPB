@@ -49,6 +49,7 @@ import { loadGoogleFont } from '../utils/googleFonts'
 import HeaderBlock from '../components/blocks/HeaderBlock.vue'
 import HeroBlock from '../components/blocks/HeroBlock.vue'
 import HeroWideBlock from '../components/blocks/HeroWideBlock.vue'
+import HeroVideoBlock from '../components/blocks/HeroVideoBlock.vue'
 import ImageSlideBlock from '../components/blocks/ImageSlideBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
 import RichTextOnlyBlock from '../components/blocks/RichTextOnlyBlock.vue'
@@ -136,6 +137,7 @@ const getBlockComponent = (type) => {
     header: HeaderBlock,
     hero: HeroBlock,
     'hero-wide': HeroWideBlock,
+    'hero-video': HeroVideoBlock,
     'image-slide': ImageSlideBlock,
     video: VideoBlock,
     text: TextBlock,

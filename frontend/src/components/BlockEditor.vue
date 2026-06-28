@@ -7,8 +7,8 @@
       <p class="text-sm text-gray-900 font-medium">{{ blockTypeName }}</p>
     </div>
 
-    <!-- Hero / Hero Larghezza Variabile Block Editor -->
-    <div v-if="block.type === 'hero' || block.type === 'hero-wide'" class="space-y-5">
+    <!-- Hero / Hero Larghezza Variabile / Hero Video Block Editor -->
+    <div v-if="block.type === 'hero' || block.type === 'hero-wide' || block.type === 'hero-video'" class="space-y-5">
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-2">Titolo</label>
         <input
@@ -151,8 +151,92 @@
         </div>
       </div>
 
+      <!-- Video di Sfondo (solo hero-video) -->
+      <div v-if="block.type === 'hero-video'" class="border-t border-gray-200 pt-4">
+        <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Video di Sfondo</h5>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">URL Video</label>
+            <input
+              v-model="localBlock.content.backgroundVideo"
+              type="text"
+              placeholder="https://... oppure /uploads/..."
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un video</label>
+            <input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg"
+              @change="handleHeroBgVideoUpload"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+            />
+            <p class="text-xs text-gray-500 mt-1">MP4, MOV, AVI o WebM — max 100MB. Il video va in riproduzione automatica, muto e in loop.</p>
+          </div>
+
+          <div v-if="localBlock.content.backgroundVideo">
+            <label class="block text-xs font-medium text-gray-700 mb-2">
+              Opacità Video: {{ Math.round((localBlock.content.backgroundVideoOpacity ?? 1) * 100) }}%
+            </label>
+            <input
+              v-model.number="localBlock.content.backgroundVideoOpacity"
+              type="range"
+              min="0.05"
+              max="1"
+              step="0.05"
+              class="w-full accent-primary-500"
+            />
+          </div>
+
+          <!-- Overlay -->
+          <div v-if="localBlock.content.backgroundVideo" class="border-t border-gray-100 pt-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                v-model="localBlock.content.overlayEnabled"
+                type="checkbox"
+                class="w-4 h-4 rounded accent-primary-500"
+              />
+              <span class="text-xs font-medium text-gray-700">Abilita Overlay Colorato</span>
+            </label>
+          </div>
+
+          <div v-if="localBlock.content.backgroundVideo && localBlock.content.overlayEnabled" class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">Colore Overlay</label>
+              <div class="flex items-center gap-3">
+                <input
+                  v-model="localBlock.content.overlayColor"
+                  type="color"
+                  class="h-11 w-20 rounded-lg cursor-pointer border border-gray-300"
+                />
+                <input
+                  v-model="localBlock.content.overlayColor"
+                  type="text"
+                  placeholder="#000000"
+                  class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition-all outline-none text-sm font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Opacità Overlay: {{ Math.round((localBlock.content.overlayOpacity ?? 0.5) * 100) }}%
+              </label>
+              <input
+                v-model.number="localBlock.content.overlayOpacity"
+                type="range"
+                min="0.05"
+                max="0.95"
+                step="0.05"
+                class="w-full accent-primary-500"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Immagine di Sfondo -->
-      <div class="border-t border-gray-200 pt-4">
+      <div v-if="block.type !== 'hero-video'" class="border-t border-gray-200 pt-4">
         <h5 class="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Immagine di Sfondo</h5>
         <div class="space-y-3">
           <div>
@@ -3882,6 +3966,7 @@ const blockTypeNames = {
   'form': 'Form',
   'form-avanzato': 'Form Avanzato',
   'hero-wide': 'Hero Larghezza Variabile',
+  'hero-video': 'Hero Video',
   'footer': 'Footer',
   'legal-footer': 'Footer Legale'
 }
@@ -3918,7 +4003,7 @@ const initBlock = (block) => {
   }
 
   // Per blocchi hero vecchi, aggiungi buttonStyle se non esiste
-  if (clonedBlock.type === 'hero' && clonedBlock.content) {
+  if ((clonedBlock.type === 'hero' || clonedBlock.type === 'hero-wide' || clonedBlock.type === 'hero-video') && clonedBlock.content) {
     if (!clonedBlock.content.buttonStyle) {
       clonedBlock.content.buttonStyle = {
         backgroundColor: '#4F46E5',
@@ -4092,6 +4177,44 @@ const handleHeroBgImageUpload = async (event) => {
     } catch (error) {
       const msg = error.response?.data?.error || 'Errore durante il caricamento dell\'immagine'
       alert(msg)
+      console.error(error)
+    }
+  }
+}
+
+const handleHeroBgVideoUpload = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    // Validazione dimensione file (max 100MB)
+    const maxSize = 100 * 1024 * 1024 // 100MB in bytes
+    if (file.size > maxSize) {
+      alert('Il file è troppo grande. Dimensione massima: 100MB')
+      event.target.value = '' // Reset input
+      return
+    }
+
+    // Validazione tipo file
+    const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Tipo file non supportato. Usa MP4, MOV, AVI o WebM')
+      event.target.value = '' // Reset input
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('video', file)
+
+    try {
+      const response = await apiClient.post('/upload/video', formData)
+
+      if (response.data.success) {
+        localBlock.value.content.backgroundVideo = response.data.url
+      } else {
+        alert('Errore durante il caricamento del video: ' + (response.data.error || 'Errore sconosciuto'))
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Errore durante il caricamento del video'
+      alert(errorMessage)
       console.error(error)
     }
   }

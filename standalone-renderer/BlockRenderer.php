@@ -1079,6 +1079,120 @@ HTML;
     }
 
     /**
+     * Render Hero Video block (sfondo video)
+     */
+    protected function renderHerovideo($content, $styles, $block)
+    {
+        $title = htmlspecialchars($content['title'] ?? 'Title');
+        $subtitle = htmlspecialchars($content['subtitle'] ?? 'Subtitle');
+        $buttonText = htmlspecialchars($content['buttonText'] ?? 'Call to Action');
+        $buttonLink = htmlspecialchars($content['buttonLink'] ?? '#');
+        $backgroundVideo = htmlspecialchars($content['backgroundVideo'] ?? '');
+        $height = htmlspecialchars($content['height'] ?? '400px');
+        $roundedClass = $this->getRoundedClass();
+
+        // Content positioning
+        $horizontal = $content['contentHorizontal'] ?? 'center';
+        $vertical   = $content['contentVertical']   ?? 'middle';
+        $contentMaxWidth = $content['contentMaxWidth'] ?? '100%';
+        $justifyMap = ['left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end'];
+        $alignMap   = ['top' => 'flex-start', 'middle' => 'center', 'bottom' => 'flex-end'];
+
+        // Wrapper styles (position, min-height, background-color, font, flex)
+        $wrapperStyles = [
+            'position: relative', 'overflow: hidden', 'width: 100%', 'min-height: ' . $height,
+            'display: flex',
+            'justify-content: ' . ($justifyMap[$horizontal] ?? 'center'),
+            'align-items: '     . ($alignMap[$vertical]    ?? 'center'),
+        ];
+        if (!empty($styles['backgroundColor'])) {
+            $wrapperStyles[] = 'background-color: ' . $styles['backgroundColor'];
+        }
+        if (!empty($styles['fontFamily'])) {
+            $wrapperStyles[] = 'font-family: \'' . $styles['fontFamily'] . '\', sans-serif';
+        }
+        $backgroundContained = !empty($content['backgroundContained']);
+        $containerClass = $backgroundContained ? ' max-w-7xl' : '';
+        if ($backgroundContained) {
+            $wrapperStyles[] = 'margin: 0 auto';
+        }
+        $wrapperAttr = 'style="' . implode('; ', $wrapperStyles) . '"';
+
+        // Layer 1: background video (autoplay, muto, loop)
+        $bgVideoHtml = '';
+        if (!empty($backgroundVideo)) {
+            $bgOpacity = floatval($content['backgroundVideoOpacity'] ?? 1);
+            $videoType = $this->getVideoMimeType($content['backgroundVideo']);
+            $bgVideoHtml = "<video autoplay loop muted playsinline style=\"position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:{$bgOpacity}\"><source src=\"{$backgroundVideo}\" type=\"{$videoType}\"></video>";
+        }
+
+        // Layer 2: overlay
+        $overlayHtml = '';
+        if (!empty($content['overlayEnabled'])) {
+            $overlayColor = htmlspecialchars($content['overlayColor'] ?? '#000000');
+            $overlayOpacity = floatval($content['overlayOpacity'] ?? 0.5);
+            $overlayHtml = "<div style=\"position:absolute;top:0;left:0;width:100%;height:100%;background-color:{$overlayColor};opacity:{$overlayOpacity}\"></div>";
+        }
+
+        // Content layer styles (text color, padding, positioning)
+        $contentStyles = [
+            'position: relative', 'z-index: 1',
+            'width: ' . $contentMaxWidth,
+            'text-align: ' . $horizontal,
+            'padding: 5rem 1.5rem',
+        ];
+        if (!empty($styles['textColor'])) {
+            $contentStyles[] = 'color: ' . $styles['textColor'];
+        }
+        if (!empty($styles['padding'])) {
+            $contentStyles[] = 'padding: ' . $styles['padding'];
+        }
+        $contentStyleAttr = 'style="' . implode('; ', $contentStyles) . '"';
+
+        // Button styles
+        $buttonStyle = $content['buttonStyle'] ?? [];
+        $buttonBg = htmlspecialchars($buttonStyle['backgroundColor'] ?? '#4F46E5');
+        $buttonColor = htmlspecialchars($buttonStyle['textColor'] ?? '#FFFFFF');
+        $buttonFontSize = htmlspecialchars($buttonStyle['fontSize'] ?? '16px');
+        $buttonPadding = htmlspecialchars($buttonStyle['padding'] ?? '12px 32px');
+        $buttonRadius = htmlspecialchars($buttonStyle['borderRadius'] ?? '8px');
+        $buttonBorderWidth = htmlspecialchars($buttonStyle['borderWidth'] ?? '0px');
+        $buttonBorderColor = htmlspecialchars($buttonStyle['borderColor'] ?? 'transparent');
+        $buttonBorderStyle = htmlspecialchars($buttonStyle['borderStyle'] ?? 'solid');
+        $buttonShadow = $buttonStyle['shadow'] ?? 'md';
+
+        $shadowMap = [
+            'none' => 'none',
+            'sm' => '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'md' => '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'lg' => '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            'xl' => '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        ];
+        $boxShadow = $shadowMap[$buttonShadow] ?? $shadowMap['md'];
+
+        $buttonStyles = "background-color: {$buttonBg}; color: {$buttonColor}; font-size: {$buttonFontSize}; padding: {$buttonPadding}; border-radius: {$buttonRadius}; border-width: {$buttonBorderWidth}; border-color: {$buttonBorderColor}; border-style: {$buttonBorderStyle}; box-shadow: {$boxShadow};";
+
+        $titleColor = htmlspecialchars($content['titleColor'] ?? '');
+        $subtitleColor = htmlspecialchars($content['subtitleColor'] ?? '');
+        $titleStyle = $this->buildTitleStyle($titleColor, $content['titleSize'] ?? '');
+        $subtitleStyle = $subtitleColor ? " style=\"color:{$subtitleColor}\"" : '';
+
+        return <<<HTML
+<div class="hero-block{$containerClass}" {$wrapperAttr}>
+    {$bgVideoHtml}
+    {$overlayHtml}
+    <div class="{$roundedClass}" {$contentStyleAttr}>
+        <h1 class="text-5xl font-bold mb-4"{$titleStyle}>{$title}</h1>
+        <p class="text-xl mb-8"{$subtitleStyle}>{$subtitle}</p>
+        <a href="{$buttonLink}" class="inline-block font-semibold transition-all hover:opacity-90" style="{$buttonStyles}">
+            {$buttonText}
+        </a>
+    </div>
+</div>
+HTML;
+    }
+
+    /**
      * Render Text block
      */
     protected function renderText($content, $styles, $block)

@@ -476,6 +476,7 @@ import draggable from 'vuedraggable'
 import HeaderBlock from '../components/blocks/HeaderBlock.vue'
 import HeroBlock from '../components/blocks/HeroBlock.vue'
 import HeroWideBlock from '../components/blocks/HeroWideBlock.vue'
+import HeroVideoBlock from '../components/blocks/HeroVideoBlock.vue'
 import ImageSlideBlock from '../components/blocks/ImageSlideBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
 import RichTextOnlyBlock from '../components/blocks/RichTextOnlyBlock.vue'
@@ -562,6 +563,7 @@ const blockTypes = [
   { type: 'header', name: 'Intestazione', description: 'Header/Navbar con logo' },
   { type: 'hero', name: 'Hero', description: 'Sezione principale con titolo e CTA' },
   { type: 'hero-wide', name: 'Hero Larghezza Variabile', description: 'Hero con larghezza del blocco personalizzabile' },
+  { type: 'hero-video', name: 'Hero Video', description: 'Sezione principale con video di sfondo' },
   { type: 'image-slide', name: 'Diapositiva Immagine', description: 'Immagine a schermo intero con overlay opzionale' },
   { type: 'video', name: 'Video', description: 'Video a schermo intero senza testo' },
   { type: 'text', name: 'Testo', description: 'Blocco di testo semplice' },
@@ -881,6 +883,26 @@ const getDefaultContent = (type) => {
         shadow: 'md'
       }
     },
+    'hero-video': {
+      title: 'Titolo Hero',
+      subtitle: 'Sottotitolo',
+      buttonText: 'Call to Action',
+      buttonLink: '#',
+      backgroundVideo: '',
+      backgroundVideoOpacity: 1,
+      height: '400px',
+      buttonStyle: {
+        backgroundColor: '#4F46E5',
+        textColor: '#FFFFFF',
+        fontSize: '16px',
+        padding: '12px 32px',
+        borderRadius: '8px',
+        borderWidth: '0px',
+        borderColor: 'transparent',
+        borderStyle: 'solid',
+        shadow: 'md'
+      }
+    },
     text: {
       title: 'Titolo Sezione',
       text: '<p>Inserisci qui il tuo testo...</p>',
@@ -1141,6 +1163,7 @@ const getBlockComponent = (type) => {
     header: HeaderBlock,
     hero: HeroBlock,
     'hero-wide': HeroWideBlock,
+    'hero-video': HeroVideoBlock,
     'image-slide': ImageSlideBlock,
     video: VideoBlock,
     text: TextBlock,

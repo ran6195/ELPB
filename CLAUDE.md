@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📝 Modifiche Recenti
 
+### Sessione 2026-06-28
+- **Nuovo Blocco Hero Video** 🎬: Aggiunto tipo blocco `hero-video`, duplicato dell'Hero ma con **video di sfondo** (autoplay, muted, loop, playsinline, `object-fit: cover`) al posto dell'immagine; campi `backgroundVideo`/`backgroundVideoOpacity`, overlay e contenuto invariati. Lo sfondo video autoplay-muto evita per design la logica play-on-scroll. Nuovo componente `HeroVideoBlock.vue`, registrato in palette/default/mappa componenti (PageEditor.vue, PagePreview.vue, PublicPage.vue), editor con sezione "Video di Sfondo" (URL + upload + opacità + overlay) e handler `handleHeroBgVideoUpload`, migration buttonStyle/overlay estesa ai tipi hero-wide/hero-video, metodo `renderHerovideo()` nei due renderer (HeroVideoBlock.vue, PageEditor.vue, PagePreview.vue, PublicPage.vue, BlockEditor.vue, standalone BlockRenderer.php, joomla blockrenderer.php)
+- **Fix Video Play-on-Scroll** 🎬🔧: Risolto video che "si fermava a un certo punto": errore di sintassi JS (`if (... && )`) generato da `$isYoutube`/`$isVimeo` booleani PHP interpolati come stringa vuota nell'heredoc → SyntaxError che bloccava `.play()`/loop per i video MP4 caricati. Convertiti in literal JS (`'true'`/`'false'`) nei due renderer (standalone BlockRenderer.php, joomla blockrenderer.php)
+
 ### Sessione 2026-03-20
 - **Pulizia Codebase** 🧹: Rimossi 10 file test/debug (standalone-renderer/, backend/public/), 13 archivi deploy obsoleti (root/), 2 backup .htaccess, `.env.production.nobase`, script `deploy-backend-gtm.sh`, 4 file .txt doc, `create_fm_marketing_user.php`. Eliminati `LegalPagesController.php` e `DebugController.php` (deprecati) e relative route da `index.php`. Organizzati 35 file .md in `docs/` con sottocartelle: `deployment/`, `troubleshooting/`, `features/`, `joomla/`, `guides/`. Root ora contiene solo `README.md` e `CLAUDE.md`.
 
