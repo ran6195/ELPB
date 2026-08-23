@@ -48,6 +48,8 @@ joomla-component/com_landingpages/site/api/public/uploads/
 standalone-renderer/debug-api.php
 backend/check_published_pages.php
 backend/test-*.php
+backend/fix-leads-timezone.php
+backend/storage/logs/leads-timezone-fix.json
 standalone-renderer/test-*.php
 standalone-renderer/debug-*.php
 standalone-renderer/check-*.php

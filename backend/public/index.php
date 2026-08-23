@@ -11,6 +11,10 @@ require __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
+// Timezone (senza questo PHP usa UTC di default e i timestamp dei leads
+// vengono salvati sfasati rispetto all'ora italiana)
+date_default_timezone_set('Europe/Rome');
+
 // Initialize database
 require __DIR__ . '/../config/database.php';
 
