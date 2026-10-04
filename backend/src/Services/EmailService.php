@@ -215,11 +215,10 @@ class EmailService
             $imagePath = null;
 
             if (!empty($attachmentImageUrl)) {
-                $uploadsDir = dirname(__DIR__, 2) . '/public/uploads/images/';
-                $filename   = basename(parse_url($attachmentImageUrl, PHP_URL_PATH));
-                $candidate  = $uploadsDir . $filename;
+                // Risolve sia i file della libreria media sia i vecchi upload in uploads/images/
+                $candidate = MediaService::localPathFromUrl($attachmentImageUrl);
 
-                if ($filename && file_exists($candidate) && is_readable($candidate)) {
+                if ($candidate && is_readable($candidate)) {
                     $imagePath = $candidate;
                     $imageCid  = 'confirmation_img_' . uniqid();
                 } else {

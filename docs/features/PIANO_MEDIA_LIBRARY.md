@@ -1,0 +1,118 @@
+# Piano: libreria media per cliente
+
+> Creato: 2026-10-04 — Stato: **Fase 1 completata** — prossima: Fase 2 (frontend)
+
+Gestione centralizzata di immagini e video per ogni cliente (company), con possibilità futura di modificare le immagini (ridimensionamento, ritaglio, filtri).
+
+## Situazione di partenza
+
+- **Upload senza proprietario.** `UploadController` salva tutto in due cartelle condivise (`uploads/images/`, `uploads/videos/`) con nomi `uniqid()`. Nel database non resta traccia di chi ha caricato cosa (al 2026-10-04: 31 immagini / 13 MB, 2 video / 50 MB).
+- **URL assoluti.** Nel JSON dei blocchi finisce l'URL completo (`APP_URL/uploads/...`): i renderer standalone e Joomla non vanno toccati.
+- **Upload sparsi.** 7 handler in `BlockEditor.vue` (immagine, sfondo hero, video hero, video, mappa, servizi, slide) e 1 in `PageSettings.vue`, ognuno con il suo `<input type="file">`: un file già caricato non si può riusare.
+- **Sicurezza.** Il tipo del file viene da `getClientMediaType()` (dichiarato dal browser, falsificabile). Ammessi anche SVG (possibile XSS) e HEIC/TIFF (non mostrati dai browser).
+- **Ambiente.** `gd` ed `exif` presenti in locale (bastano per miniature e ridimensionamento); da verificare su Aruba. Imagick e ffmpeg probabilmente assenti sul condiviso.
+- **"Cliente" = company.** `users.company_id` può essere vuoto (admin, utenti senza azienda).
+
+## Architettura
+
+### Tabella `media`
+```
+id, company_id (FK, nullable), user_id (FK, nullable),
+type (image|video), disk, path, thumbnail_path,
+original_name, mime_type, size,
+width, height, duration (video), alt_text,
+parent_id (FK media, versioni modificate),
+created_at, updated_at, deleted_at
+```
+
+L'URL **non** viene salvato: è calcolato da `disk` + `path`, così cambiare storage o dominio non richiede di riscrivere la tabella.
+
+### Struttura percorsi
+```
+media/c{company_id}/images/2026/10/<random>.jpg
+media/c{company_id}/images/2026/10/thumbs/<random>.jpg
+media/c{company_id}/videos/2026/10/<random>.mp4
+media/u{user_id}/...            ← utenti senza azienda
+```
+
+### Astrazione storage
+- Interfaccia `App\Storage\MediaStorage` (`putFile`, `delete`, `exists`, `url`, `size`).
+- Driver `LocalMediaStorage` (filesystem, `backend/public/uploads/`).
+- `MediaStorageFactory` sceglie il driver da `.env` (`MEDIA_DISK`).
+- Un futuro driver S3-compatibile si aggiunge senza toccare controller e frontend.
+
+### Visibilità (stessa logica di `canViewPage`)
+- admin: tutto, con filtro per azienda;
+- company: tutti i media della sua azienda;
+- user: media della sua azienda (o solo i suoi se senza azienda) — **da confermare**.
+
+## Object storage cloud: valutazione
+
+**Decisione: non ora, ma l'architettura è pronta.**
+
+Motivi per rimandare:
+- volumi attuali piccoli (~63 MB);
+- un provider esterno aggiunge credenziali, costi, CORS e un punto di guasto in più;
+- gli URL assoluti già salvati nei blocchi restano validi solo se i file esistenti non si spostano.
+
+Quando conviene passare:
+- i **video** crescono: lo streaming dal condiviso Aruba consuma banda e regge male più visitatori;
+- serve backup/ridondanza dei media separato dal server;
+- più server o renderer remoti in crescita (ilprodotto.it ecc.).
+
+Provider candidati (tutti S3-compatibili):
+| Provider | Pro | Contro |
+|---|---|---|
+| Cloudflare R2 | Nessun costo di traffico in uscita, CDN integrata | Account Cloudflare |
+| Hetzner Object Storage | UE (GDPR), economico | Nessuna CDN inclusa |
+| Backblaze B2 | Molto economico, egress gratuito via Cloudflare | Server UE da scegliere esplicitamente |
+| AWS S3 | Standard di riferimento | Egress costoso |
+
+Per il passaggio: driver `S3MediaStorage` (via `league/flysystem-aws-s3-v3` o `aws/aws-sdk-php`), `MEDIA_DISK=s3` per i nuovi file; i file esistenti restano sul disco locale (campo `disk` per record). Stima: 2-3 ore.
+
+## Fasi
+
+### Fase 1 – Backend (~4-5 h)
+1. ✅ Migration `create_media_table.php` + model `Media` (SoftDeletes).
+2. ✅ Astrazione storage (`MediaStorage`, `LocalMediaStorage`, factory, config `.env`).
+3. ✅ `MediaService`: tipo reale via `finfo`, dimensioni via `getimagesize`, correzione orientamento EXIF, miniatura 400px con GD. Nessuna quota per azienda (decisione 2026-10-04).
+4. ✅ `MediaController`: `GET /api/media` (filtri `type`, `search`, `company_id` solo admin, `archived`, paginazione), `POST /api/media` (`file`, opz. `poster`/`width`/`height`/`duration`), `GET|PUT|POST /api/media/{id}`, `GET /api/media/{id}/usage`, `DELETE /api/media/{id}` (archivia; 409 con elenco pagine se in uso, salvo `?confirm=1`), `POST /api/media/{id}/restore`, `DELETE /api/media/{id}/force` (solo archiviati, rimuove i file).
+5. ✅ Formati: JPEG, PNG, GIF, WebP, AVIF / MP4, WebM, MOV. SVG rimosso.
+6. ✅ Le route `/api/upload/image|video` restano, delegate a `MediaService` (stessa risposta + campo `media`).
+7. ✅ `EmailService`: l'immagine allegata alla email di conferma viene risolta tramite `MediaService::localPathFromUrl()` (libreria + vecchi upload).
+
+### Fase 2 – Frontend (~5-6 h)
+1. `mediaStore.js` (Pinia).
+2. Vista `/media` "Libreria Media": griglia miniature, schede Immagini/Video, ricerca, upload multiplo drag&drop con avanzamento, dettaglio (dimensioni, peso, utilizzo, URL), modifica alt, eliminazione.
+3. `MediaPicker.vue`: finestra riusabile "Libreria" / "Carica nuovo", restituisce l'URL.
+4. Sostituzione degli 8 handler con "Scegli dalla libreria" (resta il campo URL manuale).
+5. Miniatura video catturata nel browser (`<video>` + canvas).
+
+### Fase 3 – Migrazione file esistenti (~1-2 h)
+Script `migrate_existing_uploads.php`: scansiona `blocks.content` per URL `/uploads/`, assegna ogni file all'azienda della pagina, crea i record `media` **senza spostare i file**; i file non usati vanno all'admin.
+
+### Fase 4 – Eliminazione sicura (~1 h)
+Controllo utilizzo (`LIKE` sull'URL nei blocchi), conferma con elenco pagine pubblicate, soft delete → eliminazione definitiva con rimozione file.
+
+**Totale MVP: ~12-14 h**
+
+### Fase 5 – Modifica immagini (futuro)
+Modifiche **non distruttive**: ogni modifica crea una nuova versione (`parent_id`).
+
+| Funzione | Approccio |
+|---|---|
+| Ridimensionamento | GD lato server, preset 1920/1280/800 |
+| Ritaglio (16:9, 4:3, 1:1, libero) | `cropperjs` + ritaglio lato server |
+| Filtri (B/N, seppia, luminosità, contrasto, saturazione, sfocatura) | Anteprima con filtri CSS, canvas → nuovo file |
+| WebP / compressione | GD `imagewebp`, anche automatico all'upload |
+
+Futuro: versioni 800/1280/1920px automatiche + `srcset` nei renderer.
+
+## Decisioni prese (2026-10-04)
+1. Utenti semplici: vedono tutti i media dell'azienda.
+2. Nessuna quota spazio per azienda.
+3. SVG rimosso dai formati ammessi.
+
+## Domande aperte
+1. Admin: libreria unica con filtro o anche media "condivisi" con tutti?
+2. Verificare GD (con supporto WebP) attivo su Aruba (`phpinfo()`).

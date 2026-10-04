@@ -101,6 +101,17 @@ $app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(A
 $app->post('/api/upload/image', '\App\Controllers\UploadController:uploadImage')->add(AuthMiddleware::class);
 $app->post('/api/upload/video', '\App\Controllers\UploadController:uploadVideo')->add(AuthMiddleware::class);
 
+// Media library routes (protette, visibilità per azienda)
+$app->get('/api/media', '\App\Controllers\MediaController:index')->add(AuthMiddleware::class);
+$app->post('/api/media', '\App\Controllers\MediaController:store')->add(AuthMiddleware::class);
+$app->get('/api/media/{id}', '\App\Controllers\MediaController:show')->add(AuthMiddleware::class);
+$app->put('/api/media/{id}', '\App\Controllers\MediaController:update')->add(AuthMiddleware::class);
+$app->post('/api/media/{id}', '\App\Controllers\MediaController:update')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
+$app->get('/api/media/{id}/usage', '\App\Controllers\MediaController:usage')->add(AuthMiddleware::class);
+$app->post('/api/media/{id}/restore', '\App\Controllers\MediaController:restore')->add(AuthMiddleware::class);
+$app->delete('/api/media/{id}/force', '\App\Controllers\MediaController:forceDelete')->add(AuthMiddleware::class);
+$app->delete('/api/media/{id}', '\App\Controllers\MediaController:delete')->add(AuthMiddleware::class);
+
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);
 $app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(AuthMiddleware::class);
