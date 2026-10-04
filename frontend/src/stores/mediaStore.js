@@ -46,6 +46,34 @@ export const useMediaStore = defineStore('media', {
       return response.data.data
     },
 
+    async fetchOne(id) {
+      const response = await apiClient.get(`/media/${id}`)
+      return response.data.data
+    },
+
+    /** Contenuto del file come Blob, servito dall'API (evita il blocco CORS sul canvas) */
+    async fetchFileBlob(id) {
+      const response = await apiClient.get(`/media/${id}/file`, { responseType: 'blob' })
+      return response.data
+    },
+
+    /**
+     * Salva un'immagine modificata come nuova versione di `parentId` (l'originale resta intatto).
+     * @param {Blob} blob
+     * @param {string} name nome del nuovo file
+     */
+    async saveVersion(parentId, blob, name, onProgress = null) {
+      const formData = new FormData()
+      formData.append('file', blob, name)
+      formData.append('name', name)
+      const response = await apiClient.post(`/media/${parentId}/versions`, formData, {
+        onUploadProgress: (e) => {
+          if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      })
+      return response.data.data
+    },
+
     async update(id, data) {
       const response = await apiClient.put(`/media/${id}`, data)
       return response.data.data

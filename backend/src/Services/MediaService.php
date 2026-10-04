@@ -56,13 +56,16 @@ class MediaService
      * @param string|null $expectedType 'image' | 'video' per limitare il tipo accettato
      * @param array $meta  Metadati opzionali dal client per i video: width, height, duration
      * @param UploadedFileInterface|null $poster Miniatura del video catturata nel browser
+     * @param Media|null $parent Se presente, il file è una versione modificata di $parent:
+     *                           eredita proprietario (azienda) e testo alternativo
      */
     public function upload(
         UploadedFileInterface $file,
         User $user,
         ?string $expectedType = null,
         array $meta = [],
-        ?UploadedFileInterface $poster = null
+        ?UploadedFileInterface $poster = null,
+        ?Media $parent = null
     ): Media {
         $this->logger->debug('media_received', [
             'filename'   => $file->getClientFilename(),
@@ -108,7 +111,13 @@ class MediaService
             }
 
             $name = bin2hex(random_bytes(8));
-            $folder = Media::ownerFolder($user) . '/' . $type . 's/' . date('Y/m');
+            // Le versioni restano nella libreria del proprietario dell'originale
+            // (es. un admin che modifica l'immagine di un'azienda)
+            $companyId = $parent ? $parent->company_id : $user->company_id;
+            $ownerFolder = $parent
+                ? ($parent->company_id ? 'media/c' . $parent->company_id : 'media/u' . ($parent->user_id ?? $user->id))
+                : Media::ownerFolder($user);
+            $folder = $ownerFolder . '/' . $type . 's/' . date('Y/m');
             $size = filesize($tmp);
 
             // Miniatura (prima di spostare l'originale nello storage)
@@ -127,18 +136,20 @@ class MediaService
             }
 
             $media = Media::create([
-                'company_id'     => $user->company_id,
+                'company_id'     => $companyId,
                 'user_id'        => $user->id,
                 'type'           => $type,
                 'disk'           => $this->storage->name(),
                 'path'           => $path,
                 'thumbnail_path' => $thumbPath,
-                'original_name'  => $this->cleanName($file->getClientFilename()),
+                'original_name'  => $this->cleanName($meta['name'] ?? $file->getClientFilename()),
                 'mime_type'      => $mime,
                 'size'           => $size,
                 'width'          => $width,
                 'height'         => $height,
                 'duration'       => $duration,
+                'alt_text'       => $parent ? $parent->alt_text : null,
+                'parent_id'      => $parent ? $parent->id : null,
             ]);
 
             $this->logger->info('media_saved', ['id' => $media->id, 'path' => $path, 'user_id' => $user->id]);

@@ -108,6 +108,8 @@ $app->get('/api/media/{id}', '\App\Controllers\MediaController:show')->add(AuthM
 $app->put('/api/media/{id}', '\App\Controllers\MediaController:update')->add(AuthMiddleware::class);
 $app->post('/api/media/{id}', '\App\Controllers\MediaController:update')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
 $app->get('/api/media/{id}/usage', '\App\Controllers\MediaController:usage')->add(AuthMiddleware::class);
+$app->get('/api/media/{id}/file', '\App\Controllers\MediaController:file')->add(AuthMiddleware::class);
+$app->post('/api/media/{id}/versions', '\App\Controllers\MediaController:storeVersion')->add(AuthMiddleware::class);
 $app->post('/api/media/{id}/restore', '\App\Controllers\MediaController:restore')->add(AuthMiddleware::class);
 $app->delete('/api/media/{id}/force', '\App\Controllers\MediaController:forceDelete')->add(AuthMiddleware::class);
 $app->delete('/api/media/{id}', '\App\Controllers\MediaController:delete')->add(AuthMiddleware::class);

@@ -165,6 +165,21 @@
               <img v-else :src="detail.url" :alt="detail.alt_text || detail.original_name" class="w-full max-h-72 object-contain" />
             </div>
 
+            <button
+              v-if="detail.type === 'image' && !isArchived"
+              @click="editing = detail"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-50"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              Modifica immagine
+            </button>
+
+            <p v-if="detail.parent" class="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              Versione modificata di
+              <button @click="openDetailById(detail.parent.id)" class="font-medium text-primary-700 hover:underline">{{ detail.parent.original_name }}</button>
+              <span v-if="detail.parent.deleted_at" class="text-gray-500"> (archiviato)</span>
+            </p>
+
             <!-- Info -->
             <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt class="text-gray-500">Tipo</dt>
@@ -293,6 +308,13 @@
         </aside>
       </div>
     </Teleport>
+
+    <ImageEditor
+      v-if="editing"
+      :media="editing"
+      @close="editing = null"
+      @saved="onVersionSaved"
+    />
   </div>
 </template>
 
@@ -302,6 +324,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useMediaStore, mediaErrorMessage } from '../stores/mediaStore'
 import MediaThumb from '../components/media/MediaThumb.vue'
 import MediaDropzone from '../components/media/MediaDropzone.vue'
+import ImageEditor from '../components/media/ImageEditor.vue'
 import { formatBytes, formatDuration } from '../utils/media'
 
 const authStore = useAuthStore()
@@ -401,6 +424,28 @@ async function openDetail(media) {
   } finally {
     usageLoading.value = false
   }
+}
+
+async function openDetailById(id) {
+  const existing = items.value.find((m) => m.id === id)
+  if (existing) return openDetail(existing)
+  try {
+    openDetail(await mediaStore.fetchOne(id))
+  } catch (e) {
+    actionError.value = mediaErrorMessage(e, 'File non trovato')
+  }
+}
+
+// ===== Editor immagini =====
+const editing = ref(null)
+
+function onVersionSaved(media) {
+  editing.value = null
+  if (filter.value === 'all' || filter.value === 'image') {
+    items.value = [media, ...items.value]
+    total.value++
+  }
+  openDetail(media)
 }
 
 function closeDetail() {

@@ -1,6 +1,6 @@
 # Piano: libreria media per cliente
 
-> Creato: 2026-10-04 — Stato: **Fasi 1-4 completate in locale** — Fase 3 da eseguire in produzione dopo revisione del dry-run
+> Creato: 2026-10-04 — Stato: **Fasi 1-5 completate in locale** — Fase 3 da eseguire in produzione dopo revisione del dry-run
 
 Gestione centralizzata di immagini e video per ogni cliente (company), con possibilità futura di modificare le immagini (ridimensionamento, ritaglio, filtri).
 
@@ -111,17 +111,23 @@ Script `backend/scripts/migrate-existing-uploads.php`. **Non sposta né modifica
 
 **Totale MVP: ~12-14 h**
 
-### Fase 5 – Modifica immagini (futuro)
-Modifiche **non distruttive**: ogni modifica crea una nuova versione (`parent_id`).
+### Fase 5 – Modifica immagini ✅
+Modifiche **non distruttive**: ogni salvataggio crea una nuova immagine (`parent_id` = originale), che resta nella libreria del proprietario dell'originale ed eredita il testo alternativo. L'originale non viene mai toccato.
 
-| Funzione | Approccio |
+**Scelta tecnica (diversa dal piano iniziale):** tutta l'elaborazione avviene nel browser con un'unica pipeline su canvas (ritaglio → ridimensionamento → filtri → formato) invece di GD lato server. Anteprima = risultato, un solo percorso di codice, nessun rischio di memoria su hosting condiviso con foto grandi.
+
+| Funzione | Implementazione |
 |---|---|
-| Ridimensionamento | GD lato server, preset 1920/1280/800 |
-| Ritaglio (16:9, 4:3, 1:1, libero) | `cropperjs` + ritaglio lato server |
-| Filtri (B/N, seppia, luminosità, contrasto, saturazione, sfocatura) | Anteprima con filtri CSS, canvas → nuovo file |
-| WebP / compressione | GD `imagewebp`, anche automatico all'upload |
+| Ritaglio (Libero, 1:1, 4:3, 3:2, 16:9, 9:16) | `cropperjs` 1.6 |
+| Rotazione ±90°, specchiatura | Applicate alla sorgente (canvas PNG senza perdita) e ricaricate in Cropper, così vista e ritaglio si adattano |
+| Filtri: preset (B/N, Seppia, Vintage, Vivace, Luminoso, Tenue) + luminosità, contrasto, saturazione, B/N, seppia, sfocatura | CSS filter in anteprima, `ctx.filter` in esportazione (sfocatura riportata alla scala dell'immagine finale); disattivati con avviso se il browser non supporta `ctx.filter` |
+| Ridimensionamento (1920/1280/800/originale/custom) | `getCroppedCanvas`, mai ingrandimenti |
+| Formato JPEG / WebP / PNG + qualità | `canvas.toBlob`; default WebP se l'originale ha trasparenza |
 
-Futuro: versioni 800/1280/1920px automatiche + `srcset` nei renderer.
+- Backend: `GET /api/media/{id}/file` (file servito dall'API autenticata: evita il blocco CORS del canvas tra frontend e backend su origini diverse), `POST /api/media/{id}/versions` (multipart `file`, `name`); `parent` incluso nelle risposte.
+- Frontend: `components/media/ImageEditor.vue`, `utils/imageFilters.js`, pulsante "Modifica immagine" e link "Versione modificata di…" nel dettaglio della libreria.
+
+Futuro: versioni 800/1280/1920px automatiche + `srcset` nei renderer; editor accessibile anche dal MediaPicker dell'editor pagine.
 
 ## Decisioni prese (2026-10-04)
 1. Utenti semplici: vedono tutti i media dell'azienda.

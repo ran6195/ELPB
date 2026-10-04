@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Models\Media;
 use App\Services\MediaService;
 use App\Services\MediaUploadException;
+use App\Storage\LocalMediaStorage;
+use App\Storage\MediaStorageFactory;
+use Slim\Psr7\Stream;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -17,6 +20,15 @@ class MediaController
     private const PER_PAGE_DEFAULT = 40;
     private const PER_PAGE_MAX = 100;
 
+    /** Relazioni incluse nelle risposte: autore e originale (anche se archiviato) */
+    private function relations(): array
+    {
+        return [
+            'user:id,name',
+            'parent' => fn ($query) => $query->withTrashed()->select('id', 'original_name', 'disk', 'path', 'thumbnail_path', 'deleted_at'),
+        ];
+    }
+
     /**
      * GET /api/media?type=image|video&search=&company_id=&archived=1&page=1&per_page=40
      */
@@ -25,7 +37,7 @@ class MediaController
         $user = $request->getAttribute('user');
         $params = $request->getQueryParams();
 
-        $query = Media::visibleTo($user)->with('user:id,name');
+        $query = Media::visibleTo($user)->with($this->relations());
 
         if (!empty($params['archived'])) {
             $query->onlyTrashed();
@@ -84,7 +96,7 @@ class MediaController
                 (array) ($request->getParsedBody() ?? []),
                 $files['poster'] ?? null
             );
-            return $this->json($response, ['success' => true, 'data' => $media->load('user:id,name')], 201);
+            return $this->json($response, ['success' => true, 'data' => $media->load($this->relations())], 201);
         } catch (MediaUploadException $e) {
             return $this->json($response, ['error' => $e->getMessage()], $e->getStatus());
         }
@@ -97,7 +109,7 @@ class MediaController
         if (!$media) {
             return $this->notFound($response);
         }
-        return $this->json($response, ['data' => $media->load('user:id,name')]);
+        return $this->json($response, ['data' => $media->load($this->relations())]);
     }
 
     /** PUT/POST /api/media/{id}  (alt_text, original_name) */
@@ -127,7 +139,62 @@ class MediaController
 
         $media->save();
 
-        return $this->json($response, ['success' => true, 'data' => $media->load('user:id,name')]);
+        return $this->json($response, ['success' => true, 'data' => $media->load($this->relations())]);
+    }
+
+    /**
+     * GET /api/media/{id}/file — contenuto del file servito dall'API.
+     * Serve all'editor immagini: caricare l'originale dallo stesso endpoint
+     * autenticato evita che il canvas venga bloccato dal CORS.
+     */
+    public function file(Request $request, Response $response, $args)
+    {
+        $media = $this->findVisible($request, $args['id'], true);
+        if (!$media) {
+            return $this->notFound($response);
+        }
+
+        $storage = MediaStorageFactory::disk($media->disk);
+        $path = $storage instanceof LocalMediaStorage ? $storage->localPath($media->path) : null;
+        if ($path === null) {
+            return $this->notFound($response);
+        }
+
+        return $response
+            ->withBody(new Stream(fopen($path, 'rb')))
+            ->withHeader('Content-Type', $media->mime_type)
+            ->withHeader('Content-Length', (string) filesize($path))
+            ->withHeader('Cache-Control', 'private, max-age=300');
+    }
+
+    /**
+     * POST /api/media/{id}/versions  (multipart: file, name?)
+     * Salva un'immagine modificata come nuova versione dell'originale, che resta intatto.
+     */
+    public function storeVersion(Request $request, Response $response, $args)
+    {
+        $parent = $this->findVisible($request, $args['id']);
+        if (!$parent) {
+            return $this->notFound($response);
+        }
+        if ($parent->type !== 'image') {
+            return $this->json($response, ['error' => 'Si possono modificare solo le immagini'], 422);
+        }
+
+        $files = $request->getUploadedFiles();
+        if (!isset($files['file'])) {
+            return $this->json($response, ['error' => 'Nessun file inviato (campo "file")'], 400);
+        }
+
+        $body = (array) ($request->getParsedBody() ?? []);
+        $meta = isset($body['name']) ? ['name' => $body['name']] : [];
+
+        try {
+            $media = (new MediaService())->upload($files['file'], $request->getAttribute('user'), 'image', $meta, null, $parent);
+            return $this->json($response, ['success' => true, 'data' => $media->load($this->relations())], 201);
+        } catch (MediaUploadException $e) {
+            return $this->json($response, ['error' => $e->getMessage()], $e->getStatus());
+        }
     }
 
     /** GET /api/media/{id}/usage */
