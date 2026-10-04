@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\Media;
+use App\Models\MediaFolder;
 use App\Services\MediaService;
 use App\Services\MediaUploadException;
 use App\Storage\LocalMediaStorage;
@@ -25,12 +26,14 @@ class MediaController
     {
         return [
             'user:id,name',
+            'folder:id,name',
             'parent' => fn ($query) => $query->withTrashed()->select('id', 'original_name', 'disk', 'path', 'thumbnail_path', 'deleted_at'),
         ];
     }
 
     /**
-     * GET /api/media?type=image|video&search=&company_id=&archived=1&page=1&per_page=40
+     * GET /api/media?type=image|video&search=&company_id=&archived=1&folder=root|{id}&page=1&per_page=40
+     * `folder` limita alla cartella indicata; con ricerca o archivio si cerca in tutte le cartelle.
      */
     public function index(Request $request, Response $response)
     {
@@ -51,6 +54,10 @@ class MediaController
                 $q->where('original_name', 'like', $search)
                   ->orWhere('alt_text', 'like', $search);
             });
+        }
+        $folder = $params['folder'] ?? '';
+        if ($folder !== '' && empty($params['search']) && empty($params['archived'])) {
+            $folder === 'root' ? $query->whereNull('folder_id') : $query->where('folder_id', (int) $folder);
         }
         // Filtro per azienda (solo admin, che altrimenti vede tutto)
         if ($user->isAdmin() && !empty($params['company_id'])) {
@@ -88,13 +95,24 @@ class MediaController
             return $this->json($response, ['error' => 'Nessun file inviato (campo "file")'], 400);
         }
 
+        $body = (array) ($request->getParsedBody() ?? []);
+        $folder = null;
+        if (!empty($body['folder_id'])) {
+            $folder = MediaFolder::visibleTo($user)->find((int) $body['folder_id']);
+            if (!$folder) {
+                return $this->json($response, ['error' => 'Cartella non trovata'], 404);
+            }
+        }
+
         try {
             $media = (new MediaService())->upload(
                 $files['file'],
                 $user,
                 null,
-                (array) ($request->getParsedBody() ?? []),
-                $files['poster'] ?? null
+                $body,
+                $files['poster'] ?? null,
+                null,
+                $folder
             );
             return $this->json($response, ['success' => true, 'data' => $media->load($this->relations())], 201);
         } catch (MediaUploadException $e) {
@@ -137,9 +155,61 @@ class MediaController
             $media->original_name = mb_substr($name, 0, 255);
         }
 
+        if (array_key_exists('folder_id', $data)) {
+            $error = $this->assignFolder($request, $media, $data['folder_id']);
+            if ($error) {
+                return $this->json($response, ['error' => $error], 422);
+            }
+        }
+
         $media->save();
 
         return $this->json($response, ['success' => true, 'data' => $media->load($this->relations())]);
+    }
+
+    /**
+     * POST /api/media/move  { ids: [..], folder_id: id|null }
+     * Sposta più file in una cartella (solo database: gli URL non cambiano).
+     */
+    public function move(Request $request, Response $response)
+    {
+        $data = json_decode($request->getBody()->getContents(), true);
+        $ids = array_values(array_unique(array_map('intval', (array) ($data['ids'] ?? []))));
+        if (!$ids || !array_key_exists('folder_id', (array) $data)) {
+            return $this->json($response, ['error' => 'Indica i file e la cartella di destinazione'], 400);
+        }
+
+        $moved = [];
+        $skipped = [];
+        foreach (Media::visibleTo($request->getAttribute('user'))->whereIn('id', $ids)->get() as $media) {
+            $error = $this->assignFolder($request, $media, $data['folder_id']);
+            if ($error) {
+                $skipped[] = ['id' => $media->id, 'name' => $media->original_name, 'error' => $error];
+                continue;
+            }
+            $media->save();
+            $moved[] = $media->id;
+        }
+
+        return $this->json($response, ['success' => true, 'moved' => $moved, 'skipped' => $skipped]);
+    }
+
+    /** Imposta la cartella del media (null = radice). Ritorna un messaggio di errore o null. */
+    private function assignFolder(Request $request, Media $media, $folderId): ?string
+    {
+        if (!$folderId) {
+            $media->folder_id = null;
+            return null;
+        }
+        $folder = MediaFolder::visibleTo($request->getAttribute('user'))->find((int) $folderId);
+        if (!$folder) {
+            return 'Cartella non trovata';
+        }
+        if (!$folder->sameOwnerAs($media)) {
+            return 'La cartella appartiene a un\'altra azienda';
+        }
+        $media->folder_id = $folder->id;
+        return null;
     }
 
     /**

@@ -71,13 +71,58 @@
     </div>
 
     <div class="max-w-7xl mx-auto px-8 py-6">
+      <!-- Percorso cartella + nuova cartella -->
+      <div v-if="browsing" class="flex items-center justify-between gap-3 mb-4">
+        <FolderBreadcrumb :path="currentPath" droppable @navigate="goToFolder" @drop="onDropToFolder" />
+        <button
+          @click="openFolderDialog('create')"
+          class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+          Nuova cartella
+        </button>
+      </div>
+      <p v-else-if="search.trim()" class="text-sm text-gray-500 mb-4">Risultati della ricerca in tutte le cartelle</p>
+
+      <!-- Avvisi (spostamenti) -->
+      <div
+        v-if="notice"
+        :class="notice.error ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'"
+        class="mb-4 text-sm border rounded-lg px-4 py-2.5"
+      >
+        {{ notice.text }}
+      </div>
+
       <!-- Upload -->
       <div v-if="showUpload && filter !== 'archived'" class="mb-6">
-        <MediaDropzone :type="filter === 'image' || filter === 'video' ? filter : null" @uploaded="onUploaded" />
+        <p class="text-xs text-gray-500 mb-2">
+          Caricamento in: <span class="font-medium text-gray-700">{{ currentFolderLabel }}</span>
+        </p>
+        <MediaDropzone
+          :type="filter === 'image' || filter === 'video' ? filter : null"
+          :folder-id="currentFolderId"
+          @uploaded="onUploaded"
+        />
       </div>
 
       <div v-if="filter === 'archived'" class="mb-4 text-sm text-gray-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
         I file archiviati non compaiono nella scelta dall'editor ma restano raggiungibili dalle pagine che li usano. Eliminandoli definitivamente il file viene cancellato dal server.
+      </div>
+
+      <!-- Cartelle -->
+      <div v-if="browsing && subfolders.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6">
+        <FolderTile
+          v-for="f in subfolders"
+          :key="f.id"
+          :folder="f"
+          :count="itemCount(f)"
+          manageable
+          :show-company="authStore.isAdmin && !companyId"
+          @open="goToFolder(f.id)"
+          @rename="openFolderDialog('rename', f)"
+          @delete="removeFolder"
+          @drop="onDropToFolder"
+        />
       </div>
 
       <!-- Loading -->
@@ -88,29 +133,30 @@
       <p v-else-if="error" class="text-center text-red-600 py-16">{{ error }}</p>
 
       <!-- Vuoto -->
-      <div v-else-if="!items.length" class="text-center py-20">
-        <svg class="w-14 h-14 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div v-else-if="!items.length" class="text-center" :class="browsing && subfolders.length ? 'py-8' : 'py-20'">
+        <svg v-if="!(browsing && subfolders.length)" class="w-14 h-14 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        <p class="text-gray-500">
-          {{ search ? 'Nessun file corrisponde alla ricerca' : filter === 'archived' ? 'Nessun file archiviato' : 'Nessun file nella libreria' }}
-        </p>
+        <p class="text-gray-500">{{ emptyMessage }}</p>
         <button
           v-if="!search && filter !== 'archived'"
           @click="showUpload = true"
           class="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700"
         >
-          Carica il primo file
+          Carica file qui
         </button>
       </div>
 
       <!-- Griglia -->
       <template v-else>
+        <p v-if="browsing && filter !== 'archived'" class="text-xs text-gray-400 mb-2">Trascina un file su una cartella (o sul percorso) per spostarlo.</p>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <button
             v-for="m in items"
             :key="m.id"
             type="button"
+            :draggable="filter !== 'archived'"
+            @dragstart="onMediaDragStart($event, m)"
             @click="openDetail(m)"
             :class="detail?.id === m.id ? 'ring-2 ring-primary-500' : 'hover:shadow-md'"
             class="text-left bg-white rounded-lg overflow-hidden border border-gray-200 transition-shadow"
@@ -120,8 +166,11 @@
             </div>
             <div class="px-2.5 py-2">
               <p class="text-xs font-medium text-gray-800 truncate" :title="m.original_name">{{ m.original_name }}</p>
-              <p class="text-[11px] text-gray-500 mt-0.5">
+              <p class="text-[11px] text-gray-500 mt-0.5 truncate">
                 <span v-if="m.width">{{ m.width }}×{{ m.height }} · </span>{{ formatBytes(m.size) }}
+              </p>
+              <p v-if="!browsing" class="text-[11px] text-gray-400 mt-0.5 truncate">
+                📁 {{ m.folder?.name || 'Nessuna cartella' }}
               </p>
             </div>
           </button>
@@ -217,6 +266,20 @@
               </div>
             </div>
 
+            <!-- Cartella -->
+            <div v-if="!isArchived">
+              <label class="block text-xs font-medium text-gray-700 mb-1.5">Cartella</label>
+              <select
+                :value="detail.folder_id ?? ''"
+                @change="moveDetailTo($event.target.value)"
+                :disabled="moving"
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
+              >
+                <option value="">Nessuna cartella (Tutti i media)</option>
+                <option v-for="o in detailFolderOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
+              </select>
+            </div>
+
             <!-- Modifica -->
             <div v-if="!isArchived" class="space-y-3">
               <div>
@@ -309,6 +372,35 @@
       </div>
     </Teleport>
 
+    <Teleport to="body">
+      <div v-if="folderDialog" class="fixed inset-0 z-[1050] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40" @click="folderDialog = null"></div>
+        <form @submit.prevent="submitFolderDialog" class="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-5">
+          <h3 class="font-semibold text-gray-900 mb-1">{{ folderDialog.mode === 'create' ? 'Nuova cartella' : 'Rinomina cartella' }}</h3>
+          <p v-if="folderDialog.mode === 'create'" class="text-xs text-gray-500 mb-3">In: {{ currentFolderLabel }}</p>
+          <input
+            ref="folderNameInput"
+            v-model="folderDialog.name"
+            type="text"
+            maxlength="100"
+            placeholder="Nome cartella"
+            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
+          />
+          <p v-if="folderDialog.error" class="text-xs text-red-600 mt-2">{{ folderDialog.error }}</p>
+          <div class="flex justify-end gap-2 mt-4">
+            <button type="button" @click="folderDialog = null" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Annulla</button>
+            <button
+              type="submit"
+              :disabled="folderDialog.saving || !folderDialog.name.trim()"
+              class="px-4 py-2 text-sm text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+            >
+              {{ folderDialog.mode === 'create' ? 'Crea' : 'Salva' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Teleport>
+
     <ImageEditor
       v-if="editing"
       :media="editing"
@@ -319,12 +411,17 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { useMediaStore, mediaErrorMessage } from '../stores/mediaStore'
 import MediaThumb from '../components/media/MediaThumb.vue'
 import MediaDropzone from '../components/media/MediaDropzone.vue'
 import ImageEditor from '../components/media/ImageEditor.vue'
+import FolderTile from '../components/media/FolderTile.vue'
+import FolderBreadcrumb from '../components/media/FolderBreadcrumb.vue'
+import { useMediaFolders } from '../composables/useMediaFolders'
+import { writeDragPayload } from '../utils/mediaDrag'
 import { formatBytes, formatDuration } from '../utils/media'
 
 const authStore = useAuthStore()
@@ -350,6 +447,128 @@ const lastPage = ref(1)
 const loading = ref(false)
 const error = ref('')
 
+// ===== Cartelle =====
+const route = useRoute()
+const router = useRouter()
+const { folders, byId, load: loadFolders, childrenOf, pathTo, sameOwner, treeOptions, itemCount } = useMediaFolders(companyId)
+
+// Navigazione per cartelle (non durante ricerca o nell'archivio, che mostrano tutto)
+const browsing = computed(() => filter.value !== 'archived' && !search.value.trim())
+const currentFolderId = computed(() => {
+  const id = Number(route.query.cartella)
+  return Number.isInteger(id) && id > 0 ? id : null
+})
+const currentPath = computed(() => pathTo(currentFolderId.value))
+const currentFolderLabel = computed(() => currentPath.value.map((f) => f.name).join(' › ') || 'Tutti i media')
+const subfolders = computed(() => childrenOf(currentFolderId.value))
+
+function goToFolder(id) {
+  const query = { ...route.query }
+  if (id) query.cartella = String(id)
+  else delete query.cartella
+  router.push({ query })
+}
+
+watch(currentFolderId, () => {
+  detail.value = null
+  load(1)
+})
+
+const emptyMessage = computed(() => {
+  if (search.value.trim()) return 'Nessun file corrisponde alla ricerca'
+  if (filter.value === 'archived') return 'Nessun file archiviato'
+  if (currentFolderId.value) return 'Nessun file in questa cartella'
+  return subfolders.value.length ? 'Nessun file fuori dalle cartelle' : 'Nessun file nella libreria'
+})
+
+const notice = ref(null)
+let noticeTimer = null
+function showNotice(text, isError = false) {
+  notice.value = { text, error: isError }
+  clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => { notice.value = null }, isError ? 6000 : 3000)
+}
+
+// Trascinamento file/cartelle su una cartella o sul percorso
+function onMediaDragStart(e, media) {
+  writeDragPayload(e, { kind: 'media', id: media.id })
+}
+
+async function onDropToFolder({ payload, folderId }) {
+  const targetName = folderId ? byId.value.get(folderId)?.name : 'Tutti i media'
+  try {
+    if (payload.kind === 'media') {
+      const res = await mediaStore.moveMedia([payload.id], folderId)
+      if (res.skipped?.length) {
+        showNotice(res.skipped[0].error, true)
+        return
+      }
+      if (browsing.value && (folderId ?? null) !== currentFolderId.value) {
+        items.value = items.value.filter((m) => m.id !== payload.id)
+        total.value = Math.max(0, total.value - 1)
+        if (detail.value?.id === payload.id) detail.value = null
+      }
+      showNotice(`File spostato in "${targetName}"`)
+    } else if (payload.kind === 'folder') {
+      if (payload.id === folderId) return
+      await mediaStore.updateFolder(payload.id, { parent_id: folderId })
+      showNotice(`Cartella spostata in "${targetName}"`)
+    }
+    await loadFolders()
+  } catch (e) {
+    showNotice(mediaErrorMessage(e, 'Spostamento non riuscito'), true)
+  }
+}
+
+// Finestra crea/rinomina
+const folderDialog = ref(null)
+const folderNameInput = ref(null)
+
+async function openFolderDialog(mode, folder = null) {
+  folderDialog.value = { mode, folder, name: folder?.name || '', error: '', saving: false }
+  await nextTick()
+  folderNameInput.value?.focus()
+}
+
+async function submitFolderDialog() {
+  const d = folderDialog.value
+  d.saving = true
+  d.error = ''
+  try {
+    if (d.mode === 'create') {
+      await mediaStore.createFolder({
+        name: d.name.trim(),
+        parent_id: currentFolderId.value,
+        // l'admin che filtra per azienda crea le cartelle di primo livello per quell'azienda
+        company_id: authStore.isAdmin && !currentFolderId.value && companyId.value ? companyId.value : undefined
+      })
+    } else {
+      await mediaStore.updateFolder(d.folder.id, { name: d.name.trim() })
+    }
+    folderDialog.value = null
+    await loadFolders()
+  } catch (e) {
+    d.error = mediaErrorMessage(e, 'Operazione non riuscita')
+    d.saving = false
+  }
+}
+
+async function removeFolder(folder) {
+  const parentName = folder.parent_id ? byId.value.get(folder.parent_id)?.name : 'Tutti i media'
+  const ok = window.confirm(
+    `Eliminare la cartella "${folder.name}"?\n\nI file e le sottocartelle che contiene verranno spostati in "${parentName}". Nessun file viene cancellato.`
+  )
+  if (!ok) return
+  try {
+    const res = await mediaStore.deleteFolder(folder.id)
+    await loadFolders()
+    await load(1)
+    showNotice(`Cartella eliminata${res.moved_media ? `: ${res.moved_media} file spostati in "${parentName}"` : ''}`)
+  } catch (e) {
+    showNotice(mediaErrorMessage(e, 'Eliminazione non riuscita'), true)
+  }
+}
+
 async function load(p = 1) {
   loading.value = true
   error.value = ''
@@ -358,6 +577,7 @@ async function load(p = 1) {
       type: ['image', 'video'].includes(filter.value) ? filter.value : null,
       archived: filter.value === 'archived' ? 1 : null,
       search: search.value.trim(),
+      folder: browsing.value ? (currentFolderId.value ?? 'root') : null,
       company_id: companyId.value,
       page: p,
       per_page: 48
@@ -373,7 +593,14 @@ async function load(p = 1) {
   }
 }
 
-watch([filter, companyId], () => load(1))
+watch(filter, () => load(1))
+
+// Cambiando azienda (admin) si riparte dalla radice con le sue cartelle
+watch(companyId, async () => {
+  await loadFolders()
+  if (currentFolderId.value) goToFolder(null)
+  else load(1)
+})
 
 let searchTimeout = null
 watch(search, () => {
@@ -382,11 +609,13 @@ watch(search, () => {
 })
 
 function onUploaded(media) {
-  // Aggiunge in testa solo se coerente col filtro attivo
-  if (filter.value === 'all' || filter.value === media.type) {
+  // Aggiunge in testa solo se coerente con filtro e cartella attivi
+  const inView = !browsing.value || (media.folder_id ?? null) === currentFolderId.value
+  if (inView && (filter.value === 'all' || filter.value === media.type)) {
     items.value = [media, ...items.value]
     total.value++
   }
+  loadFolders()
 }
 
 // ===== Dettaglio =====
@@ -403,6 +632,29 @@ const actionError = ref('')
 const copied = ref(false)
 
 const isArchived = computed(() => !!detail.value?.deleted_at)
+const moving = ref(false)
+
+// Solo cartelle dello stesso proprietario del file
+const detailFolderOptions = computed(() => (detail.value ? treeOptions((f) => sameOwner(f, detail.value)) : []))
+
+async function moveDetailTo(value) {
+  const folderId = value ? Number(value) : null
+  moving.value = true
+  actionError.value = ''
+  try {
+    const updated = await mediaStore.update(detail.value.id, { folder_id: folderId })
+    replaceItem(updated)
+    if (browsing.value && folderId !== currentFolderId.value) {
+      items.value = items.value.filter((m) => m.id !== updated.id)
+      total.value = Math.max(0, total.value - 1)
+    }
+    await loadFolders()
+  } catch (e) {
+    actionError.value = mediaErrorMessage(e, 'Spostamento non riuscito')
+  } finally {
+    moving.value = false
+  }
+}
 const isDirty = computed(() => detail.value && (
   form.value.original_name !== detail.value.original_name ||
   (form.value.alt_text || '') !== (detail.value.alt_text || '')
@@ -441,7 +693,8 @@ const editing = ref(null)
 
 function onVersionSaved(media) {
   editing.value = null
-  if (filter.value === 'all' || filter.value === 'image') {
+  const inView = !browsing.value || (media.folder_id ?? null) === currentFolderId.value
+  if (inView && (filter.value === 'all' || filter.value === 'image')) {
     items.value = [media, ...items.value]
     total.value++
   }
@@ -546,6 +799,10 @@ function formatDate(value) {
 
 onMounted(async () => {
   load(1)
+  loadFolders().then(() => {
+    // Cartella nell'URL non più esistente (eliminata o di un'altra azienda)
+    if (currentFolderId.value && !byId.value.has(currentFolderId.value)) goToFolder(null)
+  })
   if (authStore.isAdmin) {
     const res = await authStore.fetchCompanies()
     companies.value = Array.isArray(res) ? res : []

@@ -99,7 +99,7 @@ Script `backend/scripts/migrate-existing-uploads.php`. **Non sposta né modifica
 **Procedura produzione**
 0. Se la libreria è già stata usata prima del fix orientamento (2026-10-04): `php scripts/repair-media-orientation.php` (dry-run) e poi `--execute`.
 1. Backup DB.
-2. `php database/migrations/create_media_table.php` e `php database/migrations/add_legacy_to_media.php`.
+2. `php database/migrations/create_media_table.php`, `php database/migrations/add_legacy_to_media.php` e `php database/migrations/create_media_folders_table.php`.
 3. `php scripts/migrate-existing-uploads.php` (dry-run) → revisione del report.
 4. `php scripts/migrate-existing-uploads.php --execute`.
 
@@ -128,6 +128,18 @@ Modifiche **non distruttive**: ogni salvataggio crea una nuova immagine (`parent
 - Frontend: `components/media/ImageEditor.vue`, `utils/imageFilters.js`, pulsante "Modifica immagine" e link "Versione modificata di…" nel dettaglio della libreria.
 
 Futuro: versioni 800/1280/1920px automatiche + `srcset` nei renderer; editor accessibile anche dal MediaPicker dell'editor pagine.
+
+### Cartelle ✅ (2026-10-04)
+**Solo logiche (database)**: spostare file o cartelle non tocca il disco, quindi gli URL nelle LP non cambiano mai.
+- Tabella `media_folders` (company_id, user_id, parent_id, name) annidabile + colonna `media.folder_id` (NULL = radice). Migration `create_media_folders_table.php`.
+- Visibilità e proprietario come i media (trait `OwnedByCompany`: `scopeVisibleTo`, `sameOwnerAs`): un file può stare solo in una cartella dello stesso proprietario.
+- Nomi univoci (senza distinzione maiuscole/minuscole) nella stessa cartella; spostamento di una cartella dentro se stessa bloccato.
+- Eliminare una cartella **non cancella nulla**: file (anche archiviati) e sottocartelle risalgono alla cartella superiore (suffisso "(2)" in caso di nome già presente).
+- Upload e immagini modificate: nella cartella corrente / dell'originale; un file caricato in una cartella ne eredita il proprietario (es. admin nella cartella di un'azienda).
+- API: `GET/POST /api/media-folders`, `PUT|POST/DELETE /api/media-folders/{id}`, `GET /api/media?folder=root|{id}` (ignorato con ricerca/archivio), `POST /api/media/move {ids, folder_id}`, `folder_id` in upload e `PUT /api/media/{id}`.
+- UI libreria: percorso (cartella nell'URL `?cartella=ID`), riquadri cartella con menu Rinomina/Elimina, "Nuova cartella", trascinamento di file e cartelle su cartella o percorso, selettore "Cartella" nel dettaglio, ricerca in tutte le cartelle con indicazione della cartella. Picker dell'editor: navigazione per cartelle e caricamento nella cartella corrente.
+
+Possibili sviluppi: selezione multipla per spostare/archiviare più file insieme.
 
 ## Decisioni prese (2026-10-04)
 1. Utenti semplici: vedono tutti i media dell'azienda.

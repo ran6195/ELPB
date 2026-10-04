@@ -2,19 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\OwnedByCompany;
 use App\Storage\MediaStorageFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Media extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, OwnedByCompany;
 
     protected $table = 'media';
 
     protected $fillable = [
         'company_id',
         'user_id',
+        'folder_id',
         'type',
         'disk',
         'path',
@@ -31,6 +33,9 @@ class Media extends Model
     ];
 
     protected $casts = [
+        'company_id' => 'integer',
+        'user_id' => 'integer',
+        'folder_id' => 'integer',
         'size' => 'integer',
         'width' => 'integer',
         'height' => 'integer',
@@ -52,6 +57,11 @@ class Media extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function folder()
+    {
+        return $this->belongsTo(MediaFolder::class, 'folder_id');
     }
 
     public function parent()
@@ -87,18 +97,4 @@ class Media extends Model
             : 'media/u' . $user->id;
     }
 
-    /**
-     * Visibilità coerente con canViewPage: admin tutto, company la sua azienda,
-     * user la sua azienda (o solo i propri se senza azienda).
-     */
-    public function scopeVisibleTo($query, User $user)
-    {
-        if ($user->isAdmin()) {
-            return $query;
-        }
-        if ($user->company_id) {
-            return $query->where('company_id', $user->company_id);
-        }
-        return $query->where('user_id', $user->id);
-    }
 }

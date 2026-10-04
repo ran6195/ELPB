@@ -103,6 +103,7 @@ $app->post('/api/upload/video', '\App\Controllers\UploadController:uploadVideo')
 
 // Media library routes (protette, visibilità per azienda)
 $app->get('/api/media', '\App\Controllers\MediaController:index')->add(AuthMiddleware::class);
+$app->post('/api/media/move', '\App\Controllers\MediaController:move')->add(AuthMiddleware::class);
 $app->post('/api/media', '\App\Controllers\MediaController:store')->add(AuthMiddleware::class);
 $app->get('/api/media/{id}', '\App\Controllers\MediaController:show')->add(AuthMiddleware::class);
 $app->put('/api/media/{id}', '\App\Controllers\MediaController:update')->add(AuthMiddleware::class);
@@ -113,6 +114,13 @@ $app->post('/api/media/{id}/versions', '\App\Controllers\MediaController:storeVe
 $app->post('/api/media/{id}/restore', '\App\Controllers\MediaController:restore')->add(AuthMiddleware::class);
 $app->delete('/api/media/{id}/force', '\App\Controllers\MediaController:forceDelete')->add(AuthMiddleware::class);
 $app->delete('/api/media/{id}', '\App\Controllers\MediaController:delete')->add(AuthMiddleware::class);
+
+// Cartelle della libreria media (solo logiche: i file non si spostano su disco)
+$app->get('/api/media-folders', '\App\Controllers\MediaFolderController:index')->add(AuthMiddleware::class);
+$app->post('/api/media-folders', '\App\Controllers\MediaFolderController:store')->add(AuthMiddleware::class);
+$app->put('/api/media-folders/{id}', '\App\Controllers\MediaFolderController:update')->add(AuthMiddleware::class);
+$app->post('/api/media-folders/{id}', '\App\Controllers\MediaFolderController:update')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
+$app->delete('/api/media-folders/{id}', '\App\Controllers\MediaFolderController:delete')->add(AuthMiddleware::class);
 
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);

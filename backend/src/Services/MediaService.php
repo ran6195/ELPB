@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Media;
+use App\Models\MediaFolder;
 use App\Models\User;
 use App\Storage\LocalMediaStorage;
 use App\Storage\MediaStorage;
@@ -57,7 +58,8 @@ class MediaService
      * @param array $meta  Metadati opzionali dal client per i video: width, height, duration
      * @param UploadedFileInterface|null $poster Miniatura del video catturata nel browser
      * @param Media|null $parent Se presente, il file è una versione modificata di $parent:
-     *                           eredita proprietario (azienda) e testo alternativo
+     *                           eredita proprietario (azienda), cartella e testo alternativo
+     * @param MediaFolder|null $folder Cartella di destinazione: il file ne eredita il proprietario
      */
     public function upload(
         UploadedFileInterface $file,
@@ -65,7 +67,8 @@ class MediaService
         ?string $expectedType = null,
         array $meta = [],
         ?UploadedFileInterface $poster = null,
-        ?Media $parent = null
+        ?Media $parent = null,
+        ?MediaFolder $folder = null
     ): Media {
         $this->logger->debug('media_received', [
             'filename'   => $file->getClientFilename(),
@@ -111,12 +114,18 @@ class MediaService
             }
 
             $name = bin2hex(random_bytes(8));
-            // Le versioni restano nella libreria del proprietario dell'originale
-            // (es. un admin che modifica l'immagine di un'azienda)
-            $companyId = $parent ? $parent->company_id : $user->company_id;
-            $ownerFolder = $parent
-                ? ($parent->company_id ? 'media/c' . $parent->company_id : 'media/u' . ($parent->user_id ?? $user->id))
+            // Versioni e file caricati in una cartella restano nella libreria del proprietario
+            // della cartella/originale (es. un admin che lavora nei media di un'azienda)
+            $ownerSource = $folder ?? $parent;
+            $companyId = $ownerSource ? $ownerSource->company_id : $user->company_id;
+            $ownerFolder = $ownerSource
+                ? ($ownerSource->company_id ? 'media/c' . $ownerSource->company_id : 'media/u' . ($ownerSource->user_id ?? $user->id))
                 : Media::ownerFolder($user);
+            $folderId = $folder ? $folder->id : ($parent ? $parent->folder_id : null);
+            // Senza azienda il proprietario è l'utente: il file deve restare suo anche se lo carica un admin
+            $userId = ($ownerSource && $ownerSource->company_id === null && $ownerSource->user_id)
+                ? $ownerSource->user_id
+                : $user->id;
             $folder = $ownerFolder . '/' . $type . 's/' . date('Y/m');
             $size = filesize($tmp);
 
@@ -137,7 +146,8 @@ class MediaService
 
             $media = Media::create([
                 'company_id'     => $companyId,
-                'user_id'        => $user->id,
+                'user_id'        => $userId,
+                'folder_id'      => $folderId,
                 'type'           => $type,
                 'disk'           => $this->storage->name(),
                 'path'           => $path,
@@ -152,7 +162,7 @@ class MediaService
                 'parent_id'      => $parent ? $parent->id : null,
             ]);
 
-            $this->logger->info('media_saved', ['id' => $media->id, 'path' => $path, 'user_id' => $user->id]);
+            $this->logger->info('media_saved', ['id' => $media->id, 'path' => $path, 'user_id' => $user->id, 'folder_id' => $folderId]);
 
             return $media;
         } catch (Throwable $e) {

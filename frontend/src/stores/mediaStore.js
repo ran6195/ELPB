@@ -25,10 +25,12 @@ export const useMediaStore = defineStore('media', {
      * e le dimensioni nel browser.
      * @param {File} file
      * @param {(percent: number) => void} onProgress
+     * @param {number|null} folderId cartella di destinazione (null = radice)
      */
-    async upload(file, onProgress = null) {
+    async upload(file, onProgress = null, folderId = null) {
       const formData = new FormData()
       formData.append('file', file)
+      if (folderId) formData.append('folder_id', folderId)
 
       if (file.type.startsWith('video/')) {
         const info = await readVideoInfo(file)
@@ -98,6 +100,35 @@ export const useMediaStore = defineStore('media', {
         }
         throw error
       }
+    },
+
+    /** Sposta file in una cartella (null = radice). Ritorna { moved, skipped } */
+    async moveMedia(ids, folderId) {
+      const response = await apiClient.post('/media/move', { ids, folder_id: folderId })
+      return response.data
+    },
+
+    // ===== Cartelle (solo logiche: i file non si spostano su disco) =====
+
+    async fetchFolders(params = {}) {
+      const query = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v != null))
+      const response = await apiClient.get('/media-folders', { params: query })
+      return response.data.data
+    },
+
+    async createFolder(data) {
+      const response = await apiClient.post('/media-folders', data)
+      return response.data.data
+    },
+
+    async updateFolder(id, data) {
+      const response = await apiClient.put(`/media-folders/${id}`, data)
+      return response.data.data
+    },
+
+    async deleteFolder(id) {
+      const response = await apiClient.delete(`/media-folders/${id}`)
+      return response.data
     },
 
     async restore(id) {

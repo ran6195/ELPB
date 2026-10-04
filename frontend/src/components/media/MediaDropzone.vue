@@ -66,7 +66,8 @@ import { ACCEPT, validateFile } from '../../utils/media'
 const props = defineProps({
   type: { type: String, default: null }, // 'image' | 'video' | null (entrambi)
   multiple: { type: Boolean, default: true },
-  compact: { type: Boolean, default: false }
+  compact: { type: Boolean, default: false },
+  folderId: { type: Number, default: null } // cartella di destinazione (null = radice)
 })
 
 const emit = defineEmits(['uploaded', 'finished'])
@@ -120,7 +121,7 @@ async function handleFiles(fileList) {
     }
 
     try {
-      const media = await mediaStore.upload(file, (p) => { entry.progress = p })
+      const media = await mediaStore.upload(file, (p) => { entry.progress = p }, props.folderId)
       entry.status = 'done'
       emit('uploaded', media)
       setTimeout(() => removeFromQueue(entry.id), 2500)

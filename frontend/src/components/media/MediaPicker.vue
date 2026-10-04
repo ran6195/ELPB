@@ -42,12 +42,27 @@
         <div class="flex-1 overflow-y-auto p-5 min-h-[300px]">
           <!-- Libreria -->
           <template v-if="tab === 'library'">
+            <!-- Cartelle -->
+            <template v-if="!search.trim()">
+              <FolderBreadcrumb :path="pathTo(folderId)" root-label="Tutti i media" class="mb-3" @navigate="openFolder" />
+              <div v-if="childrenOf(folderId).length" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
+                <FolderTile
+                  v-for="f in childrenOf(folderId)"
+                  :key="f.id"
+                  :folder="f"
+                  :count="itemCount(f)"
+                  @open="openFolder(f.id)"
+                />
+              </div>
+            </template>
+            <p v-else class="text-xs text-gray-500 mb-3">Risultati in tutte le cartelle</p>
+
             <div v-if="loading && !items.length" class="flex justify-center py-16">
               <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
             </div>
             <p v-else-if="error" class="text-sm text-red-600 text-center py-16">{{ error }}</p>
             <div v-else-if="!items.length" class="text-center py-16">
-              <p class="text-gray-500 text-sm mb-3">{{ search ? 'Nessun risultato' : 'La libreria è vuota' }}</p>
+              <p class="text-gray-500 text-sm mb-3">{{ search ? 'Nessun risultato' : folderId ? 'Nessun file in questa cartella' : 'Nessun file qui' }}</p>
               <button @click="tab = 'upload'" class="text-sm font-medium text-primary-600 hover:text-primary-700">Carica un file</button>
             </div>
             <template v-else>
@@ -81,13 +96,18 @@
           </template>
 
           <!-- Upload -->
-          <MediaDropzone
-            v-else
-            :type="type"
-            :multiple="true"
-            @uploaded="onUploaded"
-            @finished="onUploadFinished"
-          />
+          <div v-else>
+            <p class="text-xs text-gray-500 mb-2">
+              Caricamento in: <span class="font-medium text-gray-700">{{ pathTo(folderId).map((f) => f.name).join(' › ') || 'Tutti i media' }}</span>
+            </p>
+            <MediaDropzone
+              :type="type"
+              :multiple="true"
+              :folder-id="folderId"
+              @uploaded="onUploaded"
+              @finished="onUploadFinished"
+            />
+          </div>
         </div>
 
         <!-- Footer -->
@@ -121,6 +141,9 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import MediaThumb from './MediaThumb.vue'
 import MediaDropzone from './MediaDropzone.vue'
+import FolderTile from './FolderTile.vue'
+import FolderBreadcrumb from './FolderBreadcrumb.vue'
+import { useMediaFolders } from '../../composables/useMediaFolders'
 import { useMediaStore, mediaErrorMessage } from '../../stores/mediaStore'
 import { formatBytes } from '../../utils/media'
 
@@ -146,6 +169,16 @@ const error = ref('')
 const selected = ref(null)
 let lastUploaded = null
 
+// Cartelle: si naviga come nella libreria (la ricerca guarda in tutte)
+const { load: loadFolders, childrenOf, pathTo, itemCount } = useMediaFolders()
+const folderId = ref(null)
+
+function openFolder(id) {
+  folderId.value = id ?? null
+  selected.value = null
+  load(1)
+}
+
 async function load(p = 1) {
   loading.value = true
   error.value = ''
@@ -153,6 +186,7 @@ async function load(p = 1) {
     const res = await mediaStore.fetchMedia({
       type: props.type,
       search: search.value.trim(),
+      folder: search.value.trim() ? null : (folderId.value ?? 'root'),
       page: p,
       per_page: 30
     })
@@ -180,7 +214,7 @@ function onUploaded(media) {
 async function onUploadFinished() {
   if (!lastUploaded) return
   search.value = ''
-  await load(1)
+  await Promise.all([load(1), loadFolders()])
   selected.value = items.value.find((m) => m.id === lastUploaded.id) || lastUploaded
   lastUploaded = null
   tab.value = 'library'
@@ -197,6 +231,7 @@ const onKeydown = (e) => {
 
 onMounted(() => {
   load(1)
+  loadFolders()
   window.addEventListener('keydown', onKeydown)
 })
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
