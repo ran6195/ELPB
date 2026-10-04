@@ -162,6 +162,39 @@ class MediaService
         }
     }
 
+    /**
+     * Genera la miniatura di un'immagine già presente nello storage locale
+     * (usato dalla migrazione dei vecchi upload). Ritorna il path della miniatura.
+     */
+    public function generateThumbnail(Media $media): ?string
+    {
+        $storage = MediaStorageFactory::disk($media->disk);
+        if ($media->type !== 'image' || !$storage instanceof LocalMediaStorage) {
+            return null;
+        }
+        $source = $storage->localPath($media->path);
+        if ($source === null) {
+            return null;
+        }
+
+        $thumb = $this->makeThumbnail($source, $media->mime_type, (int) $media->width, (int) $media->height);
+        if ($thumb === null) {
+            return null;
+        }
+
+        [$thumbFile, $thumbExt, $thumbMime] = $thumb;
+        $name = pathinfo($media->path, PATHINFO_FILENAME);
+        $target = dirname($media->path) . '/thumbs/' . $name . '.' . $thumbExt;
+
+        try {
+            return $storage->putFile($thumbFile, $target, $thumbMime);
+        } finally {
+            if (is_file($thumbFile)) {
+                @unlink($thumbFile);
+            }
+        }
+    }
+
     /** Elimina definitivamente record e file (originale + miniatura) */
     public function forceDelete(Media $media): void
     {
@@ -265,7 +298,7 @@ class MediaService
         return $tmp;
     }
 
-    private function detectMime(string $path): string
+    public function detectMime(string $path): string
     {
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($path) ?: 'application/octet-stream';

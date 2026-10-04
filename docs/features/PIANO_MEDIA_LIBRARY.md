@@ -1,6 +1,6 @@
 # Piano: libreria media per cliente
 
-> Creato: 2026-10-04 — Stato: **Fasi 1-2 completate** — prossima: Fase 3 (migrazione file esistenti)
+> Creato: 2026-10-04 — Stato: **Fasi 1-4 completate in locale** — Fase 3 da eseguire in produzione dopo revisione del dry-run
 
 Gestione centralizzata di immagini e video per ogni cliente (company), con possibilità futura di modificare le immagini (ridimensionamento, ritaglio, filtri).
 
@@ -88,11 +88,25 @@ Per il passaggio: driver `S3MediaStorage` (via `league/flysystem-aws-s3-v3` o `a
 4. ✅ Sostituiti i 10 campi upload di `BlockEditor.vue` (rimossi 7 handler) e l'upload allegato di `PageSettings.vue`; il campo URL manuale resta.
 5. ✅ Miniatura video catturata nel browser (`<video>` + canvas) e inviata come `poster` con dimensioni e durata.
 
-### Fase 3 – Migrazione file esistenti (~1-2 h)
-Script `migrate_existing_uploads.php`: scansiona `blocks.content` per URL `/uploads/`, assegna ogni file all'azienda della pagina, crea i record `media` **senza spostare i file**; i file non usati vanno all'admin.
+### Fase 3 – Migrazione file esistenti ✅ (script pronto)
+Script `backend/scripts/migrate-existing-uploads.php`. **Non sposta né modifica file, non tocca blocchi/pagine**: crea solo record `media` (`legacy = 1`) con `path = images/<file>` → URL calcolato identico a quello già salvato nelle LP (verificato in locale su tutti i 9 file in uso, compreso l'allegato email).
+- Default **dry-run**: report a video + JSON in `storage/logs/media-migration-*-dryrun.json` (da importare, non usati → admin, condivisi tra proprietari, formati non supportati, citati ma assenti su disco).
+- Riferimenti cercati in `blocks.content/styles` e nei campi JSON di `pages`, abbinati per nome file ignorando l'host (`localhost`, http/https, vecchi domini).
+- Proprietario: azienda/utente più frequente tra le pagine attive (pubblicate pesano di più); non usati → primo admin.
+- `--execute` crea i record (data = data del file) e le miniature in `uploads/images/thumbs/`; `--no-thumbnails` per saltarle. Rieseguibile (salta i file già presenti).
+- Rollback: `DELETE FROM media WHERE legacy = 1;` + `rm -r public/uploads/images/thumbs`.
 
-### Fase 4 – Eliminazione sicura (~1 h)
-Controllo utilizzo (`LIKE` sull'URL nei blocchi), conferma con elenco pagine pubblicate, soft delete → eliminazione definitiva con rimozione file.
+**Procedura produzione**
+1. Backup DB.
+2. `php database/migrations/create_media_table.php` e `php database/migrations/add_legacy_to_media.php`.
+3. `php scripts/migrate-existing-uploads.php` (dry-run) → revisione del report.
+4. `php scripts/migrate-existing-uploads.php --execute`.
+
+### Fase 4 – Eliminazione sicura ✅
+- Archiviazione: 409 con elenco pagine se il file è in uso, salvo conferma esplicita.
+- Eliminazione definitiva: **rifiutata dal backend (409) se il file è ancora usato** in qualsiasi pagina (anche archiviata).
+- File `legacy`: eliminazione definitiva **solo admin** (403 per gli altri), perché potrebbero essere usati fuori da questo database (pagine esportate, email, siti esterni).
+- UI: pulsante sostituito da spiegazione quando l'eliminazione non è consentita; avviso specifico per i file legacy.
 
 **Totale MVP: ~12-14 h**
 

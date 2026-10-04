@@ -26,7 +26,8 @@ class Media extends Model
         'height',
         'duration',
         'alt_text',
-        'parent_id'
+        'parent_id',
+        'legacy'
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class Media extends Model
         'width' => 'integer',
         'height' => 'integer',
         'duration' => 'integer',
+        'legacy' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime'

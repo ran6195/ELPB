@@ -24,6 +24,12 @@ class LocalMediaStorage implements MediaStorage
         return 'local';
     }
 
+    /** Radice assoluta del disco */
+    public function root(): string
+    {
+        return $this->root;
+    }
+
     public function putFile(string $sourcePath, string $path, string $mimeType): string
     {
         $path = $this->normalize($path);

@@ -192,7 +192,25 @@ class MediaController
             return $this->json($response, ['error' => 'Archivia il file prima di eliminarlo definitivamente'], 422);
         }
 
-        (new MediaService())->forceDelete($media);
+        // I file importati dai vecchi upload possono essere usati anche fuori da
+        // questo database (pagine esportate, email, siti esterni): solo l'admin
+        if ($media->legacy && !$request->getAttribute('user')->isAdmin()) {
+            return $this->json($response, [
+                'error' => 'Questo file proviene dai caricamenti precedenti alla libreria: può eliminarlo definitivamente solo un amministratore',
+            ], 403);
+        }
+
+        // Mai cancellare fisicamente un file ancora usato da una pagina
+        $service = new MediaService();
+        $usage = $service->findUsage($media);
+        if (!empty($usage)) {
+            return $this->json($response, [
+                'error' => 'Il file è ancora usato in ' . count($usage) . ' pagina/e: sostituiscilo nelle pagine prima di eliminarlo definitivamente',
+                'usage' => $usage,
+            ], 409);
+        }
+
+        $service->forceDelete($media);
 
         return $this->json($response, ['success' => true]);
     }

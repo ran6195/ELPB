@@ -179,6 +179,10 @@
               </template>
               <dt class="text-gray-500">Peso</dt>
               <dd class="text-gray-900">{{ formatBytes(detail.size) }}</dd>
+              <template v-if="detail.legacy">
+                <dt class="text-gray-500">Origine</dt>
+                <dd class="text-gray-900">Caricamento precedente alla libreria</dd>
+              </template>
               <dt class="text-gray-500">Caricato</dt>
               <dd class="text-gray-900">{{ formatDate(detail.created_at) }}</dd>
               <template v-if="detail.user">
@@ -268,9 +272,16 @@
                 >
                   Ripristina
                 </button>
+                <p v-if="usage.length" class="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  Il file è ancora usato in {{ usage.length }} {{ usage.length === 1 ? 'pagina' : 'pagine' }}: per eliminarlo definitivamente sostituiscilo prima nelle pagine.
+                </p>
+                <p v-else-if="detail.legacy && !authStore.isAdmin" class="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  File dei caricamenti precedenti alla libreria: può eliminarlo definitivamente solo un amministratore.
+                </p>
                 <button
+                  v-else
                   @click="forceDelete"
-                  :disabled="busy"
+                  :disabled="busy || usageLoading"
                   class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
                 >
                   Elimina definitivamente
@@ -456,8 +467,8 @@ async function restore() {
 }
 
 async function forceDelete() {
-  const warning = usage.value.length
-    ? `Il file è ancora usato in ${usage.value.length} pagina/e: lì comparirà un'immagine o un video mancante. Eliminarlo definitivamente?`
+  const warning = detail.value.legacy
+    ? 'Questo file proviene dai caricamenti precedenti alla libreria e potrebbe essere usato fuori da questa applicazione (pagine esportate, email, altri siti). Eliminarlo definitivamente? L\'operazione non è reversibile.'
     : 'Eliminare definitivamente il file? L\'operazione non è reversibile.'
   if (!window.confirm(warning)) return
 
@@ -467,6 +478,7 @@ async function forceDelete() {
     await mediaStore.forceDelete(detail.value.id)
     removeItem(detail.value.id)
   } catch (e) {
+    if (e.response?.status === 409 && e.response.data?.usage) usage.value = e.response.data.usage
     actionError.value = mediaErrorMessage(e)
   } finally {
     busy.value = false
