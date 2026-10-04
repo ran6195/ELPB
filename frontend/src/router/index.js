@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import PageList from '../views/PageList.vue'
 import ArchivedPages from '../views/ArchivedPages.vue'
+import MediaLibrary from '../views/MediaLibrary.vue'
 import PageEditor from '../views/PageEditor.vue'
 import PagePreview from '../views/PagePreview.vue'
 import PublicPage from '../views/PublicPage.vue'
@@ -34,6 +35,12 @@ const routes = [
     path: '/archived',
     name: 'ArchivedPages',
     component: ArchivedPages,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/media',
+    name: 'MediaLibrary',
+    component: MediaLibrary,
     meta: { requiresAuth: true }
   },
   {

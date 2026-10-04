@@ -165,14 +165,12 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un video</label>
-            <input
-              type="file"
-              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg"
-              @change="handleHeroBgVideoUpload"
-              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+            <MediaField
+              type="video"
+              label="Oppure scegli dalla libreria"
+              @select="(url) => (localBlock.content.backgroundVideo = url)"
             />
-            <p class="text-xs text-gray-500 mt-1">MP4, MOV, AVI o WebM — max 100MB. Il video va in riproduzione automatica, muto e in loop.</p>
+            <p class="text-xs text-gray-500 mt-1">Il video va in riproduzione automatica, muto e in loop.</p>
           </div>
 
           <div v-if="localBlock.content.backgroundVideo">
@@ -249,12 +247,10 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un'immagine</label>
-            <input
-              type="file"
-              accept="image/*"
-              @change="handleHeroBgImageUpload"
-              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+            <MediaField
+              type="image"
+              label="Oppure scegli dalla libreria"
+              @select="(url) => (localBlock.content.backgroundImage = url)"
             />
           </div>
 
@@ -639,12 +635,10 @@
         />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un'immagine</label>
-        <input
-          type="file"
-          accept="image/*"
-          @change="handleImageUpload"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        <MediaField
+          type="image"
+          label="Oppure scegli dalla libreria"
+          @select="(url) => (localBlock.content.image = url)"
         />
       </div>
 
@@ -783,12 +777,10 @@
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un video</label>
-        <input
-          type="file"
-          accept="video/*"
-          @change="handleVideoUpload"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        <MediaField
+          type="video"
+          label="Oppure scegli dalla libreria"
+          @select="(url) => (localBlock.content.videoUrl = url)"
         />
       </div>
 
@@ -1928,12 +1920,10 @@
         />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un'immagine</label>
-        <input
-          type="file"
-          accept="image/*"
-          @change="handleImageUpload"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        <MediaField
+          type="image"
+          label="Oppure scegli dalla libreria"
+          @select="(url) => (localBlock.content.image = url)"
         />
       </div>
     </div>
@@ -1966,12 +1956,10 @@
       </div>
 
       <div v-if="localBlock.content.videoType !== 'youtube'">
-        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un video</label>
-        <input
-          type="file"
-          accept="video/*"
-          @change="handleVideoUpload"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        <MediaField
+          type="video"
+          label="Oppure scegli dalla libreria"
+          @select="(url) => (localBlock.content.videoUrl = url)"
         />
       </div>
 
@@ -2102,12 +2090,10 @@
         />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica immagine mappa</label>
-        <input
-          type="file"
-          accept="image/*"
-          @change="handleMapImageUpload"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        <MediaField
+          type="image"
+          label="Oppure scegli dalla libreria"
+          @select="(url) => (localBlock.content.mapImage = url)"
         />
       </div>
 
@@ -2187,12 +2173,10 @@
         />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un logo</label>
-        <input
-          type="file"
-          accept="image/*"
-          @change="handleImageUpload"
-          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+        <MediaField
+          type="image"
+          label="Oppure scegli dalla libreria"
+          @select="(url) => (localBlock.content.logoUrl = url)"
         />
       </div>
       <div>
@@ -3503,12 +3487,10 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un'immagine</label>
-              <input
-                type="file"
-                accept="image/*"
-                @change="(e) => handleServiceImageUpload(e, index)"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              <MediaField
+                type="image"
+                label="Oppure scegli dalla libreria"
+                @select="(url) => (localBlock.content.services[index].image = url)"
               />
             </div>
 
@@ -3670,12 +3652,10 @@
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">Oppure carica un'immagine</label>
-              <input
-                type="file"
-                accept="image/*"
-                @change="(e) => handleSlideImageUpload(e, index)"
-                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              <MediaField
+                type="image"
+                label="Oppure scegli dalla libreria"
+                @select="(url) => (localBlock.content.slides[index].image = url)"
               />
             </div>
 
@@ -3886,7 +3866,7 @@ import { ref, watch, computed } from 'vue'
 import draggable from 'vuedraggable'
 import RichTextEditor from './RichTextEditor.vue'
 import TitleShadowEditor from './TitleShadowEditor.vue'
-import apiClient from '../api/axios'
+import MediaField from './media/MediaField.vue'
 import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
 import { usePageStore } from '../stores/pageStore'
 
@@ -4158,172 +4138,6 @@ watch(localBlock, () => {
   }, 300) // 300ms debounce
 }, { deep: true })
 
-const handleImageUpload = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-
-    try {
-      const response = await apiClient.post('/upload/image', formData)
-
-      if (response.data.success) {
-        // Determina quale campo aggiornare in base al tipo di blocco
-        if (localBlock.value.type === 'header') {
-          localBlock.value.content.logoUrl = response.data.url
-        } else {
-          localBlock.value.content.image = response.data.url
-        }
-      } else {
-        alert('Errore durante il caricamento dell\'immagine: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      alert('Errore durante il caricamento dell\'immagine')
-      console.error(error)
-    }
-  }
-}
-
-const handleHeroBgImageUpload = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-
-    try {
-      const response = await apiClient.post('/upload/image', formData)
-
-      if (response.data.success) {
-        localBlock.value.content.backgroundImage = response.data.url
-      } else {
-        alert('Errore durante il caricamento dell\'immagine: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      const msg = error.response?.data?.error || 'Errore durante il caricamento dell\'immagine'
-      alert(msg)
-      console.error(error)
-    }
-  }
-}
-
-const handleHeroBgVideoUpload = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // Validazione dimensione file (max 100MB)
-    const maxSize = 100 * 1024 * 1024 // 100MB in bytes
-    if (file.size > maxSize) {
-      alert('Il file è troppo grande. Dimensione massima: 100MB')
-      event.target.value = '' // Reset input
-      return
-    }
-
-    // Validazione tipo file
-    const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm']
-    if (!allowedTypes.includes(file.type)) {
-      alert('Tipo file non supportato. Usa MP4, MOV, AVI o WebM')
-      event.target.value = '' // Reset input
-      return
-    }
-
-    const formData = new FormData()
-    formData.append('video', file)
-
-    try {
-      const response = await apiClient.post('/upload/video', formData)
-
-      if (response.data.success) {
-        localBlock.value.content.backgroundVideo = response.data.url
-      } else {
-        alert('Errore durante il caricamento del video: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Errore durante il caricamento del video'
-      alert(errorMessage)
-      console.error(error)
-    }
-  }
-}
-
-const handleVideoUpload = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // Validazione dimensione file (max 100MB)
-    const maxSize = 100 * 1024 * 1024 // 100MB in bytes
-    if (file.size > maxSize) {
-      alert('Il file è troppo grande. Dimensione massima: 100MB')
-      event.target.value = '' // Reset input
-      return
-    }
-
-    // Validazione tipo file
-    const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm']
-    if (!allowedTypes.includes(file.type)) {
-      alert('Tipo file non supportato. Usa MP4, MOV, AVI o WebM')
-      event.target.value = '' // Reset input
-      return
-    }
-
-    const formData = new FormData()
-    formData.append('video', file)
-
-    try {
-      const response = await apiClient.post('/upload/video', formData)
-
-      if (response.data.success) {
-        localBlock.value.content.videoUrl = response.data.url
-      } else {
-        alert('Errore durante il caricamento del video: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Errore durante il caricamento del video'
-      alert(errorMessage)
-      console.error(error)
-    }
-  }
-}
-
-const handleMapImageUpload = async (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-
-    try {
-      const response = await apiClient.post('/upload/image', formData)
-
-      if (response.data.success) {
-        localBlock.value.content.mapImage = response.data.url
-      } else {
-        alert('Errore durante il caricamento dell\'immagine: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      alert('Errore durante il caricamento dell\'immagine')
-      console.error(error)
-    }
-  }
-}
-
-const handleServiceImageUpload = async (event, serviceIndex) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-
-    try {
-      const response = await apiClient.post('/upload/image', formData)
-
-      if (response.data.success) {
-        localBlock.value.content.services[serviceIndex].image = response.data.url
-      } else {
-        alert('Errore durante il caricamento dell\'immagine: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      alert('Errore durante il caricamento dell\'immagine')
-      console.error(error)
-    }
-  }
-}
-
 // Funzioni per gestire i link del footer
 const addFooterLink = () => {
   if (!localBlock.value.content.links) {
@@ -4380,27 +4194,6 @@ const updateFeatureField = (index, field, value) => {
 }
 
 // Funzioni per gestire lo slider
-const handleSlideImageUpload = async (event, slideIndex) => {
-  const file = event.target.files[0]
-  if (file) {
-    const formData = new FormData()
-    formData.append('image', file)
-
-    try {
-      const response = await apiClient.post('/upload/image', formData)
-
-      if (response.data.success) {
-        localBlock.value.content.slides[slideIndex].image = response.data.url
-      } else {
-        alert('Errore durante il caricamento dell\'immagine: ' + (response.data.error || 'Errore sconosciuto'))
-      }
-    } catch (error) {
-      alert('Errore durante il caricamento dell\'immagine')
-      console.error(error)
-    }
-  }
-}
-
 const addSlide = () => {
   if (!localBlock.value.content.slides) {
     localBlock.value.content.slides = []

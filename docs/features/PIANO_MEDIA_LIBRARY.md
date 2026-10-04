@@ -1,6 +1,6 @@
 # Piano: libreria media per cliente
 
-> Creato: 2026-10-04 — Stato: **Fase 1 completata** — prossima: Fase 2 (frontend)
+> Creato: 2026-10-04 — Stato: **Fasi 1-2 completate** — prossima: Fase 3 (migrazione file esistenti)
 
 Gestione centralizzata di immagini e video per ogni cliente (company), con possibilità futura di modificare le immagini (ridimensionamento, ritaglio, filtri).
 
@@ -81,12 +81,12 @@ Per il passaggio: driver `S3MediaStorage` (via `league/flysystem-aws-s3-v3` o `a
 6. ✅ Le route `/api/upload/image|video` restano, delegate a `MediaService` (stessa risposta + campo `media`).
 7. ✅ `EmailService`: l'immagine allegata alla email di conferma viene risolta tramite `MediaService::localPathFromUrl()` (libreria + vecchi upload).
 
-### Fase 2 – Frontend (~5-6 h)
-1. `mediaStore.js` (Pinia).
-2. Vista `/media` "Libreria Media": griglia miniature, schede Immagini/Video, ricerca, upload multiplo drag&drop con avanzamento, dettaglio (dimensioni, peso, utilizzo, URL), modifica alt, eliminazione.
-3. `MediaPicker.vue`: finestra riusabile "Libreria" / "Carica nuovo", restituisce l'URL.
-4. Sostituzione degli 8 handler con "Scegli dalla libreria" (resta il campo URL manuale).
-5. Miniatura video catturata nel browser (`<video>` + canvas).
+### Fase 2 – Frontend ✅
+1. ✅ `stores/mediaStore.js` (Pinia, solo azioni API: le liste vivono nei componenti) + `utils/media.js` (validazione client, formattazione, `readVideoInfo`).
+2. ✅ Vista `/media` "Libreria Media" (`views/MediaLibrary.vue`): filtri Tutti/Immagini/Video/Archiviati, ricerca, filtro azienda (admin), upload multiplo drag&drop con avanzamento, pannello dettaglio (anteprima, info, URL copiabile, nome/alt, utilizzo con link all'editor, archivia con avviso se in uso, ripristina, elimina definitivamente). Pulsante "Media" nella dashboard.
+3. ✅ `components/media/`: `MediaPicker.vue` (finestra Libreria / Carica nuovo, doppio clic o "Inserisci"), `MediaField.vue` (pulsante che apre il picker), `MediaDropzone.vue`, `MediaThumb.vue`.
+4. ✅ Sostituiti i 10 campi upload di `BlockEditor.vue` (rimossi 7 handler) e l'upload allegato di `PageSettings.vue`; il campo URL manuale resta.
+5. ✅ Miniatura video catturata nel browser (`<video>` + canvas) e inviata come `poster` con dimensioni e durata.
 
 ### Fase 3 – Migrazione file esistenti (~1-2 h)
 Script `migrate_existing_uploads.php`: scansiona `blocks.content` per URL `/uploads/`, assegna ogni file all'azienda della pagina, crea i record `media` **senza spostare i file**; i file non usati vanno all'admin.
