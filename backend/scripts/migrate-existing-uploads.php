@@ -252,8 +252,9 @@ foreach ($diskFiles as $rel => $abs) {
     }
 
     $width = $height = null;
-    if ($type === 'image' && ($info = @getimagesize($abs))) {
-        [$width, $height] = $info;
+    // Dimensioni come le mostra il browser (EXIF Orientation applicato): l'originale non si tocca
+    if ($type === 'image' && ($dims = MediaService::displayDimensions($abs, $mime))) {
+        [$width, $height] = $dims;
     }
 
     $entry = [

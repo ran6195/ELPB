@@ -97,6 +97,7 @@ Script `backend/scripts/migrate-existing-uploads.php`. **Non sposta né modifica
 - Rollback: `DELETE FROM media WHERE legacy = 1;` + `rm -r public/uploads/images/thumbs`.
 
 **Procedura produzione**
+0. Se la libreria è già stata usata prima del fix orientamento (2026-10-04): `php scripts/repair-media-orientation.php` (dry-run) e poi `--execute`.
 1. Backup DB.
 2. `php database/migrations/create_media_table.php` e `php database/migrations/add_legacy_to_media.php`.
 3. `php scripts/migrate-existing-uploads.php` (dry-run) → revisione del report.

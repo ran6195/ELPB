@@ -95,11 +95,12 @@ class MediaService
                 if ($mime === 'image/jpeg') {
                     $this->fixJpegOrientation($tmp);
                 }
-                $info = @getimagesize($tmp);
-                if ($info === false) {
+                // Se la correzione non è riuscita l'EXIF è ancora presente: dimensioni come le vede il browser
+                $dims = self::displayDimensions($tmp, $mime);
+                if ($dims === null) {
                     throw new MediaUploadException('Immagine danneggiata o non leggibile');
                 }
-                [$width, $height] = $info;
+                [$width, $height] = $dims;
             } else {
                 $width = $this->positiveInt($meta['width'] ?? null);
                 $height = $this->positiveInt($meta['height'] ?? null);
@@ -112,7 +113,7 @@ class MediaService
 
             // Miniatura (prima di spostare l'originale nello storage)
             $thumbTmp = $type === 'image'
-                ? $this->makeThumbnail($tmp, $mime, (int) $width, (int) $height)
+                ? $this->makeThumbnail($tmp, $mime)
                 : $this->posterThumbnail($poster);
 
             $path = $this->storage->putFile($tmp, $folder . '/' . $name . '.' . $ext, $mime);
@@ -177,7 +178,7 @@ class MediaService
             return null;
         }
 
-        $thumb = $this->makeThumbnail($source, $media->mime_type, (int) $media->width, (int) $media->height);
+        $thumb = $this->makeThumbnail($source, $media->mime_type);
         if ($thumb === null) {
             return null;
         }
@@ -315,16 +316,85 @@ class MediaService
         return $mime;
     }
 
-    /** Ruota fisicamente le foto JPEG da smartphone secondo il tag EXIF Orientation */
-    private function fixJpegOrientation(string $path): void
+    /** Valore EXIF Orientation (1-8) di un JPEG; 1 se assente o non leggibile */
+    public static function exifOrientation(string $path, string $mime): int
     {
-        if (!function_exists('exif_read_data')) {
-            return;
+        if ($mime !== 'image/jpeg' || !function_exists('exif_read_data')) {
+            return 1;
         }
         $exif = @exif_read_data($path);
         $orientation = (int) ($exif['Orientation'] ?? 1);
-        $angles = [3 => 180, 6 => -90, 8 => 90];
-        if (!isset($angles[$orientation])) {
+        return $orientation >= 1 && $orientation <= 8 ? $orientation : 1;
+    }
+
+    /**
+     * Dimensioni come le mostra il browser (che applica l'EXIF Orientation):
+     * per gli orientamenti 5-8 larghezza e altezza sono invertite.
+     *
+     * @return array{0:int,1:int}|null
+     */
+    public static function displayDimensions(string $path, string $mime): ?array
+    {
+        $info = @getimagesize($path);
+        if ($info === false) {
+            return null;
+        }
+        [$w, $h] = $info;
+        return self::exifOrientation($path, $mime) >= 5 ? [$h, $w] : [$w, $h];
+    }
+
+    /**
+     * Applica a un'immagine GD la trasformazione indicata dall'EXIF Orientation:
+     * 2 specchio orizzontale, 3 rotazione 180°, 4 specchio verticale,
+     * 5 trasposizione, 6 rotazione 90° oraria, 7 trasversale, 8 rotazione 90° antioraria.
+     */
+    private function applyOrientation(\GdImage $img, int $orientation): \GdImage
+    {
+        $rotate = function (\GdImage $src, int $angle): \GdImage {
+            $rotated = imagerotate($src, $angle, 0);
+            if ($rotated === false) {
+                return $src;
+            }
+            imagedestroy($src);
+            return $rotated;
+        };
+
+        switch ($orientation) {
+            case 2:
+                imageflip($img, IMG_FLIP_HORIZONTAL);
+                break;
+            case 3:
+                $img = $rotate($img, 180);
+                break;
+            case 4:
+                imageflip($img, IMG_FLIP_VERTICAL);
+                break;
+            case 5:
+                $img = $rotate($img, -90);
+                imageflip($img, IMG_FLIP_HORIZONTAL);
+                break;
+            case 6:
+                $img = $rotate($img, -90);
+                break;
+            case 7:
+                $img = $rotate($img, 90);
+                imageflip($img, IMG_FLIP_HORIZONTAL);
+                break;
+            case 8:
+                $img = $rotate($img, 90);
+                break;
+        }
+        return $img;
+    }
+
+    /**
+     * Raddrizza fisicamente le foto JPEG da smartphone secondo il tag EXIF Orientation.
+     * Il file riscritto non contiene più EXIF, quindi browser e GD lo vedono uguale.
+     */
+    private function fixJpegOrientation(string $path): void
+    {
+        $orientation = self::exifOrientation($path, 'image/jpeg');
+        if ($orientation === 1) {
             return;
         }
 
@@ -333,24 +403,23 @@ class MediaService
             if (!$img) {
                 return;
             }
-            $rotated = imagerotate($img, $angles[$orientation], 0);
+            $img = $this->applyOrientation($img, $orientation);
+            imagejpeg($img, $path, 90);
             imagedestroy($img);
-            if ($rotated) {
-                imagejpeg($rotated, $path, 90);
-                imagedestroy($rotated);
-            }
         } catch (Throwable $e) {
-            $this->logger->warning('exif_rotation_failed', ['exception' => $e->getMessage()]);
+            $this->logger->warning('exif_rotation_failed', ['exception' => $e->getMessage(), 'orientation' => $orientation]);
         }
     }
 
     /**
-     * Crea una miniatura (lato maggiore THUMB_SIZE). Ritorna [tmpPath, ext, mime]
+     * Crea una miniatura (lato maggiore THUMB_SIZE), con l'orientamento EXIF applicato.
+     * Ritorna [tmpPath, ext, mime]
      * oppure null se l'immagine è già piccola o GD non riesce a leggerla.
      */
-    private function makeThumbnail(string $path, string $mime, int $width, int $height): ?array
+    private function makeThumbnail(string $path, string $mime): ?array
     {
-        if ($width <= self::THUMB_SIZE && $height <= self::THUMB_SIZE) {
+        $dims = self::displayDimensions($path, $mime);
+        if ($dims === null || ($dims[0] <= self::THUMB_SIZE && $dims[1] <= self::THUMB_SIZE)) {
             return null;
         }
 
@@ -371,6 +440,11 @@ class MediaService
             if (!$src) {
                 return null;
             }
+            // Il file originale può avere ancora l'EXIF (vecchi upload, che non vanno
+            // modificati): la miniatura deve avere lo stesso orientamento del browser
+            $src = $this->applyOrientation($src, self::exifOrientation($path, $mime));
+            $width = imagesx($src);
+            $height = imagesy($src);
 
             $ratio = min(self::THUMB_SIZE / $width, self::THUMB_SIZE / $height);
             $tw = max(1, (int) round($width * $ratio));
@@ -417,7 +491,7 @@ class MediaService
                 return null;
             }
 
-            $thumb = $this->makeThumbnail($tmp, $mime, $info[0], $info[1]);
+            $thumb = $this->makeThumbnail($tmp, $mime);
             if ($thumb !== null) {
                 @unlink($tmp);
                 return $thumb;
