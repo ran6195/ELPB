@@ -68,3 +68,5 @@ MIGRATION_SQL_MANUAL.sql
 
 # File versione generato automaticamente da Vite
 frontend/public/version.json
+# Credenziali FTP locali
+.credenziali_ftp.txt
