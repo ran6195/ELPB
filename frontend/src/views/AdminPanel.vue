@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50">
     <!-- HEADER -->
     <div class="bg-white border-b border-gray-200 shadow-sm">
-      <div class="max-w-7xl mx-auto px-8 py-6">
+      <div class="max-w-screen-2xl mx-auto px-8 py-6">
         <div class="flex justify-between items-center">
           <div>
             <h1 class="text-2xl font-semibold text-gray-900 mb-1">Pannello Amministrazione</h1>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- TABS -->
-    <div class="max-w-7xl mx-auto px-8 py-6">
+    <div class="max-w-screen-2xl mx-auto px-8 py-6">
       <div class="border-b border-gray-200 mb-6">
         <nav class="-mb-px flex space-x-8">
           <button
@@ -569,7 +569,7 @@
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   </td>
-                  <td class="px-4 py-4 text-sm text-gray-500">
+                  <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
                     {{ formatDate(lead.created_at) }}
                   </td>
                   <td class="px-4 py-4 text-sm font-medium text-gray-900">
@@ -593,7 +593,7 @@
                       {{ lead.email }}
                     </a>
                   </td>
-                  <td class="px-4 py-4 text-sm text-gray-500">
+                  <td class="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
                     <a v-if="lead.phone" :href="`tel:${lead.phone}`" class="text-blue-600 hover:text-blue-800">
                       {{ lead.phone }}
                     </a>
