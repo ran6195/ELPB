@@ -497,11 +497,18 @@
                     >{{ leadOrigin(lead).badge }}</span>
                   </td>
                   <td class="px-4 py-4 text-sm text-gray-500">
+                    <router-link
+                      v-if="lead.page && !lead.page.deleted_at"
+                      :to="`/editor/${lead.page.id}`"
+                      class="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                      title="Apri la pagina nell'editor"
+                    >#{{ lead.page.id }}-{{ lead.page.slug }}</router-link>
+                    <!-- Pagina archiviata: non modificabile, l'ID si copia -->
                     <span
-                      v-if="lead.page"
+                      v-else-if="lead.page"
                       class="font-mono text-xs text-gray-500 cursor-pointer hover:text-gray-700"
                       @click="copyPageId(`#${lead.page.id}-${lead.page.slug}`)"
-                      :title="`Clicca per copiare: #${lead.page.id}-${lead.page.slug}`"
+                      :title="`Pagina archiviata. Clicca per copiare: #${lead.page.id}-${lead.page.slug}`"
                     >#{{ lead.page.id }}-{{ lead.page.slug }}</span>
                     <span v-else class="text-gray-400">—</span>
                   </td>
