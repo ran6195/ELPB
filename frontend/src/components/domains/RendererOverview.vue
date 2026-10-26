@@ -34,20 +34,38 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="row in sites" :key="`${row.host}|${row.renderer}|${row.version}|${row.ip}`" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm">
+              <td class="px-4 py-3 text-sm align-top">
                 <span v-if="row.host" class="font-medium text-gray-900">{{ row.display_host }}</span>
-                <span v-else class="text-gray-700">Server {{ row.ip }}</span>
+                <template v-else>
+                  <span class="text-gray-700">Server {{ row.ip }}</span>
+                  <span v-if="row.likely_hosts.length" class="block text-xs text-gray-500 mt-0.5">
+                    Probabile:
+                    <span v-for="(h, i) in row.likely_hosts" :key="h.host" :title="likelySource(h)">
+                      <span class="text-gray-700">{{ h.display_host }}</span>{{ i < row.likely_hosts.length - 1 ? ', ' : '' }}
+                    </span>
+                  </span>
+                  <span v-else class="block text-xs text-gray-400 mt-0.5">
+                    Sito non ancora noto: associa un dominio alle pagine o attendi un contatto
+                  </span>
+                </template>
               </td>
-              <td class="px-4 py-3 text-sm whitespace-nowrap">
+              <td class="px-4 py-3 text-sm whitespace-nowrap align-top">
                 <span class="text-gray-700">{{ rendererLabel(row) }}</span>
                 <span
                   v-if="row.outdated"
                   class="ml-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800"
                 >da aggiornare</span>
               </td>
-              <td class="px-4 py-3 text-sm text-gray-500">{{ row.pages_count }}</td>
-              <td class="px-4 py-3 text-sm text-gray-500">{{ row.hits }}</td>
-              <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at) }}</td>
+              <td class="px-4 py-3 text-sm text-gray-500 align-top">
+                <span
+                  v-for="p in row.pages"
+                  :key="p.id"
+                  class="block"
+                  :title="`#${p.id}-${p.slug}`"
+                >{{ p.title }} <span class="font-mono text-xs text-gray-400">{{ p.slug }}</span></span>
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-500 align-top">{{ row.hits }}</td>
+              <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap align-top" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at) }}</td>
             </tr>
           </tbody>
         </table>
@@ -76,6 +94,13 @@ const currentVersion = ref('2.1.0')
 const sites = computed(() => rows.value.filter(r => !r.is_app))
 const outdated = computed(() => sites.value.filter(r => r.outdated).length)
 const upToDate = computed(() => sites.value.length - outdated.value)
+
+function likelySource(h) {
+  const sources = []
+  if (h.from_domain) sources.push('dominio associato alla pagina')
+  if (h.from_leads) sources.push('contatti arrivati da questo sito')
+  return sources.join(' e ')
+}
 
 onMounted(async () => {
   try {

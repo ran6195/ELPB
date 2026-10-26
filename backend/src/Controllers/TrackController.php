@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\Lead;
 use App\Models\Page;
 use App\Models\User;
 use App\Services\TrackingService;
@@ -96,12 +97,19 @@ class TrackController
             ->selectRaw("h.host, h.renderer, h.version,
                 CASE WHEN h.host = '' THEN h.ip ELSE '' END as ip,
                 COUNT(DISTINCT h.page_id) as pages_count,
+                GROUP_CONCAT(DISTINCT h.page_id) as page_ids,
                 SUM(h.hits) as hits,
                 MIN(h.first_seen_at) as first_seen_at,
                 MAX(h.last_seen_at) as last_seen_at")
             ->groupBy('h.host', 'h.renderer', 'h.version', Capsule::raw("CASE WHEN h.host = '' THEN h.ip ELSE '' END"))
             ->orderByDesc('last_seen_at')
-            ->get()
+            ->get();
+
+        $pageIds = $rows->flatMap(fn($row) => explode(',', (string) $row->page_ids))->filter()->unique()->values()->all();
+        $pages = Page::with('domains:id,hostname')->whereIn('id', $pageIds)->get(['id', 'title', 'slug'])->keyBy('id');
+        $leadHosts = $this->leadHostsByPage($pageIds);
+
+        $rows = $rows
             ->map(fn($row) => [
                 'host' => $row->host,
                 'display_host' => $row->host !== '' ? Hostname::display($row->host) : '',
@@ -111,6 +119,9 @@ class TrackController
                 'is_app' => Hostname::isAppHost($row->host),
                 'ip' => $row->ip !== '' ? $row->ip : null,
                 'pages_count' => (int) $row->pages_count,
+                'pages' => $this->pagesOf($row->page_ids, $pages),
+                // Renderer non aggiornati: il sito si deduce da domini associati e contatti delle pagine
+                'likely_hosts' => $row->host === '' ? $this->likelyHosts($row->page_ids, $pages, $leadHosts) : [],
                 'hits' => (int) $row->hits,
                 'first_seen_at' => $row->first_seen_at,
                 'last_seen_at' => $row->last_seen_at,
@@ -120,6 +131,59 @@ class TrackController
             'data' => $rows,
             'current_version' => TrackingService::CURRENT_RENDERER_VERSION,
         ]);
+    }
+
+    private function pagesOf(?string $pageIds, $pages): array
+    {
+        return collect(explode(',', (string) $pageIds))
+            ->map(fn($id) => $pages->get((int) $id))
+            ->filter()
+            ->map(fn($page) => ['id' => $page->id, 'title' => $page->title, 'slug' => $page->slug])
+            ->sortBy('title')
+            ->values()
+            ->all();
+    }
+
+    /** Siti probabili: domini associati alle pagine e siti da cui sono arrivati i loro contatti */
+    private function likelyHosts(?string $pageIds, $pages, $leadHosts): array
+    {
+        $hosts = [];
+        foreach (explode(',', (string) $pageIds) as $id) {
+            $page = $pages->get((int) $id);
+            foreach ($page ? $page->domains : [] as $domain) {
+                $hosts[$domain->hostname]['domain'] = true;
+            }
+            foreach ($leadHosts->get((int) $id, []) as $host) {
+                $hosts[$host]['leads'] = true;
+            }
+        }
+
+        return collect($hosts)
+            ->map(fn($sources, $host) => [
+                'host' => $host,
+                'display_host' => Hostname::display($host),
+                'from_domain' => !empty($sources['domain']),
+                'from_leads' => !empty($sources['leads']),
+            ])
+            ->sortBy('host')
+            ->values()
+            ->all();
+    }
+
+    /** Siti misurati (non stimati) da cui sono arrivati i contatti, per pagina */
+    private function leadHostsByPage(array $pageIds)
+    {
+        if (!$pageIds) {
+            return collect();
+        }
+        return Lead::whereIn('page_id', $pageIds)
+            ->whereNotNull('origin_host')
+            ->where('origin_inferred', false)
+            ->distinct()
+            ->get(['page_id', 'origin_host'])
+            ->reject(fn($lead) => Hostname::isAppHost($lead->origin_host))
+            ->groupBy('page_id')
+            ->map(fn($leads) => $leads->pluck('origin_host')->all());
     }
 
     private function presentHit(object $hit, array $associated): array
