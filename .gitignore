@@ -70,3 +70,12 @@ MIGRATION_SQL_MANUAL.sql
 frontend/public/version.json
 # Credenziali FTP locali
 .credenziali_ftp.txt
+
+# Commit dell'ultimo deploy FTP (scripts/deploy-ftp.sh)
+.deploy-rev
+
+# Log e report generati dagli script backend (migrazioni, email)
+backend/storage/
+
+# Impostazioni locali di Claude Code
+.claude/settings.local.json
