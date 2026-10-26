@@ -14,6 +14,8 @@
 #   ./scripts/deploy-ftp.sh --pulisci       # elimina dal server gli asset vecchi non più usati
 #
 # Credenziali in .credenziali_ftp.txt (USER=, PASSWORD=, HOST= opzionale), ignorato da git.
+# Se un upload si interrompe, il file sul server può restare troncato: rilanciare
+# subito il deploy (.deploy-rev non viene aggiornato, quindi riprova gli stessi file).
 # Il commit dell'ultimo deploy è salvato in .deploy-rev (ignorato da git).
 # Ogni fase usa una sola connessione FTP: troppe connessioni ravvicinate fanno
 # scattare il blocco temporaneo dell'IP da parte di Plesk.
@@ -55,7 +57,9 @@ fi
 FTP_USER=$(sed -n 's/^USER=//p' "$CRED_FILE")
 FTP_PASS=$(sed -n 's/^PASSWORD=//p' "$CRED_FILE")
 FTP_HOST=$(sed -n 's/^HOST=//p' "$CRED_FILE")
-FTP_HOST=${FTP_HOST:-elpb.edysma.com}
+# Nome del server Aruba: è quello presente nel certificato TLS dell'FTP
+# (con elpb.edysma.com la verifica del certificato fallisce)
+FTP_HOST=${FTP_HOST:-mu001625.arubabiz.net}
 FTP_URL="ftp://$FTP_HOST"
 
 WORK=$(mktemp -d)
@@ -65,7 +69,9 @@ umask 077
 cat > "$CURL_CFG" <<EOF
 user = "$FTP_USER:$FTP_PASS"
 ssl-reqd
-insecure
+# Con TLS 1.3 e il curl di macOS ProFTPD interrompe gli upload (426 Transfer aborted):
+# il limite a 1.2 resta come protezione se il curl di Homebrew non c'è
+tls-max = "1.2"
 ftp-create-dirs
 connect-timeout = 20
 silent
@@ -73,7 +79,14 @@ show-error
 EOF
 umask 022
 
-ftp() { curl -K "$CURL_CFG" "$@"; }
+# Il curl di macOS (SecureTransport/LibreSSL) interrompe gli upload FTP con TLS:
+# si usa quello di Homebrew (OpenSSL) se installato
+CURL=/usr/bin/curl
+for c in /opt/homebrew/opt/curl/bin/curl /usr/local/opt/curl/bin/curl; do
+    [ -x "$c" ] && { CURL="$c"; break; }
+done
+
+ftp() { "$CURL" -K "$CURL_CFG" "$@"; }
 
 # --- Controlli git ---
 if [ -n "$(git status --porcelain --untracked-files=no -- backend frontend)" ]; then
@@ -185,7 +198,7 @@ upload_list() { # $1 = file con righe "locale<TAB>remoto"
     while IFS=$'\t' read -r local remote; do
         printf 'upload-file = "%s"\nurl = "%s/%s"\n' "$local" "$FTP_URL" "$remote" >> "$cfg"
     done < "$1"
-    curl -K "$CURL_CFG" -K "$cfg"
+    "$CURL" -K "$CURL_CFG" -K "$cfg"
 }
 
 delete_list() { # $1 = file con un percorso remoto per riga
