@@ -1,0 +1,16 @@
+# Dal web è raggiungibile solo backend/public/ (API e upload).
+# Tutto il resto (src, vendor, database, scripts, storage, .env, composer.*,
+# script di test, archivi) risponde 403.
+#
+# backend/public/.htaccess ha il proprio RewriteEngine On: le sue regole
+# sostituiscono queste, quindi le richieste a public/ non vengono bloccate.
+RewriteEngine On
+RewriteRule !^public(/|$) - [F,L]
+
+# Doppia protezione per i file più sensibili, valida anche se le regole
+# di riscrittura non venissero applicate
+<FilesMatch "(^\.env|\.(sql|zip|log|lock|md)$|^composer\.json$)">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes

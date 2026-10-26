@@ -162,7 +162,7 @@ else
     OLD_ASSETS=$(grep -vxFf "$WORK/local_assets" "$WORK/remote_assets" | grep -vxE '\.|\.\.' || true)
     echo "   asset nuovi: $(echo "$NEW_ASSETS" | grep -c . || true)"
     echo "$NEW_ASSETS" | grep . | sed 's/^/   ↑ assets\//' || true
-    echo "   ↑ .htaccess, debug.html, version.json, index.html (per ultimo)"
+    echo "   ↑ .htaccess, version.json, index.html (per ultimo)"
     if [ -n "$OLD_ASSETS" ]; then
         if [ $CLEAN_ASSETS -eq 1 ]; then
             echo "   asset vecchi da eliminare: $(echo "$OLD_ASSETS" | grep -c .)"
@@ -212,7 +212,7 @@ if [ $DEPLOY_FRONTEND -eq 1 ]; then
     echo "$NEW_ASSETS" | grep . | while read -r f; do
         printf 'frontend/dist/assets/%s\tassets/%s\n' "$f" "$f"
     done >> "$WORK/frontend_pairs" || true
-    for f in .htaccess debug.html version.json index.html; do
+    for f in .htaccess version.json index.html; do
         printf 'frontend/dist/%s\t%s\n' "$f" "$f" >> "$WORK/frontend_pairs"
     done
     upload_list "$WORK/frontend_pairs"
