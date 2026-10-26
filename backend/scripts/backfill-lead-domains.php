@@ -65,10 +65,11 @@ foreach ($pages as $page) {
 }
 
 $summary = sprintf(
-    "Stima dominio lead vecchi — %s\n%d lead su %d pagine con un solo dominio%s\n",
+    "Stima dominio lead vecchi — %s\nPagine con un solo dominio: %d, di cui %d con lead da stimare: %d lead%s\n",
     $execute ? 'ESEGUITO' : 'DRY-RUN (nessuna scrittura, usa --execute)',
-    $total,
+    $pages->count(),
     count($details),
+    $total,
     $firstMeasured ? " (solo lead prima del {$firstMeasured})" : ''
 );
 
