@@ -97,6 +97,8 @@ $app->post('/api/pages/{id}/notification-settings', '\App\Controllers\PageContro
 $app->put('/api/pages/{id}/domains', '\App\Controllers\PageController:updateDomains')->add(AuthMiddleware::class);
 $app->post('/api/pages/{id}/domains', '\App\Controllers\PageController:updateDomains')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
 $app->get('/api/pages/{id}/domain-suggestions', '\App\Controllers\PageController:domainSuggestions')->add(AuthMiddleware::class);
+$app->get('/api/pages/{id}/renderers', '\App\Controllers\TrackController:pageRenderers')->add(AuthMiddleware::class);
+$app->get('/api/renderers', '\App\Controllers\TrackController:index')->add(AuthMiddleware::class);
 $app->put('/api/pages/{id}', '\App\Controllers\PageController:update')->add(AuthMiddleware::class);
 $app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(AuthMiddleware::class);
 
@@ -144,5 +146,6 @@ $app->get('/api/page/{slug}', '\App\Controllers\PageController:showBySlug');
 
 // Leads routes - Form submission pubblica
 $app->post('/api/leads', '\App\Controllers\LeadController:store');
+$app->post('/api/track/view', '\App\Controllers\TrackController:view'); // beacon visite dei renderer v2.1
 
 $app->run();

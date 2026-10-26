@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\Domain;
 use App\Models\Page;
 use App\Utils\Hostname;
+use Illuminate\Database\Capsule\Manager as Capsule;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -34,6 +35,7 @@ class DomainController
         }
 
         $domains = $query->orderBy('hostname')->get();
+        $this->attachRenderers($domains);
 
         return $this->json($response, ['data' => $domains]);
     }
@@ -191,5 +193,37 @@ class DomainController
     {
         $response->getBody()->write(json_encode($data));
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
+    }
+
+    /**
+     * Renderer che hanno mostrato pagine su ciascun dominio (registro renderer_hits):
+     * `renderers` [{renderer, version, last_seen_at}] e `last_seen_at` complessivo
+     */
+    private function attachRenderers($domains): void
+    {
+        if ($domains->isEmpty()) {
+            return;
+        }
+        try {
+            $rows = Capsule::table('renderer_hits')
+                ->whereIn('host', $domains->pluck('hostname')->all())
+                ->selectRaw('host, renderer, version, MAX(last_seen_at) as last_seen_at')
+                ->groupBy('host', 'renderer', 'version')
+                ->orderByDesc('last_seen_at')
+                ->get()
+                ->groupBy('host');
+        } catch (\Throwable $e) {
+            return; // tabella non ancora creata
+        }
+
+        foreach ($domains as $domain) {
+            $seen = $rows->get($domain->hostname, collect());
+            $domain->setAttribute('renderers', $seen->map(fn($row) => [
+                'renderer' => $row->renderer,
+                'version' => $row->version,
+                'last_seen_at' => $row->last_seen_at,
+            ])->values());
+            $domain->setAttribute('last_seen_at', $seen->max('last_seen_at'));
+        }
     }
 }

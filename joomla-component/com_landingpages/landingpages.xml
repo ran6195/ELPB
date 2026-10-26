@@ -7,8 +7,8 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>your@email.com</authorEmail>
     <authorUrl>https://yourwebsite.com</authorUrl>
-    <version>2.0.7</version>
-    <description>COM_LANDINGPAGES_XML_DESCRIPTION - v2.0.7: Integrazione Google Tag Manager - possibilità di inserire GTM Container ID nelle impostazioni della pagina per gestire tutti i tag di tracciamento (Analytics, Ads, Facebook Pixel, ecc.) da un'unica interfaccia GTM. Include anche personalizzazione completa del bottone submit del Form.</description>
+    <version>2.1.0</version>
+    <description>COM_LANDINGPAGES_XML_DESCRIPTION - v2.1.0: Il componente comunica al builder sito e versione (registro dei renderer) e conta le visite senza cookie, per statistiche e tasso di conversione per sito.</description>
 
     <!-- Site files -->
     <files folder="site">

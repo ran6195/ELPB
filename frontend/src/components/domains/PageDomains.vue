@@ -74,6 +74,62 @@
         </button>
       </div>
     </div>
+
+    <!-- Dove viene mostrata (registro dei renderer) e visite -->
+    <div v-if="renderers" class="mt-5">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Dove viene mostrata</p>
+      <p v-if="!renderers.hits.length" class="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+        Nessun sito ha ancora scaricato la pagina da quando è attivo il registro.
+      </p>
+      <div v-else class="space-y-1.5">
+        <div
+          v-for="hit in renderers.hits"
+          :key="`${hit.host}|${hit.renderer}|${hit.ip}`"
+          class="p-2.5 rounded-lg border text-xs"
+          :class="hit.outdated ? 'border-amber-200 bg-amber-50' : 'border-gray-200'"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="min-w-0 truncate text-sm text-gray-900" :title="hit.last_url || ''">
+              {{ hit.host ? hit.display_host : 'Renderer non aggiornato' }}
+            </span>
+            <span v-if="hit.host && hit.is_app" class="shrink-0 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">anteprima</span>
+            <span v-else-if="hit.associated" class="shrink-0 px-1.5 py-0.5 rounded bg-green-100 text-green-700">associato</span>
+            <button
+              v-else-if="hit.host && (domainFor(hit.host) || canManage)"
+              type="button"
+              :disabled="saving"
+              @click="associateHost(hit.host)"
+              class="shrink-0 font-medium text-primary-700 hover:text-primary-800 disabled:opacity-50"
+            >
+              {{ domainFor(hit.host) ? 'Associa' : 'Aggiungi e associa' }}
+            </button>
+          </div>
+          <div class="mt-0.5 text-gray-500">
+            {{ rendererLabel(hit) }}
+            <span v-if="hit.outdated" class="text-amber-700 font-medium">· da aggiornare</span>
+            <span v-if="hit.ip"> · server {{ hit.ip }}</span>
+            · {{ timeAgo(hit.last_seen_at) }}
+          </div>
+          <div v-if="hit.last_url" class="mt-0.5 text-gray-400 truncate" :title="hit.last_url">{{ hit.last_url }}</div>
+        </div>
+      </div>
+
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
+        Visite ultimi {{ renderers.views_days }} giorni
+      </p>
+      <p v-if="!renderers.views.length" class="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+        Nessuna visita registrata. Le visite si contano dai siti con il renderer 2.1 o successivo.
+      </p>
+      <div v-else class="space-y-1">
+        <div v-for="v in renderers.views" :key="v.host" class="flex items-center justify-between gap-2 text-xs">
+          <span class="min-w-0 truncate text-gray-700">{{ v.display_host || 'sito sconosciuto' }}</span>
+          <span class="shrink-0 text-gray-500">{{ v.views }} {{ v.views === 1 ? 'visita' : 'visite' }} · {{ v.visitors }} {{ v.visitors === 1 ? 'visitatore' : 'visitatori' }}</span>
+        </div>
+        <p v-if="renderers.first_view_day" class="text-xs text-gray-400 pt-1">
+          Dati raccolti dal {{ formatDay(renderers.first_view_day) }}, senza cookie.
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -82,6 +138,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { usePageStore } from '../../stores/pageStore'
 import { useAuthStore } from '../../stores/authStore'
 import { useDomainStore, sameOwner } from '../../stores/domainStore'
+import { rendererLabel, timeAgo, formatDay } from '../../utils/renderers'
 
 /**
  * Associazione della pagina ai domini dell'azienda. Ogni modifica viene salvata subito.
@@ -99,6 +156,7 @@ const saving = ref(false)
 const error = ref('')
 const newHostname = ref('')
 const suggestions = ref([])
+const renderers = ref(null)
 
 const canManage = computed(() => authStore.isAdmin || authStore.isCompany)
 
@@ -114,7 +172,7 @@ const availableDomains = computed(() => domainStore.domains.filter(d => sameOwne
 onMounted(async () => {
   try {
     await domainStore.fetchDomains(true)
-    await loadSuggestions()
+    await Promise.all([loadSuggestions(), loadRenderers()])
   } catch (e) {
     error.value = 'Impossibile caricare i domini'
   } finally {
@@ -122,7 +180,7 @@ onMounted(async () => {
   }
 })
 
-watch(() => props.page.id, loadSuggestions)
+watch(() => props.page.id, () => Promise.all([loadSuggestions(), loadRenderers()]))
 
 async function loadSuggestions() {
   try {
@@ -132,12 +190,25 @@ async function loadSuggestions() {
   }
 }
 
+async function loadRenderers() {
+  try {
+    renderers.value = await domainStore.fetchPageRenderers(props.page.id)
+  } catch (e) {
+    renderers.value = null
+  }
+}
+
+/** Dominio in anagrafica con questo hostname e lo stesso proprietario della pagina */
+function domainFor(hostname) {
+  return availableDomains.value.find(d => d.hostname === hostname)
+}
+
 async function run(action) {
   saving.value = true
   error.value = ''
   try {
     await action()
-    await loadSuggestions()
+    await Promise.all([loadSuggestions(), loadRenderers()])
   } catch (e) {
     error.value = e.response?.data?.error || 'Errore durante il salvataggio'
   } finally {
@@ -164,5 +235,10 @@ function associateSuggestion(s) {
     return run(() => domainStore.setPageDomains(props.page.id, [...selectedIds.value, s.domain_id]))
   }
   return run(() => domainStore.createDomain({ hostname: s.hostname, page_id: props.page.id }))
+}
+
+function associateHost(hostname) {
+  const domain = domainFor(hostname)
+  return associateSuggestion({ hostname, domain_id: domain?.id || null })
 }
 </script>

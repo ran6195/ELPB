@@ -72,6 +72,18 @@ export const useDomainStore = defineStore('domain', {
       return response.data.data
     },
 
+    /** Dove viene mostrata la pagina (registro renderer) e visite per sito degli ultimi 30 giorni */
+    async fetchPageRenderers(pageId) {
+      const response = await apiClient.get(`/pages/${pageId}/renderers`)
+      return response.data.data
+    },
+
+    /** Siti e versioni dei renderer delle pagine visibili; current_version è l'ultima distribuita */
+    async fetchRenderers() {
+      const response = await apiClient.get('/renderers')
+      return response.data
+    },
+
     /** Aggiorna i domini nella pagina corrente e nella lista dello store pagine */
     _setPageDomains(pageId, domains) {
       if (!domains) return

@@ -69,6 +69,7 @@
               <th v-if="companies.length" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Società</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagine</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Renderer</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
             </tr>
           </thead>
@@ -92,6 +93,18 @@
                 <span v-for="p in domain.pages" :key="p.id" class="block" :title="`#${p.id}-${p.slug}`">{{ p.title }}</span>
               </td>
               <td class="px-4 py-3 text-sm text-gray-500">{{ domain.leads_count }}</td>
+              <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                <span v-if="!domain.renderers?.length" class="text-gray-400" title="Nessuna pagina scaricata da questo sito con il registro attivo">—</span>
+                <template v-else>
+                  <span
+                    v-for="r in domain.renderers"
+                    :key="`${r.renderer}|${r.version}`"
+                    class="block"
+                    :class="r.version ? '' : 'text-amber-700'"
+                  >{{ rendererLabel(r) }}{{ r.version ? '' : ' · da aggiornare' }}</span>
+                  <span class="block text-xs text-gray-400">{{ timeAgo(domain.last_seen_at) }}</span>
+                </template>
+              </td>
               <td class="px-4 py-3 text-right text-sm font-medium space-x-2 whitespace-nowrap">
                 <template v-if="editing?.id === domain.id">
                   <button @click="saveEdit" :disabled="saving" class="text-blue-600 hover:text-blue-900">Salva</button>
@@ -121,6 +134,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useDomainStore } from '../../stores/domainStore'
+import { rendererLabel, timeAgo } from '../../utils/renderers'
 
 /**
  * Anagrafica domini per i pannelli admin e aziendale.

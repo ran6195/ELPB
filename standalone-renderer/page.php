@@ -78,6 +78,7 @@ function httpGet($url) {
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Solo per sviluppo
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, elpbRendererHeaders());
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -429,6 +430,7 @@ function renderPage($page) {
             });
         });
     </script>
+    <?php echo elpbViewBeacon($apiUrl, $pageId); ?>
 </body>
 </html>
     <?php

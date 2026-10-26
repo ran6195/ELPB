@@ -16,6 +16,10 @@ use Joomla\CMS\Http\HttpFactory;
  */
 class LandingPagesHelper
 {
+    /** Identifica sito e versione nelle chiamate al backend (registro renderer, dalla v2.1) */
+    const RENDERER_NAME = 'joomla';
+    const RENDERER_VERSION = '2.1.0';
+
     /**
      * Get component parameters
      *
@@ -49,6 +53,57 @@ class LandingPagesHelper
     }
 
     /**
+     * Header con sito, URL (senza query string) e versione del renderer:
+     * il backend registra dove viene mostrata ogni pagina
+     *
+     * @return  array
+     */
+    public static function getRendererHeaders()
+    {
+        $uri = \Joomla\CMS\Uri\Uri::getInstance();
+
+        return [
+            'X-ELPB-Host' => $uri->getHost(),
+            'X-ELPB-Url' => $uri->toString(['scheme', 'host', 'port', 'path']),
+            'X-ELPB-Renderer' => self::RENDERER_NAME . '/' . self::RENDERER_VERSION,
+        ];
+    }
+
+    /**
+     * Script che segnala una visita al backend: una sola richiesta per pagina vista,
+     * senza cookie né dati salvati nel browser. text/plain evita la richiesta preliminare CORS.
+     *
+     * @param   int  $pageId  ID della pagina
+     *
+     * @return  string
+     */
+    public static function getViewBeacon($pageId)
+    {
+        if (empty($pageId)) {
+            return '';
+        }
+        $url = json_encode(self::getApiUrl() . '/track/view', JSON_UNESCAPED_SLASHES);
+        $id = (int) $pageId;
+
+        return <<<HTML
+<script>
+(function () {
+    try {
+        if (navigator.webdriver) return;
+        var data = JSON.stringify({ page_id: {$id}, host: location.hostname });
+        var url = {$url};
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url, new Blob([data], { type: 'text/plain' }));
+        } else {
+            fetch(url, { method: 'POST', body: data, keepalive: true, mode: 'no-cors', headers: { 'Content-Type': 'text/plain' } });
+        }
+    } catch (e) {}
+})();
+</script>
+HTML;
+    }
+
+    /**
      * Make HTTP request to API
      *
      * @param   string  $endpoint  API endpoint (e.g., 'page/my-slug')
@@ -64,10 +119,10 @@ class LandingPagesHelper
 
         try {
             $http = HttpFactory::getHttp();
-            $headers = [
+            $headers = array_merge([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
-            ];
+            ], self::getRendererHeaders());
 
             if (!empty($token)) {
                 $headers['Authorization'] = 'Bearer ' . $token;

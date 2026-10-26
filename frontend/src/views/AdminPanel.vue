@@ -67,6 +67,17 @@
             Domini
           </button>
           <button
+            @click="activeTab = 'renderers'"
+            :class="[
+              'py-4 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'renderers'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Renderer
+          </button>
+          <button
             @click="activeTab = 'leads'"
             :class="[
               'py-4 px-1 border-b-2 font-medium text-sm',
@@ -402,6 +413,9 @@
 
       <!-- TAB: DOMINI -->
       <DomainManager v-if="activeTab === 'domains'" :companies="companies" />
+
+      <!-- TAB: RENDERER -->
+      <RendererOverview v-if="activeTab === 'renderers'" />
 
       <!-- TAB: LEADS -->
       <div v-if="activeTab === 'leads'" class="bg-white rounded-lg shadow">
@@ -932,6 +946,7 @@ import { useAuthStore } from '../stores/authStore'
 import { usePageStore } from '../stores/pageStore'
 import LeadsCalendar from '../components/LeadsCalendar.vue'
 import DomainManager from '../components/domains/DomainManager.vue'
+import RendererOverview from '../components/domains/RendererOverview.vue'
 import { leadOrigin, leadSiteText, siteOptions, matchesSite } from '../utils/leadOrigin'
 
 const router = useRouter()

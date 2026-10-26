@@ -355,6 +355,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<?php
+// Segnalazione della visita (non sulla thank-you page: la conversione è il lead)
+if (!$showThankYou) {
+    echo LandingPagesHelper::getViewBeacon($this->page['id'] ?? 0);
+}
+?>
+
 <?php if (!$showInTemplate): ?>
 </body>
 </html>

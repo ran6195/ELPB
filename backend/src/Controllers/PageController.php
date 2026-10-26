@@ -6,6 +6,7 @@ use App\Models\Domain;
 use App\Models\Lead;
 use App\Models\Page;
 use App\Models\User;
+use App\Services\TrackingService;
 use App\Utils\Hostname;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -236,6 +237,12 @@ class PageController
         unset($data['notification_settings'], $data['user_id'], $data['company_id'], $data['deleted_at']);
         if (is_array($data['recaptcha_settings'] ?? null)) {
             unset($data['recaptcha_settings']['secret_key']);
+        }
+
+        // Registro dei renderer (sito, versione): non blocca mai la risposta.
+        // class_exists: durante l'upload FTP questo file può arrivare prima del servizio
+        if (class_exists(TrackingService::class)) {
+            TrackingService::recordRendererHit($request, $page);
         }
 
         $response->getBody()->write(json_encode($data));

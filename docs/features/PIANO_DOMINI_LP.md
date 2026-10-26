@@ -228,3 +228,28 @@ Frontend: `stores/domainStore.js`, `utils/leadOrigin.js`, `components/domains/Pa
 1. Backup del database, poi `backend/database/sql/domini_lp.sql` in phpMyAdmin.
 2. `./scripts/deploy-ftp.sh` (prova) e `--execute`.
 3. Facoltativo: `backend/scripts/backfill-lead-domains.php` come attività pianificata Plesk, prima senza argomenti e poi con `--execute`, **dopo** aver associato i domini alle pagine vecchie (stima solo le pagine con un solo dominio).
+
+## File — Fasi 2-3 (realizzate: registro renderer e raccolta visite)
+
+Backend: `database/migrations/create_tracking_tables.php`, `database/sql/renderer_visite.sql`, `src/Services/TrackingService.php` (registro renderer, visite, sale giornaliero, pulizia), `src/Controllers/TrackController.php` (`POST /api/track/view`, `GET /api/pages/{id}/renderers`, `GET /api/renderers`), `src/Controllers/PageController.php` (`showBySlug` registra il renderer), `src/Controllers/DomainController.php` (renderer e ultimo accesso per dominio), `public/index.php` (route).
+
+Renderer: standalone 2.1.0 (`config.php` con `elpbRendererHeaders()` e `elpbViewBeacon()`, `page.php`, `legal-pages.php`), Joomla 2.1.0 (`helpers/landingpages.php` con `getRendererHeaders()` e `getViewBeacon()`, `views/page/tmpl/default.php`, `landingpages.xml`). Pacchetti (non versionati): `renderer-lp-elpb.zip`, `renderer-lp-elpb-nolegal.zip` (LEGGIMI con istruzioni di aggiornamento), `com_landingpages_v2.1.0.zip`.
+
+Frontend: `utils/renderers.js`, `stores/domainStore.js` (`fetchPageRenderers`, `fetchRenderers`), `components/domains/PageDomains.vue` ("Dove viene mostrata" e visite 30 giorni, con "Associa" dal registro), `components/domains/DomainManager.vue` (colonna Renderer), `components/domains/RendererOverview.vue` (scheda Renderer del pannello admin), `views/AdminPanel.vue`.
+
+### Differenze rispetto al piano
+- Header in più `X-ELPB-Url` (URL della pagina senza query string): dice anche il percorso, non solo il dominio.
+- `renderer_hits` usa stringhe vuote invece di NULL per `host`/`renderer` (l'indice univoco non considera uguali due NULL), più `user_agent` e `last_url`.
+- Renderer vecchi classificati dallo user agent: vuoto = standalone (cURL), contiene "Joomla" = Joomla, altrimenti "altro". Le richieste dal browser (header `Sec-Fetch-*` o Referer/Origin dell'app) non vengono registrate.
+- **Nessuna attività pianificata**: alla prima visita di ogni giorno `TrackingService` crea il nuovo sale e cancella sali e hash dei giorni precedenti e gli aggregati oltre 16 mesi.
+- Nell'hash dei visitatori entra anche il sito, oltre a sale, IP, user agent e pagina. Esclusi bot (user agent), `navigator.webdriver` e anteprima dell'app. La thank-you page non conta come visita (la conversione è il lead).
+- Joomla mette in cache le pagine (`cache_time`, default 300 s): l'ultimo accesso nel registro può avere fino a 5 minuti di ritardo. Le visite (beacon dal browser) non ne risentono.
+- `PageController` chiama `TrackingService` solo se la classe esiste: durante l'upload FTP il controller può arrivare prima del servizio.
+- Statistiche complete (grafici, tasso di conversione per periodo) ancora da fare: per ora visite e visitatori degli ultimi 30 giorni nelle impostazioni della pagina.
+
+### Deploy fasi 2-3
+1. `backend/database/sql/renderer_visite.sql` in phpMyAdmin (anche dopo il backend funzionerebbe: gli errori sulle tabelle mancanti sono intercettati, ma registro e visite partirebbero dopo).
+2. `./scripts/deploy-ftp.sh` (prova) e `--execute`.
+3. Aggiornamento dei renderer sito per sito con i nuovi pacchetti; la scheda Renderer mostra quali mancano.
+4. Citare il conteggio anonimo delle visite nella privacy/cookie policy (template `menu-legali/`).
+
