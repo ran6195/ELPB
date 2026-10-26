@@ -227,7 +227,15 @@ class PageController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
         }
 
-        $response->getBody()->write(json_encode($page));
+        // Endpoint pubblico: niente segreti né dati interni (secret_key reCAPTCHA,
+        // destinatari delle notifiche, proprietario)
+        $data = $page->toArray();
+        unset($data['notification_settings'], $data['user_id'], $data['company_id'], $data['deleted_at']);
+        if (is_array($data['recaptcha_settings'] ?? null)) {
+            unset($data['recaptcha_settings']['secret_key']);
+        }
+
+        $response->getBody()->write(json_encode($data));
         return $response->withHeader('Content-Type', 'application/json');
     }
 
