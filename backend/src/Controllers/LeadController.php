@@ -229,13 +229,14 @@ class LeadController
 
         // Sito da cui è stato inviato il form (header del browser: funziona anche
         // con i renderer già installati). Non blocca mai il salvataggio.
-        $originHost = $this->originHost($request);
+        $originHost = null;
         $domainId = null;
         try {
+            $originHost = $this->originHost($request);
             if ($originHost && !empty($data['page_id'])) {
                 $domainId = $this->matchDomain($originHost, Page::find($data['page_id']));
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("LeadController: Errore riconoscimento dominio {$originHost}: " . $e->getMessage());
         }
 
