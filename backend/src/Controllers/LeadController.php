@@ -2,9 +2,11 @@
 
 namespace App\Controllers;
 
+use App\Models\Domain;
 use App\Models\Lead;
 use App\Models\Page;
 use App\Services\EmailService;
+use App\Utils\Hostname;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -22,12 +24,12 @@ class LeadController
 
         // If admin, get all leads (including those from archived pages)
         if ($user->role === 'admin') {
-            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()])
+            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()->with('domains:id,hostname'), 'domain:id,hostname,label'])
                 ->orderBy('created_at', 'desc')->get();
         }
         // If company or user, get only leads from their company's pages (including archived)
         else if ($user->company_id) {
-            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()])
+            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()->with('domains:id,hostname'), 'domain:id,hostname,label'])
                 ->whereHas('page', function($query) use ($user) {
                     $query->withTrashed()->where('company_id', $user->company_id);
                 })
@@ -37,6 +39,10 @@ class LeadController
         // No company associated
         else {
             $leads = [];
+        }
+
+        foreach ($leads as $lead) {
+            $lead->setAttribute('origin_status', $lead->originStatus());
         }
 
         $response->getBody()->write(json_encode($leads));
@@ -221,6 +227,18 @@ class LeadController
             }
         }
 
+        // Sito da cui è stato inviato il form (header del browser: funziona anche
+        // con i renderer già installati). Non blocca mai il salvataggio.
+        $originHost = $this->originHost($request);
+        $domainId = null;
+        try {
+            if ($originHost && !empty($data['page_id'])) {
+                $domainId = $this->matchDomain($originHost, Page::find($data['page_id']));
+            }
+        } catch (\Exception $e) {
+            error_log("LeadController: Errore riconoscimento dominio {$originHost}: " . $e->getMessage());
+        }
+
         // Create lead
         $lead = Lead::create([
             'page_id' => $data['page_id'] ?? null,
@@ -228,7 +246,9 @@ class LeadController
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'message' => $data['message'] ?? null,
-            'metadata' => $metadata
+            'metadata' => $metadata,
+            'origin_host' => $originHost,
+            'domain_id' => $domainId
         ]);
 
         // Invia notifica email (non bloccante)
@@ -270,6 +290,45 @@ class LeadController
             'lead' => $lead
         ]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+    }
+
+    /**
+     * Host da cui arriva il form: Origin, oppure Referer se il browser non l'ha inviato.
+     * L'anteprima dell'applicazione (anche localhost) viene registrata così com'è.
+     */
+    private function originHost(Request $request): ?string
+    {
+        foreach (['Origin', 'Referer'] as $header) {
+            $value = $request->getHeaderLine($header);
+            if ($value === '' || $value === 'null') {
+                continue;
+            }
+            if (Hostname::isAppHost($value)) {
+                return Hostname::normalize($value) ?? parse_url($value, PHP_URL_HOST) ?: null;
+            }
+            $host = Hostname::normalize($value);
+            if ($host !== null) {
+                return $host;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Dominio in anagrafica corrispondente all'host: prima tra quelli associati
+     * alla pagina, poi tra quelli dello stesso proprietario della pagina.
+     */
+    private function matchDomain(string $host, ?Page $page): ?int
+    {
+        if (!$page) {
+            return null;
+        }
+        $domain = $page->domains()->where('hostname', $host)->first();
+        if (!$domain) {
+            $domain = Domain::where('hostname', $host)->get()
+                ->first(fn($candidate) => $candidate->sameOwnerAs($page));
+        }
+        return $domain ? $domain->id : null;
     }
 
     /**

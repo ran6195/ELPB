@@ -531,6 +531,9 @@
       </div>
     </div>
 
+    <!-- Domini del cliente -->
+    <PageDomains v-if="page.id" :page="page" />
+
     <!-- Notifiche Email -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
@@ -785,6 +788,7 @@ import { usePageStore } from '../stores/pageStore'
 import { useAuthStore } from '../stores/authStore'
 import { popularGoogleFonts, loadGoogleFont } from '../utils/googleFonts'
 import MediaField from './media/MediaField.vue'
+import PageDomains from './domains/PageDomains.vue'
 
 const pageStore = usePageStore()
 const authStore = useAuthStore()

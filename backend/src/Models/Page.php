@@ -63,6 +63,16 @@ class Page extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function leads()
+    {
+        return $this->hasMany(Lead::class);
+    }
+
+    public function domains()
+    {
+        return $this->belongsToMany(Domain::class, 'domain_page')->orderBy('hostname');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -56,6 +56,17 @@
             Crea Utente
           </button>
           <button
+            @click="activeTab = 'domains'"
+            :class="[
+              'py-4 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'domains'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Domini
+          </button>
+          <button
             @click="activeTab = 'leads'"
             :class="[
               'py-4 px-1 border-b-2 font-medium text-sm',
@@ -273,6 +284,9 @@
         </form>
       </div>
 
+      <!-- TAB: DOMINI -->
+      <DomainManager v-if="activeTab === 'domains'" />
+
       <!-- TAB: LEADS -->
       <div v-if="activeTab === 'leads'" class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -349,6 +363,14 @@
                   <option v-for="p in availablePages" :key="p.id" :value="p.id">{{ p.title }} (#{{ p.id }}-{{ p.slug }})</option>
                 </select>
                 <select
+                  v-if="availableSites.length"
+                  v-model="filterSite"
+                  class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Tutti i siti</option>
+                  <option v-for="site in availableSites" :key="site.value" :value="site.value">{{ site.label }}</option>
+                </select>
+                <select
                   v-model="filterStatus"
                   class="border border-gray-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -415,6 +437,7 @@
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagina</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sito</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Pagina</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
                   <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
@@ -463,6 +486,15 @@
                   <td class="px-4 py-4 text-sm text-gray-500">
                     <span v-if="lead.page" class="text-gray-700">{{ lead.page.title }}</span>
                     <span v-else class="text-gray-400">-</span>
+                  </td>
+                  <td class="px-4 py-4 text-sm" :title="leadOrigin(lead).label">
+                    <span v-if="leadOrigin(lead).host" class="text-gray-700 break-words">{{ leadOrigin(lead).host }}</span>
+                    <span v-else class="text-gray-400">—</span>
+                    <span
+                      v-if="leadOrigin(lead).badge"
+                      :class="leadOrigin(lead).classes"
+                      class="ml-1 px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap inline-block"
+                    >{{ leadOrigin(lead).badge }}</span>
                   </td>
                   <td class="px-4 py-4 text-sm text-gray-500">
                     <span
@@ -624,6 +656,11 @@
                   {{ selectedLead.page?.deleted_at ? 'Archiviata' : selectedLead.page?.is_published ? 'Pubblicata' : 'Non pubblicata' }}
                 </p>
               </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">Sito di provenienza</label>
+                <p class="text-gray-900">{{ leadSiteText(selectedLead) || '-' }}</p>
+                <p class="text-xs text-gray-500">{{ leadOrigin(selectedLead).label }}</p>
+              </div>
             </div>
             <div v-if="selectedLead.message">
               <label class="text-sm font-medium text-gray-500">Messaggio</label>
@@ -778,6 +815,8 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { usePageStore } from '../stores/pageStore'
 import LeadsCalendar from '../components/LeadsCalendar.vue'
+import DomainManager from '../components/domains/DomainManager.vue'
+import { leadOrigin, leadSiteText, siteOptions, matchesSite } from '../utils/leadOrigin'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -839,6 +878,7 @@ const filterText = ref('')
 const filterPage = ref('')
 const filterStatus = ref('')
 const filterAppointment = ref('')
+const filterSite = ref('')
 const leadsPerPage = ref(20)
 const currentPage = ref(1)
 
@@ -850,8 +890,10 @@ const availablePages = computed(() => {
   return Object.entries(pagesMap).map(([id, { title, slug }]) => ({ id, title, slug }))
 })
 
+const availableSites = computed(() => siteOptions(leads.value))
+
 const hasActiveFilters = computed(() =>
-  filterText.value || filterPage.value || filterStatus.value || filterAppointment.value
+  filterText.value || filterPage.value || filterStatus.value || filterAppointment.value || filterSite.value
 )
 
 const filteredLeads = computed(() => {
@@ -869,6 +911,9 @@ const filteredLeads = computed(() => {
   }
   if (filterPage.value) {
     result = result.filter(l => l.page?.id == filterPage.value)
+  }
+  if (filterSite.value) {
+    result = result.filter(l => matchesSite(l, filterSite.value))
   }
   if (filterStatus.value === 'published') {
     result = result.filter(l => !l.page?.deleted_at && l.page?.is_published)
@@ -943,10 +988,11 @@ const resetFilters = () => {
   filterPage.value = ''
   filterStatus.value = ''
   filterAppointment.value = ''
+  filterSite.value = ''
   currentPage.value = 1
 }
 
-watch([filterText, filterPage, filterStatus, filterAppointment], () => {
+watch([filterText, filterPage, filterStatus, filterAppointment, filterSite], () => {
   currentPage.value = 1
 })
 
@@ -1132,7 +1178,7 @@ const exportLeads = () => {
 
   const metaHeaders = metaKeys.map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
 
-  const headers = ['Data', 'Nome', 'Email', 'Telefono', 'Messaggio', 'Pagina', ...metaHeaders, 'Appuntamento', 'Note']
+  const headers = ['Data', 'Nome', 'Email', 'Telefono', 'Messaggio', 'Pagina', 'Sito', ...metaHeaders, 'Appuntamento', 'Note']
 
   const rows = filteredLeads.value.map(lead => {
     const meta = lead.metadata && typeof lead.metadata === 'object' ? lead.metadata : {}
@@ -1148,6 +1194,7 @@ const exportLeads = () => {
       lead.phone || '',
       lead.message || '',
       lead.page?.title || '',
+      leadSiteText(lead),
       ...metaKeys.map(k => meta[k] ?? ''),
       appointment,
       notes

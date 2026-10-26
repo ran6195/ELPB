@@ -2,8 +2,11 @@
 
 namespace App\Controllers;
 
+use App\Models\Domain;
+use App\Models\Lead;
 use App\Models\Page;
 use App\Models\User;
+use App\Utils\Hostname;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -19,7 +22,7 @@ class PageController
         }
 
         // Filtra le pagine in base al ruolo
-        $query = Page::with(['blocks', 'company', 'user']);
+        $query = Page::with(['blocks', 'company', 'user', 'domains'])->withCount('leads');
 
         if ($user->isAdmin()) {
             // Admin vede tutte le pagine
@@ -43,7 +46,7 @@ class PageController
     public function show(Request $request, Response $response, array $args)
     {
         $user = $request->getAttribute('user');
-        $page = Page::with(['blocks', 'company', 'user'])->find($args['id']);
+        $page = Page::with(['blocks', 'company', 'user', 'domains'])->find($args['id']);
 
         if (!$page) {
             $response->getBody()->write(json_encode(['error' => 'Page not found']));
@@ -187,7 +190,7 @@ class PageController
             }
         }
 
-        $page->load('blocks');
+        $page->load(['blocks', 'domains']);
 
         $response->getBody()->write(json_encode($page));
         return $response->withHeader('Content-Type', 'application/json');
@@ -240,7 +243,8 @@ class PageController
     }
 
     /**
-     * Reassign page to another user (company manager)
+     * Reassign page to another user (admin: qualsiasi utente, anche di un'altra azienda;
+     * company manager: solo utenti della propria azienda). L'azienda segue il nuovo proprietario.
      */
     public function reassignPage(Request $request, Response $response, array $args)
     {
@@ -286,14 +290,28 @@ class PageController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
         }
 
+        // L'azienda segue il nuovo proprietario (l'admin può spostare pagine tra aziende;
+        // il responsabile aziendale resta nella propria, verificato sopra)
         $page->user_id = $newUserId;
+        $page->company_id = $newUser->company_id;
         $page->save();
 
-        $page->load(['blocks', 'company', 'user']);
+        // Domini e origine dei lead dell'azienda precedente non valgono per la nuova
+        $removedDomains = [];
+        foreach ($page->domains()->get() as $domain) {
+            if (!$domain->sameOwnerAs($page)) {
+                $removedDomains[] = $domain->hostname;
+                $page->domains()->detach($domain->id);
+                Lead::where('page_id', $page->id)->where('domain_id', $domain->id)->update(['domain_id' => null]);
+            }
+        }
+
+        $page->load(['blocks', 'company', 'user', 'domains']);
 
         $response->getBody()->write(json_encode([
             'success' => true,
-            'page' => $page
+            'page' => $page,
+            'removed_domains' => $removedDomains
         ]));
         return $response->withHeader('Content-Type', 'application/json');
     }
@@ -409,7 +427,7 @@ class PageController
         $page->restore();
 
         // Ricarica la pagina ripristinata
-        $page->load(['blocks', 'company', 'user']);
+        $page->load(['blocks', 'company', 'user', 'domains']);
 
         $response->getBody()->write(json_encode([
             'message' => 'Page restored successfully',
@@ -709,7 +727,7 @@ class PageController
             $page->save();
 
             // Ricarica la pagina con le relazioni
-            $page->load(['blocks', 'company', 'user']);
+            $page->load(['blocks', 'company', 'user', 'domains']);
 
             $response->getBody()->write(json_encode([
                 'success' => true,
@@ -812,7 +830,7 @@ class PageController
             $page->save();
 
             // Ricarica la pagina con le relazioni
-            $page->load(['blocks', 'company', 'user']);
+            $page->load(['blocks', 'company', 'user', 'domains']);
 
             $response->getBody()->write(json_encode([
                 'success' => true,
@@ -828,5 +846,101 @@ class PageController
             ]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
+    }
+
+    /**
+     * PUT/POST /api/pages/{id}/domains  { domain_ids: [] }
+     * Associazione facoltativa: un elenco vuoto riporta la pagina al comportamento di sempre.
+     */
+    public function updateDomains(Request $request, Response $response, array $args)
+    {
+        $user = $request->getAttribute('user');
+        $page = Page::find($args['id']);
+
+        if (!$page) {
+            return $this->jsonResponse($response, ['error' => 'Page not found'], 404);
+        }
+        if (!$user || !$user->canEditPage($page)) {
+            return $this->jsonResponse($response, ['error' => 'Forbidden'], 403);
+        }
+
+        $data = json_decode($request->getBody()->getContents(), true);
+        $ids = $data['domain_ids'] ?? null;
+        if (!is_array($ids)) {
+            return $this->jsonResponse($response, ['error' => 'domain_ids deve essere un elenco'], 400);
+        }
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        // Solo domini visibili all'utente e dello stesso proprietario della pagina
+        $domains = $ids ? Domain::visibleTo($user)->whereIn('id', $ids)->get() : collect();
+        if ($domains->count() !== count($ids)) {
+            return $this->jsonResponse($response, ['error' => 'Uno o più domini non esistono'], 404);
+        }
+        foreach ($domains as $domain) {
+            if (!$domain->sameOwnerAs($page)) {
+                return $this->jsonResponse($response, [
+                    'error' => "Il dominio {$domain->hostname} appartiene a un'altra azienda"
+                ], 422);
+            }
+        }
+
+        $page->domains()->sync($ids);
+
+        foreach ($domains as $domain) {
+            $domain->linkExistingLeads($page->id);
+        }
+
+        return $this->jsonResponse($response, ['success' => true, 'data' => $page->domains()->get()]);
+    }
+
+    /**
+     * GET /api/pages/{id}/domain-suggestions
+     * Domini da cui la pagina ha ricevuto lead ma che non le sono ancora associati.
+     */
+    public function domainSuggestions(Request $request, Response $response, array $args)
+    {
+        $user = $request->getAttribute('user');
+        $page = Page::find($args['id']);
+
+        if (!$page) {
+            return $this->jsonResponse($response, ['error' => 'Page not found'], 404);
+        }
+        if (!$user || !$user->canViewPage($page)) {
+            return $this->jsonResponse($response, ['error' => 'Forbidden'], 403);
+        }
+
+        $associated = $page->domains()->pluck('hostname')->all();
+
+        $rows = Lead::where('page_id', $page->id)
+            ->whereNotNull('origin_host')
+            ->where('origin_inferred', false)
+            ->selectRaw('origin_host, COUNT(*) as leads_count, MAX(created_at) as last_lead_at')
+            ->groupBy('origin_host')
+            ->orderByDesc('leads_count')
+            ->get();
+
+        $suggestions = $rows
+            ->filter(fn($row) => !in_array($row->origin_host, $associated, true)
+                && !Hostname::isAppHost($row->origin_host))
+            ->map(function ($row) use ($user, $page) {
+                // Se il dominio è già in anagrafica basta associarlo
+                $existing = Domain::visibleTo($user)->where('hostname', $row->origin_host)->get()
+                    ->first(fn($domain) => $domain->sameOwnerAs($page));
+                return [
+                    'hostname' => $row->origin_host,
+                    'leads_count' => (int) $row->leads_count,
+                    'last_lead_at' => $row->last_lead_at,
+                    'domain_id' => $existing ? $existing->id : null,
+                ];
+            })
+            ->values();
+
+        return $this->jsonResponse($response, ['data' => $suggestions]);
+    }
+
+    private function jsonResponse(Response $response, $data, int $status = 200): Response
+    {
+        $response->getBody()->write(json_encode($data));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
     }
 }

@@ -153,8 +153,9 @@
               :key="company.id"
               :value="company.id"
             >
-              {{ company.name }}
+              {{ company.name }} ({{ pagesCountByCompany.get(company.id) || 0 }})
             </option>
+            <option :value="NO_COMPANY">Senza azienda ({{ pagesCountByCompany.get(null) || 0 }})</option>
           </select>
 
           <!-- Contatore risultati -->
@@ -243,6 +244,17 @@
                     </button>
 
                     <button
+                      v-if="authStore.isAdmin"
+                      @click="assigningPage = page; closeMenu()"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Assegna a…
+                    </button>
+
+                    <button
                       @click="exportPage(page.id); closeMenu()"
                       class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
                     >
@@ -271,6 +283,11 @@
             <!-- INFO -->
             <div class="space-y-1.5 mb-4">
               <p class="text-gray-500 text-sm truncate">{{ page.slug }}</p>
+              <p
+                v-if="page.domains?.length"
+                class="text-xs text-gray-500 truncate mt-0.5"
+                :title="page.domains.map(d => d.display_hostname).join(', ')"
+              >🌐 {{ page.domains.map(d => d.display_hostname).join(', ') }}</p>
               <p class="text-gray-400 text-xs">
                 {{ page.blocks?.length || 0 }} blocchi
               </p>
@@ -280,7 +297,7 @@
                   <span class="font-medium">Creata il:</span> {{ formatDate(page.created_at) }}
                 </p>
                 <p class="text-xs text-gray-500">
-                  <span class="font-medium">Creata da:</span> {{ page.user?.name || 'Sconosciuto' }}
+                  <span class="font-medium">Proprietario:</span> {{ page.user?.name || 'Sconosciuto' }}
                 </p>
                 <p v-if="page.company || authStore.isAdmin" class="text-xs text-gray-500">
                   <span class="font-medium">Società:</span> {{ page.company?.name || 'Nessuna' }}
@@ -326,6 +343,13 @@
     </div>
 
     <!-- Import Dialog -->
+    <AssignPageDialog
+      v-if="assigningPage"
+      :page="assigningPage"
+      @close="assigningPage = null"
+      @assigned="onPageAssigned"
+    />
+
     <div
       v-if="showImportDialog"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -389,6 +413,7 @@ import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePageStore } from '../stores/pageStore'
 import { useAuthStore } from '../stores/authStore'
+import AssignPageDialog from '../components/AssignPageDialog.vue'
 import pkg from '../../package.json'
 
 const router = useRouter()
@@ -400,8 +425,13 @@ const currentVersion = pkg.version
 const filterStatus = ref('all')
 const filterCompany = ref('')
 
+// Valore del filtro per le pagine senza azienda (es. create dall'admin)
+const NO_COMPANY = 'none'
+
+// Tutte le aziende dell'app (anche senza pagine), più quelle presenti nelle pagine
+const companies = ref([])
 const availableCompanies = computed(() => {
-  const map = new Map()
+  const map = new Map(companies.value.map(c => [c.id, c]))
   for (const page of pageStore.pages) {
     if (page.company) {
       map.set(page.company.id, page.company)
@@ -410,13 +440,23 @@ const availableCompanies = computed(() => {
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
 })
 
+const pagesCountByCompany = computed(() => {
+  const counts = new Map()
+  for (const page of pageStore.pages) {
+    const key = page.company?.id ?? null
+    counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  return counts
+})
+
 const searchQuery = ref('')
 
 const filteredPages = computed(() => {
   return pageStore.pages.filter(page => {
     if (filterStatus.value === 'published' && !page.is_published) return false
     if (filterStatus.value === 'draft' && page.is_published) return false
-    if (filterCompany.value && page.company?.id !== filterCompany.value) return false
+    if (filterCompany.value === NO_COMPANY && page.company) return false
+    if (filterCompany.value && filterCompany.value !== NO_COMPANY && page.company?.id !== filterCompany.value) return false
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
       if (!page.title?.toLowerCase().includes(q)) return false
@@ -433,6 +473,18 @@ const importError = ref(null)
 
 // Kebab menu state
 const openMenuId = ref(null)
+
+// Assegnazione pagina ad azienda/proprietario (solo admin)
+const assigningPage = ref(null)
+const onPageAssigned = (result) => {
+  assigningPage.value = null
+  const page = result.page
+  let message = `Pagina assegnata a ${page.user?.name || 'utente'}` + (page.company ? ` (${page.company.name})` : ' (nessuna azienda)')
+  if (result.removed_domains?.length) {
+    message += `\n\nDomini tolti perché dell'azienda precedente: ${result.removed_domains.join(', ')}`
+  }
+  alert(message)
+}
 
 const createNewPage = () => {
   router.push('/editor')
@@ -557,9 +609,13 @@ const handleClickOutside = (event) => {
 }
 
 // Add/remove click listener
-onMounted(() => {
+onMounted(async () => {
   pageStore.fetchPages()
   document.addEventListener('click', handleClickOutside)
+  if (authStore.isAdmin) {
+    const data = await authStore.fetchCompanies()
+    companies.value = Array.isArray(data) ? data.map(({ id, name }) => ({ id, name })) : []
+  }
 })
 
 onUnmounted(() => {

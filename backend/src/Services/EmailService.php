@@ -5,6 +5,7 @@ namespace App\Services;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
+use App\Utils\Hostname;
 
 class EmailService
 {
@@ -392,6 +393,8 @@ HTML;
         $leadPhone = htmlspecialchars($lead->phone ?? 'Non specificato');
         $leadMessage = nl2br(htmlspecialchars($lead->message ?? 'Nessun messaggio'));
         $leadDate = date('d/m/Y H:i', strtotime($lead->created_at));
+        $leadSite = $this->leadSite($lead);
+        $leadSiteHtml = $leadSite ? '<p><strong>Sito:</strong> ' . htmlspecialchars($leadSite) . '</p>' : '';
 
         $extraFieldsHtml = '';
         $systemKeys = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
@@ -511,6 +514,7 @@ HTML;
                 <p><strong>Email:</strong> <a href="mailto:{$leadEmail}">{$leadEmail}</a></p>
                 <p><strong>Telefono:</strong> {$leadPhone}</p>
                 <p><strong>Data:</strong> {$leadDate}</p>
+                {$leadSiteHtml}
             </div>
 
             {$extraFieldsHtml}
@@ -536,6 +540,8 @@ HTML;
     {
         $pageTitle = $page->title;
         $leadDate = date('d/m/Y H:i', strtotime($lead->created_at));
+        $leadSite = $this->leadSite($lead);
+        $leadSitePlain = $leadSite ? "Sito: {$leadSite}\n" : '';
 
         $extraFieldsPlain = '';
         $systemKeys = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
@@ -562,12 +568,23 @@ Nome: {$lead->name}
 Email: {$lead->email}
 Telefono: {$lead->phone}
 Data: {$leadDate}
-{$extraFieldsPlain}
+{$leadSitePlain}{$extraFieldsPlain}
 MESSAGGIO:
 {$lead->message}
 
 ---
 Questa email è stata inviata automaticamente da Landing Page Builder.
 TEXT;
+    }
+
+    /**
+     * Sito da cui è arrivato il lead, null se non registrato
+     */
+    private function leadSite($lead): ?string
+    {
+        if (empty($lead->origin_host)) {
+            return null;
+        }
+        return Hostname::isAppHost($lead->origin_host) ? 'anteprima dell\'editor' : $lead->origin_host;
     }
 }

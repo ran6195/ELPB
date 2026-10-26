@@ -127,6 +127,11 @@ export const usePageStore = defineStore('page', {
         const response = await apiClient.put(`/company/pages/${pageId}/reassign`, {
           user_id: userId
         })
+        // Aggiorna la pagina nella lista mantenendo i campi calcolati (es. leads_count)
+        const index = this.pages.findIndex(p => p.id === pageId)
+        if (index !== -1 && response.data.page) {
+          this.pages[index] = { ...this.pages[index], ...response.data.page }
+        }
         return response.data
       } catch (error) {
         this.error = error.message

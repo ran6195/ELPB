@@ -94,6 +94,9 @@ $app->put('/api/pages/{id}/legal-info', '\App\Controllers\PageController:updateL
 $app->post('/api/pages/{id}/legal-info', '\App\Controllers\PageController:updateLegalInfo')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
 $app->put('/api/pages/{id}/notification-settings', '\App\Controllers\PageController:updateNotificationSettings')->add(AuthMiddleware::class);
 $app->post('/api/pages/{id}/notification-settings', '\App\Controllers\PageController:updateNotificationSettings')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
+$app->put('/api/pages/{id}/domains', '\App\Controllers\PageController:updateDomains')->add(AuthMiddleware::class);
+$app->post('/api/pages/{id}/domains', '\App\Controllers\PageController:updateDomains')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
+$app->get('/api/pages/{id}/domain-suggestions', '\App\Controllers\PageController:domainSuggestions')->add(AuthMiddleware::class);
 $app->put('/api/pages/{id}', '\App\Controllers\PageController:update')->add(AuthMiddleware::class);
 $app->delete('/api/pages/{id}', '\App\Controllers\PageController:delete')->add(AuthMiddleware::class);
 
@@ -121,6 +124,13 @@ $app->post('/api/media-folders', '\App\Controllers\MediaFolderController:store')
 $app->put('/api/media-folders/{id}', '\App\Controllers\MediaFolderController:update')->add(AuthMiddleware::class);
 $app->post('/api/media-folders/{id}', '\App\Controllers\MediaFolderController:update')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
 $app->delete('/api/media-folders/{id}', '\App\Controllers\MediaFolderController:delete')->add(AuthMiddleware::class);
+
+// Domini dei clienti su cui sono pubblicate le LP (gestione: admin e responsabile aziendale)
+$app->get('/api/domains', '\App\Controllers\DomainController:index')->add(AuthMiddleware::class);
+$app->post('/api/domains', '\App\Controllers\DomainController:store')->add(AuthMiddleware::class);
+$app->put('/api/domains/{id}', '\App\Controllers\DomainController:update')->add(AuthMiddleware::class);
+$app->post('/api/domains/{id}', '\App\Controllers\DomainController:update')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
+$app->delete('/api/domains/{id}', '\App\Controllers\DomainController:delete')->add(AuthMiddleware::class);
 
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);
