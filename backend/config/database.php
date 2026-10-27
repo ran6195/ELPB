@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Illuminate\Events\Dispatcher;
 
 $capsule = new Capsule;
 
@@ -15,6 +17,10 @@ $capsule->addConnection([
     'collation' => 'utf8mb4_unicode_ci',
     'prefix'    => '',
 ]);
+
+// Dispatcher degli eventi: senza, Eloquent standalone non emette gli eventi dei modelli
+// (creating, updated, deleted...) su cui si basa il registro attività
+$capsule->setEventDispatcher(new Dispatcher(new Container));
 
 $capsule->setAsGlobal();
 $capsule->bootEloquent();
