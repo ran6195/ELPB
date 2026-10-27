@@ -119,6 +119,7 @@ is_excluded() {
         backend/.env*|backend/.gitignore) return 0 ;;
         backend/public/uploads/*|backend/storage/*|backend/vendor/*) return 0 ;;
         backend/database/*|backend/test-*.php|*.md) return 0 ;;
+        backend/tests/*|backend/phpunit.xml) return 0 ;;
     esac
     return 1
 }
