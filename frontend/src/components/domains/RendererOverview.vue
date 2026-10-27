@@ -32,6 +32,7 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagina</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proprietario</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domini associati</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sito che la mostra</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Renderer</th>
@@ -46,6 +47,10 @@
                 <td :rowspan="group.rows.length" class="px-4 py-3 text-sm align-top">
                   <router-link :to="`/editor/${group.page.id}`" class="font-medium text-primary-600 hover:underline">{{ group.page.title }}</router-link>
                   <span class="block font-mono text-xs text-gray-400">#{{ group.page.id }} · {{ group.page.slug }}</span>
+                </td>
+                <td :rowspan="group.rows.length" class="px-4 py-3 text-sm align-top">
+                  <span class="block text-gray-700">{{ group.page.owner || '—' }}</span>
+                  <span class="block text-xs text-gray-500">{{ group.page.company || 'Senza azienda' }}</span>
                 </td>
                 <td :rowspan="group.rows.length" class="px-4 py-3 text-sm align-top">
                   <span v-for="d in group.domains" :key="d" class="block text-gray-700">{{ d }}</span>

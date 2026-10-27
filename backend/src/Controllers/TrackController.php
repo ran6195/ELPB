@@ -100,7 +100,10 @@ class TrackController
             ->get();
 
         $pageIds = $hits->pluck('page_id')->unique()->values()->all();
-        $pages = Page::with('domains:id,hostname')->whereIn('id', $pageIds)->get(['id', 'title', 'slug'])->keyBy('id');
+        $pages = Page::with(['domains:id,hostname', 'user:id,name', 'company:id,name'])
+            ->whereIn('id', $pageIds)
+            ->get(['id', 'title', 'slug', 'user_id', 'company_id'])
+            ->keyBy('id');
         $leadHosts = $this->leadHostsByPage($pageIds);
 
         $rows = $hits
@@ -108,7 +111,13 @@ class TrackController
                 $page = $pages->get($hit->page_id);
                 $domains = $page ? $page->domains->pluck('hostname')->all() : [];
                 return [
-                    'page' => $page ? ['id' => $page->id, 'title' => $page->title, 'slug' => $page->slug] : null,
+                    'page' => $page ? [
+                        'id' => $page->id,
+                        'title' => $page->title,
+                        'slug' => $page->slug,
+                        'owner' => $page->user->name ?? null,
+                        'company' => $page->company->name ?? null,
+                    ] : null,
                     'host' => $hit->host,
                     'display_host' => $hit->host !== '' ? Hostname::display($hit->host) : '',
                     'associated' => $hit->host !== '' && in_array($hit->host, $domains, true),
