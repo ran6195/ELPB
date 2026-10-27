@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Audit\DomainEvents;
 use App\Models\Domain;
 use App\Models\Page;
 use App\Utils\Hostname;
@@ -87,7 +88,8 @@ class DomainController
         ]);
 
         if ($page) {
-            $page->domains()->syncWithoutDetaching([$domain->id]);
+            $changes = $page->domains()->syncWithoutDetaching([$domain->id]);
+            DomainEvents::pageDomainsChanged($page, $changes['attached'] ? [$domain->hostname] : [], [], 'domain_created');
             $domain->linkExistingLeads($page->id);
         }
 
@@ -150,6 +152,9 @@ class DomainController
             return $this->notFound($response);
         }
 
+        foreach ($domain->pages()->get() as $page) {
+            DomainEvents::pageDomainsChanged($page, [], [$domain->hostname], 'domain_deleted');
+        }
         $domain->pages()->detach();
         $domain->delete();
 

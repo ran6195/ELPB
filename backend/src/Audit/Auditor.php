@@ -162,7 +162,15 @@ class Auditor
         }
 
         try {
+            // Modelli archiviabili: "deleted" è l'archiviazione, l'eliminazione vera è "force_deleted"
+            if ($event === 'deleted' && method_exists($model, 'isForceDeleting') && $model->isForceDeleting()) {
+                $event = 'force_deleted';
+            }
             $ignored = array_merge(['created_at', 'updated_at'], method_exists($model, 'auditIgnored') ? $model->auditIgnored() : []);
+            // Archiviazione e ripristino hanno già il loro evento (deleted/restored)
+            if ($event === 'updated' && method_exists($model, 'getDeletedAtColumn')) {
+                $ignored[] = $model->getDeletedAtColumn();
+            }
 
             if ($event === 'updated') {
                 $changes = array_diff_key($model->getChanges(), array_flip($ignored));
@@ -174,7 +182,7 @@ class Auditor
                     $properties['old'][$key] = self::decodeJson($model->getRawOriginal($key));
                     $properties['new'][$key] = self::decodeJson($value);
                 }
-            } elseif ($event === 'deleted') {
+            } elseif ($event === 'deleted' || $event === 'force_deleted') {
                 $properties = ['old' => self::decodeAll(array_diff_key($model->getRawOriginal(), array_flip($ignored)))];
             } else {
                 $properties = ['new' => self::decodeAll(array_diff_key($model->getAttributes(), array_flip($ignored)))];

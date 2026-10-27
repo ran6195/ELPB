@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Audit\Auditable;
 use App\Models\Concerns\OwnedByCompany;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MediaFolder extends Model
 {
-    use OwnedByCompany;
+    use OwnedByCompany, Auditable;
 
     protected $table = 'media_folders';
 
@@ -61,5 +62,21 @@ class MediaFolder extends Model
             $current = $current->parent_id ? MediaFolder::find($current->parent_id) : null;
         }
         return false;
+    }
+
+    // Registro attività (App\Audit\Auditable)
+    public function auditType(): string
+    {
+        return 'media_folder';
+    }
+
+    public function auditLabel(): ?string
+    {
+        return $this->name;
+    }
+
+    public function auditIgnored(): array
+    {
+        return [];
     }
 }

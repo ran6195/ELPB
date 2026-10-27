@@ -6,7 +6,7 @@ use App\Audit\Auditor;
 use App\Models\AuditLog;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Slim\Psr7\UploadedFile;
-use Tests\Fixtures\AuditedCompany;
+use App\Models\Company;
 use Tests\TestCase;
 
 class AuditorTest extends TestCase
@@ -114,7 +114,7 @@ class AuditorTest extends TestCase
 
     public function test_modifica_registrata_campo_per_campo_con_lo_stesso_request_id(): void
     {
-        $company = $this->auditor->withoutAuditing(fn() => AuditedCompany::create(['name' => 'Prima', 'email' => 'a@example.test']));
+        $company = $this->auditor->withoutAuditing(fn() => Company::create(['name' => 'Prima', 'email' => 'a@example.test']));
         $requestId = $this->auditor->beginRequest('api', '127.0.0.1', 'test');
 
         $company->update(['name' => 'Dopo', 'email' => 'a@example.test']);
@@ -130,7 +130,7 @@ class AuditorTest extends TestCase
 
     public function test_una_modifica_senza_cambiamenti_non_si_registra(): void
     {
-        $company = $this->auditor->withoutAuditing(fn() => AuditedCompany::create(['name' => 'Uguale', 'email' => 'a@example.test']));
+        $company = $this->auditor->withoutAuditing(fn() => Company::create(['name' => 'Uguale', 'email' => 'a@example.test']));
 
         $company->update(['name' => 'Uguale']);
         $this->auditor->flush();
@@ -140,7 +140,7 @@ class AuditorTest extends TestCase
 
     public function test_creazione_seguita_da_modifica_produce_un_solo_evento(): void
     {
-        $company = AuditedCompany::create(['name' => 'Nuova', 'email' => 'prima@example.test']);
+        $company = Company::create(['name' => 'Nuova', 'email' => 'prima@example.test']);
         $company->email = 'dopo@example.test';
         $company->save();
         $this->auditor->flush();
@@ -155,12 +155,12 @@ class AuditorTest extends TestCase
     {
         try {
             Capsule::connection()->transaction(function () {
-                AuditedCompany::create(['name' => 'Annullata', 'email' => 'x@example.test']);
+                Company::create(['name' => 'Annullata', 'email' => 'x@example.test']);
                 throw new \RuntimeException('rollback');
             });
         } catch (\RuntimeException $e) {
         }
-        Capsule::connection()->transaction(fn() => AuditedCompany::create(['name' => 'Confermata', 'email' => 'y@example.test']));
+        Capsule::connection()->transaction(fn() => Company::create(['name' => 'Confermata', 'email' => 'y@example.test']));
         $this->auditor->flush();
 
         $this->assertSame(['Confermata'], AuditLog::pluck('subject_label')->all());
@@ -168,7 +168,7 @@ class AuditorTest extends TestCase
 
     public function test_eliminazione_registra_i_valori_precedenti(): void
     {
-        $company = $this->auditor->withoutAuditing(fn() => AuditedCompany::create(['name' => 'Da eliminare', 'email' => 'z@example.test']));
+        $company = $this->auditor->withoutAuditing(fn() => Company::create(['name' => 'Da eliminare', 'email' => 'z@example.test']));
 
         $company->delete();
         $this->auditor->flush();

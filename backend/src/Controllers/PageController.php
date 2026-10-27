@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Audit\DomainEvents;
 use App\Models\Domain;
 use App\Models\Lead;
 use App\Models\Page;
@@ -305,13 +306,15 @@ class PageController
 
         // Domini e origine dei lead dell'azienda precedente non valgono per la nuova
         $removedDomains = [];
+        $unlinkedLeads = 0;
         foreach ($page->domains()->get() as $domain) {
             if (!$domain->sameOwnerAs($page)) {
                 $removedDomains[] = $domain->hostname;
                 $page->domains()->detach($domain->id);
-                Lead::where('page_id', $page->id)->where('domain_id', $domain->id)->update(['domain_id' => null]);
+                $unlinkedLeads += Lead::where('page_id', $page->id)->where('domain_id', $domain->id)->update(['domain_id' => null]);
             }
         }
+        DomainEvents::pageDomainsChanged($page, [], $removedDomains, 'page_reassigned', $unlinkedLeads ? ['leads_unlinked' => $unlinkedLeads] : []);
 
         $page->load(['blocks', 'company', 'user', 'domains']);
 
@@ -891,7 +894,15 @@ class PageController
             }
         }
 
-        $page->domains()->sync($ids);
+        $before = $page->domains()->pluck('hostname', 'domains.id')->all();
+        $changes = $page->domains()->sync($ids);
+        $hostnames = $domains->pluck('hostname', 'id')->all() + $before;
+        DomainEvents::pageDomainsChanged(
+            $page,
+            array_map(fn($id) => $hostnames[$id] ?? "#$id", $changes['attached']),
+            array_map(fn($id) => $hostnames[$id] ?? "#$id", $changes['detached']),
+            'manual'
+        );
 
         foreach ($domains as $domain) {
             $domain->linkExistingLeads($page->id);

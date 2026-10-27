@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class User extends Model
 {
+    use Auditable;
+
     protected $table = 'users';
 
     protected $fillable = [
@@ -88,5 +91,22 @@ class User extends Model
         }
 
         return false;
+    }
+
+    // Registro attività (App\Audit\Auditable)
+    /** Utente: etichetta l'email. La password è registrata solo come modificata (mascherata). */
+    public function auditType(): string
+    {
+        return 'user';
+    }
+
+    public function auditLabel(): ?string
+    {
+        return $this->email;
+    }
+
+    public function auditIgnored(): array
+    {
+        return [];
     }
 }

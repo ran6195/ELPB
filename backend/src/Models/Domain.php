@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Audit\Auditable;
 use App\Models\Concerns\OwnedByCompany;
 use App\Utils\Hostname;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Domain extends Model
 {
-    use OwnedByCompany;
+    use OwnedByCompany, Auditable;
 
     protected $table = 'domains';
 
@@ -75,5 +76,21 @@ class Domain extends Model
             $query->where('id', '!=', $exceptId);
         }
         return $query->exists();
+    }
+
+    // Registro attività (App\Audit\Auditable)
+    public function auditType(): string
+    {
+        return 'domain';
+    }
+
+    public function auditLabel(): ?string
+    {
+        return $this->hostname;
+    }
+
+    public function auditIgnored(): array
+    {
+        return [];
     }
 }

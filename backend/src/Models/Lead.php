@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Audit\Auditable;
 use App\Utils\Hostname;
 use Illuminate\Database\Eloquent\Model;
 
 class Lead extends Model
 {
+    use Auditable;
+
     protected $table = 'leads';
 
     protected $fillable = [
@@ -65,5 +68,22 @@ class Lead extends Model
             return 'associated';
         }
         return $pageHosts ? 'unexpected' : 'external';
+    }
+
+    // Registro attività (App\Audit\Auditable)
+    /** Dati personali del visitatore esclusi dal registro: restano solo nella tabella leads. */
+    public function auditType(): string
+    {
+        return 'lead';
+    }
+
+    public function auditLabel(): ?string
+    {
+        return null;
+    }
+
+    public function auditIgnored(): array
+    {
+        return ['name', 'email', 'phone', 'message', 'metadata'];
     }
 }

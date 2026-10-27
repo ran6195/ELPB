@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Page extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, Auditable;
 
     protected $table = 'pages';
 
@@ -76,5 +77,22 @@ class Page extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Registro attività (App\Audit\Auditable)
+    /** I blocchi non sono registrati uno per uno: il salvataggio dell'editor li riassume (RecordActivity). */
+    public function auditType(): string
+    {
+        return 'page';
+    }
+
+    public function auditLabel(): ?string
+    {
+        return $this->title;
+    }
+
+    public function auditIgnored(): array
+    {
+        return [];
     }
 }

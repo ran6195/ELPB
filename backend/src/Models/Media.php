@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Audit\Auditable;
 use App\Models\Concerns\OwnedByCompany;
 use App\Storage\MediaStorageFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Media extends Model
 {
-    use SoftDeletes, OwnedByCompany;
+    use SoftDeletes, OwnedByCompany, Auditable;
 
     protected $table = 'media';
 
@@ -97,4 +98,19 @@ class Media extends Model
             : 'media/u' . $user->id;
     }
 
+    // Registro attività (App\Audit\Auditable)
+    public function auditType(): string
+    {
+        return 'media';
+    }
+
+    public function auditLabel(): ?string
+    {
+        return $this->original_name;
+    }
+
+    public function auditIgnored(): array
+    {
+        return ['thumbnail_path'];
+    }
 }

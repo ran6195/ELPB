@@ -58,7 +58,9 @@ class RecordActivityTest extends TestCase
     {
         $this->request('POST', '/api/auth/register', ['name' => 'Nuovo', 'email' => 'nuovo@example.test', 'password' => 'segretissima']);
 
-        [$entry] = $this->auditEntries();
+        $entries = $this->auditEntries();
+        $entry = current(array_filter($entries, fn($e) => $e->category === 'action'));
+        $this->assertStringNotContainsString('segretissima', json_encode(array_map(fn($e) => $e->toArray(), $entries)));
         $this->assertSame(['action', 'POST /api/auth/register'], [$entry->category, $entry->action]);
         $this->assertSame('•••', $entry->properties['input']['password']);
         $this->assertSame('nuovo@example.test', $entry->properties['input']['email']);

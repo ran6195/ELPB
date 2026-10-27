@@ -60,12 +60,13 @@ abstract class TestCase extends BaseTestCase
 
     protected function createUser(array $attributes = []): User
     {
-        return User::create(array_merge([
+        // I dati preparati per il test non finiscono nel registro
+        return Auditor::get()->withoutAuditing(fn() => User::create(array_merge([
             'name' => 'Utente Test',
             'email' => 'utente' . uniqid() . '@example.test',
             'password' => password_hash('password-test', PASSWORD_DEFAULT),
             'role' => 'user',
-        ], $attributes));
+        ], $attributes)));
     }
 
     protected function createCompany(string $name = 'Azienda Test'): int
