@@ -20,8 +20,8 @@
 
     <!-- TABS -->
     <div class="max-w-screen-2xl mx-auto px-8 py-6">
-      <div class="border-b border-gray-200 mb-6">
-        <nav class="-mb-px flex space-x-8">
+      <div class="border-b border-gray-200 mb-6 overflow-x-auto">
+        <nav class="-mb-px flex space-x-8 whitespace-nowrap">
           <button
             @click="activeTab = 'users'"
             :class="[
@@ -76,6 +76,17 @@
             ]"
           >
             Renderer
+          </button>
+          <button
+            @click="activeTab = 'activity'"
+            :class="[
+              'py-4 px-1 border-b-2 font-medium text-sm',
+              activeTab === 'activity'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Registro attività
           </button>
           <button
             @click="activeTab = 'leads'"
@@ -416,6 +427,9 @@
 
       <!-- TAB: RENDERER -->
       <RendererOverview v-if="activeTab === 'renderers'" />
+
+      <!-- TAB: REGISTRO ATTIVITÀ -->
+      <ActivityLog v-if="activeTab === 'activity'" :companies="companies" />
 
       <!-- TAB: LEADS -->
       <div v-if="activeTab === 'leads'" class="bg-white rounded-lg shadow">
@@ -954,6 +968,7 @@ import { usePageStore } from '../stores/pageStore'
 import LeadsCalendar from '../components/LeadsCalendar.vue'
 import DomainManager from '../components/domains/DomainManager.vue'
 import RendererOverview from '../components/domains/RendererOverview.vue'
+import ActivityLog from '../components/audit/ActivityLog.vue'
 import { leadOrigin, leadSiteText, siteOptions, matchesSite } from '../utils/leadOrigin'
 
 const router = useRouter()

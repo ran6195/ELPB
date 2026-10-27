@@ -35,6 +35,18 @@ class ModelAuditTest extends TestCase
         $this->assertLessThanOrEqual($change->created_at->format('U.v'), $request->created_at->format('U.v'));
     }
 
+    public function test_prima_e_dopo_con_gli_stessi_tipi(): void
+    {
+        $admin = $this->createUser(['role' => 'admin']);
+        $pageId = $this->createPage(['is_published' => 1, 'user_id' => $admin->id]);
+
+        $this->request('PUT', "/api/pages/$pageId", ['is_published' => false, 'styles' => ['color' => 'red']], [], $admin);
+
+        [$change] = $this->changes('page.updated');
+        $this->assertSame([true, false], [$change->properties['old']['is_published'], $change->properties['new']['is_published']]);
+        $this->assertSame(['color' => 'red'], $change->properties['new']['styles']);
+    }
+
     public function test_creare_una_pagina_produce_un_solo_evento_di_creazione(): void
     {
         $user = $this->createUser();

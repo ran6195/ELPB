@@ -178,15 +178,21 @@ class Auditor
                 if (!$changes) {
                     return;
                 }
+                // Valori con i cast del modello (booleani, JSON, date) sia prima sia dopo:
+                // i grezzi darebbero "1 → false" per lo stesso campo
                 $properties = ['old' => [], 'new' => []];
-                foreach ($changes as $key => $value) {
-                    $properties['old'][$key] = self::decodeJson($model->getRawOriginal($key));
-                    $properties['new'][$key] = self::decodeJson($value);
+                foreach (array_keys($changes) as $key) {
+                    $properties['old'][$key] = self::decodeJson($model->getOriginal($key));
+                    $properties['new'][$key] = self::decodeJson($model->getAttribute($key));
                 }
             } elseif ($event === 'deleted' || $event === 'force_deleted') {
-                $properties = ['old' => self::decodeAll(array_diff_key($model->getRawOriginal(), array_flip($ignored)))];
+                $properties = ['old' => self::decodeAll(array_diff_key($model->getOriginal(), array_flip($ignored)))];
             } else {
-                $properties = ['new' => self::decodeAll(array_diff_key($model->getAttributes(), array_flip($ignored)))];
+                $values = [];
+                foreach (array_keys(array_diff_key($model->getAttributes(), array_flip($ignored))) as $key) {
+                    $values[$key] = $model->getAttribute($key);
+                }
+                $properties = ['new' => self::decodeAll($values)];
             }
 
             $type = method_exists($model, 'auditType') ? $model->auditType() : self::snake(class_basename($model));
@@ -236,7 +242,17 @@ class Auditor
 
         try {
             $entries = $this->resolveSubjects($entries);
-            $entries = array_values(array_filter($entries, fn($entry) => !$entry['_coalesce'] || !$this->mergeIntoRecentSave($entry)));
+            // Si uniscono solo i salvataggi che hanno toccato i soli blocchi: se la richiesta ha
+            // prodotto altre voci (campi della pagina, pubblicazione) resta collegata a quelle
+            $requestsWithOtherEntries = [];
+            foreach ($entries as $entry) {
+                if (!$entry['_coalesce'] && $entry['request_id']) {
+                    $requestsWithOtherEntries[$entry['request_id']] = true;
+                }
+            }
+            $entries = array_values(array_filter($entries, fn($entry) => !$entry['_coalesce']
+                || isset($requestsWithOtherEntries[$entry['request_id']])
+                || !$this->mergeIntoRecentSave($entry)));
             foreach (array_chunk($entries, self::INSERT_CHUNK) as $chunk) {
                 Capsule::table('audit_logs')->insert(array_map([self::class, 'toRow'], $chunk));
             }

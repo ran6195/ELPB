@@ -137,6 +137,23 @@ class RecordActivityTest extends TestCase
         $this->assertArrayNotHasKey('input', $properties);
     }
 
+    public function test_salvataggio_che_cambia_la_pagina_non_si_unisce(): void
+    {
+        $user = $this->createUser(['role' => 'admin']);
+        $pageId = $this->createPage(['user_id' => $user->id, 'title' => 'Prima']);
+
+        $this->request('PUT', "/api/pages/$pageId", ['blocks' => []], [], $user);
+        Auditor::get()->flush();
+        $this->request('PUT', "/api/pages/$pageId", ['title' => 'Dopo', 'blocks' => []], [], $user);
+
+        $entries = $this->auditEntries();
+        $saves = array_values(array_filter($entries, fn($e) => $e->action === 'PUT /api/pages/{id}'));
+        $change = current(array_filter($entries, fn($e) => $e->action === 'page.updated'));
+        $this->assertCount(2, $saves);
+        // "Stessa richiesta" trova sia il salvataggio sia la modifica
+        $this->assertSame($saves[1]->request_id, $change->request_id);
+    }
+
     public function test_salvataggio_oltre_la_finestra_crea_una_nuova_voce(): void
     {
         $user = $this->createUser(['role' => 'admin']);
