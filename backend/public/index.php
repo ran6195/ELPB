@@ -59,7 +59,8 @@ $app->get('/', function (Request $request, Response $response) {
 
 // ===== AUTH ROUTES (pubbliche) =====
 $app->post('/api/auth/login', '\App\Controllers\AuthController:login');
-$app->post('/api/auth/register', '\App\Controllers\AuthController:register');
+// Creazione utenti: solo admin (dal pannello admin). La registrazione pubblica è chiusa.
+$app->post('/api/auth/register', '\App\Controllers\AuthController:register')->add(AuthMiddleware::class);
 
 // ===== PROTECTED ROUTES (richiedono autenticazione) =====
 // Auth routes protette

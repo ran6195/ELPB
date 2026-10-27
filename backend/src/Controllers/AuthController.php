@@ -69,6 +69,16 @@ class AuthController
      */
     public function register(Request $request, Response $response)
     {
+        // Registrazione pubblica chiusa: solo l'admin crea utenti (pannello admin)
+        $currentUser = $request->getAttribute('user');
+        if (!$currentUser || !$currentUser->isAdmin()) {
+            $response->getBody()->write(json_encode([
+                'success' => false,
+                'message' => 'Solo un amministratore può creare utenti'
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
         $data = json_decode($request->getBody()->getContents(), true);
 
         // Validazione

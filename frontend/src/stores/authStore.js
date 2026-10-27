@@ -72,7 +72,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Register (solo per admin)
+    // Creazione utente (solo admin, dal pannello admin)
     async register(userData) {
       this.loading = true
       this.error = null

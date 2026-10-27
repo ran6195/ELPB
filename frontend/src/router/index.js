@@ -8,7 +8,6 @@ import PagePreview from '../views/PagePreview.vue'
 import PublicPage from '../views/PublicPage.vue'
 import ThankYouPage from '../views/ThankYouPage.vue'
 import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
 import AdminPanel from '../views/AdminPanel.vue'
 import CompanyPanel from '../views/CompanyPanel.vue'
 
@@ -20,10 +19,9 @@ const routes = [
     meta: { requiresGuest: true }
   },
   {
+    // Registrazione pubblica chiusa: gli utenti li crea l'admin dal pannello
     path: '/register',
-    name: 'Register',
-    component: Register,
-    meta: { requiresGuest: true }
+    redirect: '/login'
   },
   {
     path: '/',
