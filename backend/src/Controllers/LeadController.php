@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Audit\PublicationEvents;
 use App\Models\Domain;
 use App\Models\Lead;
 use App\Models\Page;
@@ -253,6 +254,8 @@ class LeadController
         ]);
 
         // Invia notifica email (non bloccante)
+        $page = null;
+        $notification = 'no_page';
         try {
             if (empty($lead->page_id)) {
                 error_log("LeadController: Lead #{$lead->id} non ha page_id, skip notifica email");
@@ -262,13 +265,16 @@ class LeadController
                 if (!$page) {
                     error_log("LeadController: Pagina #{$lead->page_id} non trovata per lead #{$lead->id}");
                 } elseif (empty($page->notification_settings)) {
+                    $notification = 'not_configured';
                     error_log("LeadController: Notifiche non configurate per pagina #{$page->id} (slug: {$page->slug})");
                 } elseif (empty($page->notification_settings['enabled'])) {
+                    $notification = 'disabled';
                     error_log("LeadController: Notifiche disabilitate per pagina #{$page->id} (slug: {$page->slug})");
                 } else {
                     error_log("LeadController: Invio notifica email per lead #{$lead->id} pagina #{$page->id} (slug: {$page->slug})");
                     $emailService = new EmailService();
                     $result = $emailService->sendLeadNotification($lead, $page);
+                    $notification = $result ? 'sent' : 'failed';
 
                     if ($result) {
                         error_log("LeadController: Email notifica lead #{$lead->id} inviata con successo");
@@ -284,7 +290,9 @@ class LeadController
             // Log errore ma non bloccare risposta
             error_log("LeadController: Errore invio email notifica lead #{$lead->id}: " . $e->getMessage());
             error_log("LeadController: Stack trace: " . $e->getTraceAsString());
+            $notification = 'error';
         }
+        PublicationEvents::leadReceived($lead, $page ?: null, $notification);
 
         $response->getBody()->write(json_encode([
             'message' => 'Lead saved successfully',

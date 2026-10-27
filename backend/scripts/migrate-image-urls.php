@@ -13,6 +13,7 @@ $dotenv->load();
 
 // Initialize database
 require __DIR__ . '/../config/database.php';
+\App\Audit\ScriptAudit::start(basename(__FILE__, '.php'), $argv ?? []); // registro attività
 
 use Illuminate\Database\Capsule\Manager as DB;
 

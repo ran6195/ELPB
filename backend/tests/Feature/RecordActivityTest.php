@@ -56,7 +56,8 @@ class RecordActivityTest extends TestCase
 
     public function test_i_segreti_nell_input_sono_mascherati(): void
     {
-        $this->request('POST', '/api/auth/register', ['name' => 'Nuovo', 'email' => 'nuovo@example.test', 'password' => 'segretissima']);
+        $admin = $this->createUser(['role' => 'admin']);
+        $this->request('POST', '/api/auth/register', ['name' => 'Nuovo', 'email' => 'nuovo@example.test', 'password' => 'segretissima'], [], $admin);
 
         $entries = $this->auditEntries();
         $entry = current(array_filter($entries, fn($e) => $e->category === 'action'));

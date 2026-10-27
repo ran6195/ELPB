@@ -81,6 +81,7 @@ echo "\n";
 echo "[Database " . ($_ENV['DB_DATABASE'] ?? '?') . "]\n";
 try {
     require __DIR__ . '/../config/database.php';
+    \App\Audit\ScriptAudit::start(basename(__FILE__, '.php'), $argv ?? []); // registro attività
     DB::connection()->getPdo();
     check(true, 'Connessione al database');
 

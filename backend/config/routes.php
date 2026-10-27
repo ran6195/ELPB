@@ -16,11 +16,13 @@ $app->get('/', function (Request $request, Response $response) {
 
 // ===== AUTH ROUTES (pubbliche) =====
 $app->post('/api/auth/login', '\App\Controllers\AuthController:login');
-$app->post('/api/auth/register', '\App\Controllers\AuthController:register');
+// Creazione utenti: solo admin (dal pannello admin). La registrazione pubblica è chiusa.
+$app->post('/api/auth/register', '\App\Controllers\AuthController:register')->add(AuthMiddleware::class);
 
 // ===== PROTECTED ROUTES (richiedono autenticazione) =====
 // Auth routes protette
 $app->get('/api/auth/me', '\App\Controllers\AuthController:me')->add(AuthMiddleware::class);
+$app->post('/api/auth/logout', '\App\Controllers\AuthController:logout')->add(AuthMiddleware::class);
 $app->get('/api/auth/companies', '\App\Controllers\AuthController:getCompanies')->add(AuthMiddleware::class);
 $app->get('/api/auth/users', '\App\Controllers\AuthController:getUsers')->add(AuthMiddleware::class);
 

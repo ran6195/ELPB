@@ -72,7 +72,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Register (solo per admin)
+    // Creazione utente (solo admin, dal pannello admin)
     async register(userData) {
       this.loading = true
       this.error = null
@@ -123,6 +123,18 @@ export const useAuthStore = defineStore('auth', {
 
     // Logout
     logout() {
+      // Segnala il logout al registro attività. fetch e non apiClient: con un token
+      // scaduto l'interceptor del 401 ricaricherebbe la pagina. keepalive: la richiesta
+      // parte anche se subito dopo la pagina cambia.
+      const token = this.token || localStorage.getItem('token')
+      if (token) {
+        fetch(`${apiClient.defaults.baseURL}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true
+        }).catch(() => {})
+      }
+
       this.token = null
       this.user = null
       this.error = null

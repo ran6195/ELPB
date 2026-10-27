@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Audit\DomainEvents;
+use App\Audit\PublicationEvents;
 use App\Models\Domain;
 use App\Models\Lead;
 use App\Models\Page;
@@ -300,9 +301,14 @@ class PageController
 
         // L'azienda segue il nuovo proprietario (l'admin può spostare pagine tra aziende;
         // il responsabile aziendale resta nella propria, verificato sopra)
+        $fromUser = $page->user_id ? User::find($page->user_id) : null;
+        $fromCompanyId = $page->company_id;
         $page->user_id = $newUserId;
         $page->company_id = $newUser->company_id;
         $page->save();
+        if ($page->wasChanged(['user_id', 'company_id'])) {
+            PublicationEvents::pageReassigned($page, $fromUser, $fromCompanyId, $newUser);
+        }
 
         // Domini e origine dei lead dell'azienda precedente non valgono per la nuova
         $removedDomains = [];

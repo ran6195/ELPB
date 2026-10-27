@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Audit\Auditable;
+use App\Audit\PublicationEvents;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -77,6 +78,22 @@ class Page extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Pubblicazione e ritiro registrati come eventi propri, dopo il commit */
+    protected static function booted(): void
+    {
+        static::created(function (Page $page) {
+            if ($page->is_published) {
+                $page->getConnection()->afterCommit(fn() => PublicationEvents::pagePublicationChanged($page, true));
+            }
+        });
+        static::updated(function (Page $page) {
+            if ($page->wasChanged('is_published')) {
+                $published = (bool) $page->is_published;
+                $page->getConnection()->afterCommit(fn() => PublicationEvents::pagePublicationChanged($page, $published));
+            }
+        });
     }
 
     // Registro attività (App\Audit\Auditable)

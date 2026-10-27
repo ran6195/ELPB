@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Audit\AccessEvents;
 use App\Models\User;
 use App\Models\Company;
 use App\Utils\JWTHandler;
@@ -28,6 +29,7 @@ class AuthController
         $user = User::where('email', $data['email'])->first();
 
         if (!$user || !password_verify($data['password'], $user->password)) {
+            AccessEvents::loginFailed((string) $data['email'], $user);
             $response->getBody()->write(json_encode([
                 'success' => false,
                 'message' => 'Invalid credentials'
@@ -42,6 +44,7 @@ class AuthController
             'role' => $user->role,
             'company_id' => $user->company_id
         ]);
+        AccessEvents::login($user);
 
         // Carica la relazione company se esiste
         if ($user->company_id) {
@@ -65,10 +68,31 @@ class AuthController
     }
 
     /**
+     * POST /api/auth/logout
+     * Con JWT il logout avviene nel browser (cancellazione del token): questa rotta
+     * serve solo a registrarlo nel registro attività.
+     */
+    public function logout(Request $request, Response $response)
+    {
+        AccessEvents::logout($request->getAttribute('user'));
+        return $response->withStatus(204);
+    }
+
+    /**
      * Register (solo per admin - creazione nuovi utenti/aziende)
      */
     public function register(Request $request, Response $response)
     {
+        // Registrazione pubblica chiusa: solo l'admin crea utenti (pannello admin)
+        $currentUser = $request->getAttribute('user');
+        if (!$currentUser || !$currentUser->isAdmin()) {
+            $response->getBody()->write(json_encode([
+                'success' => false,
+                'message' => 'Solo un amministratore può creare utenti'
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
         $data = json_decode($request->getBody()->getContents(), true);
 
         // Validazione

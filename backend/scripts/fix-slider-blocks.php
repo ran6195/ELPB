@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/database.php';
+\App\Audit\ScriptAudit::start(basename(__FILE__, '.php'), $argv ?? []); // registro attività
 
 use App\Models\Block;
 

@@ -30,6 +30,7 @@ $dotenv->load();
 date_default_timezone_set('Europe/Rome');
 
 require __DIR__ . '/../config/database.php';
+\App\Audit\ScriptAudit::start(basename(__FILE__, '.php'), $argv ?? []); // registro attività
 
 use App\Models\Media;
 use App\Models\User;
