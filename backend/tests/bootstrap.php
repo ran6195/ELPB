@@ -16,3 +16,6 @@ foreach (['DB_DATABASE' => $testDatabase, 'APP_DEBUG' => 'false', 'BASE_PATH' =>
     $_SERVER[$name] = $value;
     putenv("$name=$value");
 }
+
+// I messaggi di error_log (scritture del registro fallite apposta nei test) non sporcano l'output
+ini_set('error_log', sys_get_temp_dir() . '/elpb-tests-error.log');

@@ -2,6 +2,7 @@
 
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Illuminate\Database\DatabaseTransactionsManager;
 use Illuminate\Events\Dispatcher;
 
 $capsule = new Capsule;
@@ -23,6 +24,10 @@ $capsule->addConnection([
 $capsule->setEventDispatcher(new Dispatcher(new Container));
 
 $capsule->setAsGlobal();
+
+// Gestore delle transazioni: permette di rimandare un'operazione a dopo il commit
+// (afterCommit), così il registro non riporta modifiche annullate da un rollback
+$capsule->getConnection()->setTransactionManager(new DatabaseTransactionsManager);
 $capsule->bootEloquent();
 
 return $capsule;

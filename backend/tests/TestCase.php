@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Audit\Auditor;
 use App\Models\User;
 use App\Utils\JWTHandler;
 use Illuminate\Database\Capsule\Manager as Capsule;
@@ -25,6 +26,7 @@ abstract class TestCase extends BaseTestCase
         $this->app = require __DIR__ . '/../bootstrap/app.php';
         // Ogni test ha un dispatcher nuovo: i modelli devono registrare di nuovo i loro eventi
         Model::clearBootedModels();
+        Auditor::reset();
 
         $database = Capsule::connection()->getDatabaseName();
         if (!str_ends_with($database, '_test')) {
