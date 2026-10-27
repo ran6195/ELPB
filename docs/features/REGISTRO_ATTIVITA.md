@@ -4,7 +4,7 @@ Chi ha fatto che cosa, quando, da dove e con quale esito. Consultabile solo dagl
 admin: Pannello admin → **Registro attività**. Conservazione 24 mesi.
 
 Adattamento a Slim 4 + Eloquent standalone del prompt pensato per Laravel
-(`prompt-registro-attivita.md`). Implementato il 2026-10-27, fasi 0-10.
+(`docs/features/prompt-registro-attivita.md`). Implementato il 2026-10-27, fasi 0-10.
 
 ## Principi
 
