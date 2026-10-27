@@ -145,6 +145,13 @@ while IFS=$'\t' read -r status path newpath; do
     fi
 done < <(git diff --name-status -M "$FROM_REV" HEAD -- backend)
 
+# public/index.php per ultimo (come index.html del frontend): il punto d'ingresso
+# nuovo arriva quando le classi che usa sono già sul server
+if grep -qx 'backend/public/index.php' "$BACKEND_UPLOAD"; then
+    { grep -vx 'backend/public/index.php' "$BACKEND_UPLOAD"; echo 'backend/public/index.php'; } > "$WORK/backend_sorted"
+    mv "$WORK/backend_sorted" "$BACKEND_UPLOAD"
+fi
+
 echo -e "\n${YELLOW}🔧 Backend${NC}"
 if [ -s "$BACKEND_UPLOAD" ] || [ -s "$BACKEND_DELETE" ]; then
     sed 's/^/   ↑ /' "$BACKEND_UPLOAD"
