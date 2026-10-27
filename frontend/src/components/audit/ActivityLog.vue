@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg shadow">
+  <div class="audit-log bg-white rounded-lg shadow font-mono">
     <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap items-start justify-between gap-4">
       <div>
         <h2 class="text-lg font-medium text-gray-900">Registro attività</h2>
@@ -27,36 +27,36 @@
     </div>
 
     <!-- FILTRI -->
-    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 text-sm">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
       <input
         v-model="text.utente"
         type="search"
         placeholder="Utente, email o record"
-        class="xl:col-span-2 px-3 py-2 border border-gray-300 rounded-lg"
+        class="min-w-0 px-3 py-2 border border-gray-300 rounded-lg"
       />
-      <select v-model="filters.azienda" class="px-3 py-2 border border-gray-300 rounded-lg">
+      <select v-model="filters.azienda" class="min-w-0 px-3 py-2 border border-gray-300 rounded-lg">
         <option value="">Tutte le aziende</option>
         <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
-      <select v-model="filters.categoria" class="px-3 py-2 border border-gray-300 rounded-lg">
+      <select v-model="filters.categoria" class="min-w-0 px-3 py-2 border border-gray-300 rounded-lg">
         <option value="">Tutte le categorie</option>
         <option v-for="(label, code) in labels.categories" :key="code" :value="code">{{ label }}</option>
       </select>
-      <select v-model="filters.esito" class="px-3 py-2 border border-gray-300 rounded-lg">
+      <select v-model="filters.esito" class="min-w-0 px-3 py-2 border border-gray-300 rounded-lg">
         <option value="">Tutti gli esiti</option>
         <option v-for="(label, code) in labels.outcomes" :key="code" :value="code">{{ label }}</option>
       </select>
-      <label class="flex items-center gap-2">
-        <span class="text-gray-500 shrink-0">Dal</span>
-        <input v-model="filters.dal" type="date" class="w-full px-2 py-2 border border-gray-300 rounded-lg" />
+      <label class="min-w-0 flex items-center gap-2">
+        <span class="w-6 text-gray-500 shrink-0">Dal</span>
+        <input v-model="filters.dal" type="date" class="w-full min-w-0 px-2 py-2 border border-gray-300 rounded-lg" />
       </label>
-      <label class="flex items-center gap-2">
-        <span class="text-gray-500 shrink-0">Al</span>
-        <input v-model="filters.al" type="date" class="w-full px-2 py-2 border border-gray-300 rounded-lg" />
+      <label class="min-w-0 flex items-center gap-2">
+        <span class="w-6 text-gray-500 shrink-0">Al</span>
+        <input v-model="filters.al" type="date" class="w-full min-w-0 px-2 py-2 border border-gray-300 rounded-lg" />
       </label>
-      <input v-model="text.ip" type="search" placeholder="IP" class="px-3 py-2 border border-gray-300 rounded-lg font-mono" />
+      <input v-model="text.ip" type="search" placeholder="IP" class="min-w-0 px-3 py-2 border border-gray-300 rounded-lg" />
 
-      <div class="sm:col-span-2 lg:col-span-4 xl:col-span-8 flex flex-wrap items-center gap-3">
+      <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-3">
         <label class="flex items-center gap-2 text-gray-700 cursor-pointer select-none">
           <input v-model="filters.senza_consultazioni" type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
           Nascondi consultazioni
@@ -97,10 +97,10 @@
 
         <details :class="['group', freshIds.has(row.id) ? 'bg-green-50/70' : '']">
           <summary class="px-6 py-3 cursor-pointer list-none hover:bg-gray-50 flex flex-wrap lg:flex-nowrap items-start gap-x-4 gap-y-1 text-sm">
-            <span class="w-20 shrink-0 font-mono text-xs text-gray-500 pt-0.5" :title="row.created_at">{{ formatTime(row.created_at) }}</span>
-            <span :class="['w-28 shrink-0 text-center px-2 py-0.5 rounded text-xs font-medium', categoryClass(row.category)]">{{ row.category_label }}</span>
+            <span class="w-24 shrink-0 text-xs text-gray-500 pt-0.5 tabular-nums" :title="row.created_at">{{ formatTime(row.created_at) }}</span>
+            <span :class="['w-32 shrink-0 text-center px-2 py-0.5 rounded text-xs font-medium', categoryClass(row.category)]">{{ row.category_label }}</span>
 
-            <span class="min-w-0 flex-1">
+            <span class="min-w-0 flex-1 [overflow-wrap:anywhere]">
               <span class="font-medium text-gray-900">{{ row.description }}</span>
               <span v-if="subjectText(row)" class="text-gray-600"> · {{ subjectText(row) }}</span>
               <span v-if="row.properties?.saves > 1" class="ml-1 text-xs text-gray-500">({{ row.properties.saves }} salvataggi)</span>
@@ -130,7 +130,7 @@
           </summary>
 
           <!-- DETTAGLIO -->
-          <div class="px-6 pb-4 pt-1 lg:pl-[15rem] space-y-3 text-sm">
+          <div class="px-6 pb-4 pt-1 lg:pl-[17rem] space-y-3 text-sm">
             <!-- Campi modificati -->
             <div v-if="changedFields(row).length" class="overflow-x-auto">
               <table class="min-w-full text-xs border border-gray-200 rounded">
@@ -300,7 +300,7 @@ async function load(targetPage = page.value) {
   error.value = ''
   try {
     const result = await auditStore.fetchLogs(filters, targetPage)
-    rows.value = result.data
+    rows.value = sortRows(result.data)
     labels.value = result.labels
     page.value = result.meta.page
     lastPage.value = result.meta.last_page
@@ -334,7 +334,7 @@ async function pollNewer() {
     if (result.data.length) {
       const known = new Set(rows.value.map(r => r.id))
       const added = result.data.filter(r => !known.has(r.id))
-      rows.value = [...added, ...rows.value].slice(0, MAX_ROWS)
+      rows.value = sortRows([...added, ...rows.value]).slice(0, MAX_ROWS)
       total.value += added.length
       lastPage.value = Math.max(1, Math.ceil(total.value / 50))
       freshIds.value = new Set([...freshIds.value, ...added.map(r => r.id)])
@@ -413,7 +413,16 @@ function formatDay(value) {
   return date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-const formatTime = (value) => String(value).slice(11, 19)
+// Ora con i millisecondi: "15:45:37.123"
+const formatTime = (value) => String(value).slice(11, 23)
+
+// Dalla più recente: per data (con i millisecondi), a parità di data per id.
+// La diretta riceve le voci in ordine di scrittura: una richiesta lenta, scritta dopo
+// le modifiche che ha prodotto, deve comunque comparire sotto di loro
+function sortRows(list) {
+  return [...list].sort((a, b) =>
+    a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : b.id - a.id)
+}
 
 function subjectText(row) {
   if (!row.subject) return ''
@@ -471,6 +480,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.audit-log {
+  font-feature-settings: 'tnum' 1;
+}
 summary::-webkit-details-marker {
   display: none;
 }
