@@ -2,6 +2,7 @@
 
 namespace App\Audit;
 
+use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Page;
 use App\Models\User;
@@ -241,6 +242,31 @@ class Auditor
             }
         } catch (\Throwable $e) {
             error_log('Auditor: ' . count($entries) . ' voci non scritte: ' . $e->getMessage());
+        }
+
+        $this->pruneIfNeeded();
+    }
+
+    /**
+     * Pulizia automatica, senza attività pianificata: dopo ogni scrittura una query
+     * sull'indice di created_at controlla se ci sono voci oltre la conservazione;
+     * solo in quel caso le cancella e registra quante.
+     */
+    private function pruneIfNeeded(): void
+    {
+        try {
+            $limit = date('Y-m-d H:i:s', strtotime('-' . AuditLog::MONTHS . ' months'));
+            if (!Capsule::table('audit_logs')->where('created_at', '<', $limit)->exists()) {
+                return;
+            }
+            $deleted = AuditLog::prune();
+            Capsule::table('audit_logs')->insert(self::toRow($this->buildEntry(self::SYSTEM, 'audit_prune', [
+                'user' => null,
+                'outcome' => 'ok',
+                'properties' => ['deleted' => $deleted, 'months' => AuditLog::MONTHS],
+            ])));
+        } catch (\Throwable $e) {
+            error_log('Auditor: pulizia del registro non riuscita: ' . $e->getMessage());
         }
     }
 
