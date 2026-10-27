@@ -68,6 +68,29 @@ abstract class TestCase extends BaseTestCase
         ], $attributes));
     }
 
+    protected function createCompany(string $name = 'Azienda Test'): int
+    {
+        return Capsule::table('companies')->insertGetId(['name' => $name, 'email' => uniqid() . '@example.test']);
+    }
+
+    protected function createPage(array $attributes = []): int
+    {
+        return Capsule::table('pages')->insertGetId(array_merge([
+            'title' => 'Pagina Test',
+            'slug' => 'pagina-' . uniqid(),
+            'is_published' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], $attributes));
+    }
+
+    /** Scrive le voci in attesa e restituisce il registro in ordine di scrittura */
+    protected function auditEntries(): array
+    {
+        Auditor::get()->flush();
+        return \App\Models\AuditLog::orderBy('id')->get()->all();
+    }
+
     private function truncateAll(): void
     {
         $connection = Capsule::connection();

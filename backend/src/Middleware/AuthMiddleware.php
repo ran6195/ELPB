@@ -2,6 +2,7 @@
 
 namespace App\Middleware;
 
+use App\Audit\Auditor;
 use App\Models\User;
 use App\Utils\JWTHandler;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -68,8 +69,9 @@ class AuthMiddleware
                 ->withStatus(401);
         }
 
-        // Aggiungi l'utente alla richiesta
+        // Aggiungi l'utente alla richiesta (e al registro attività)
         $request = $request->withAttribute('user', $user);
+        Auditor::get()->setUser($user);
 
         return $handler->handle($request);
     }

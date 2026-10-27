@@ -7,6 +7,7 @@
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\Middleware\RecordActivity;
 use Slim\Factory\AppFactory;
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -33,12 +34,21 @@ if (!empty($basePath)) {
     $app->setBasePath($basePath);
 }
 
+// Middleware: l'ultimo aggiunto è il più esterno. Ordine di esecuzione:
+// CORS → RecordActivity → ErrorMiddleware → routing → captureRoute → rotta.
+// RecordActivity sta fuori da ErrorMiddleware per vedere anche gli errori già
+// trasformati in risposta; captureRoute (dopo il routing) gli passa la rotta.
+$app->add([RecordActivity::class, 'captureRoute']);
+$app->addRoutingMiddleware();
+
 // Add error middleware
 $app->addErrorMiddleware(
     $_ENV['APP_DEBUG'] === 'true',
     true,
     true
 );
+
+$app->add(new RecordActivity());
 
 // Add CORS middleware
 $app->add(function (Request $request, $handler) {

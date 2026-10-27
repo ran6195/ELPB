@@ -226,12 +226,140 @@ class Auditor
         }
 
         try {
+            $entries = $this->resolveSubjects($entries);
+            $entries = array_values(array_filter($entries, fn($entry) => !$entry['_coalesce'] || !$this->mergeIntoRecentSave($entry)));
             foreach (array_chunk($entries, self::INSERT_CHUNK) as $chunk) {
                 Capsule::table('audit_logs')->insert(array_map([self::class, 'toRow'], $chunk));
             }
         } catch (\Throwable $e) {
             error_log('Auditor: ' . count($entries) . ' voci non scritte: ' . $e->getMessage());
         }
+    }
+
+    /** Tabella, colonna dell'etichetta e colonna della pagina per ogni tipo di record */
+    private const SUBJECT_SOURCES = [
+        'page' => ['pages', 'title', null],
+        'lead' => ['leads', null, 'page_id'],
+        'media' => ['media', 'original_name', null],
+        'media_folder' => ['media_folders', 'name', null],
+        'domain' => ['domains', 'hostname', null],
+        'company' => ['companies', 'name', null],
+        'user' => ['users', 'email', null],
+    ];
+
+    /** Finestra in cui i salvataggi della stessa pagina dallo stesso utente diventano una voce */
+    public const SAVE_WINDOW_MINUTES = 10;
+
+    /**
+     * Voci delle richieste: azienda, pagina ed etichetta del record coinvolto, con una
+     * query per tipo di record (si fa nel flush, dopo l'invio della risposta).
+     * Un admin che agisce su un'azienda diversa dalla propria è una "consultazione staff".
+     */
+    private function resolveSubjects(array $entries): array
+    {
+        $ids = [];
+        foreach ($entries as $entry) {
+            if ($entry['_resolve'] && $entry['subject_id'] && isset(self::SUBJECT_SOURCES[$entry['subject_type']])) {
+                $ids[$entry['subject_type']][] = $entry['subject_id'];
+            }
+        }
+
+        $found = [];
+        foreach ($ids as $type => $list) {
+            [$table, $labelColumn, $pageColumn] = self::SUBJECT_SOURCES[$type];
+            $columns = array_filter(['id', $labelColumn, $pageColumn]);
+            if ($type !== 'lead') {
+                $columns[] = $type === 'company' ? 'id as company_id' : 'company_id';
+            }
+            $found[$type] = Capsule::table($table)->whereIn('id', array_unique($list))->get($columns)->keyBy('id');
+        }
+
+        $pageIds = [];
+        foreach ($entries as &$entry) {
+            $row = $entry['_resolve'] && $entry['subject_id'] ? ($found[$entry['subject_type']][$entry['subject_id']] ?? null) : null;
+            if ($row) {
+                [, $labelColumn, $pageColumn] = self::SUBJECT_SOURCES[$entry['subject_type']];
+                if ($entry['subject_type'] === 'page') {
+                    $entry['page_id'] = $row->id;
+                } elseif ($pageColumn) {
+                    $entry['page_id'] = $row->$pageColumn;
+                }
+                if (isset($row->company_id) || $entry['subject_type'] === 'page') {
+                    $entry['company_id'] = $row->company_id;
+                }
+                if ($labelColumn && $entry['subject_label'] === null && $row->$labelColumn !== null) {
+                    $entry['subject_label'] = mb_substr((string) $row->$labelColumn, 0, 255);
+                }
+            }
+            if ($entry['_resolve'] && $entry['page_id'] && ($entry['company_id'] === null || $entry['subject_type'] === 'lead')) {
+                $pageIds[] = $entry['page_id'];
+            }
+        }
+        unset($entry);
+
+        // Lead e voci con solo la pagina: l'azienda è quella della pagina
+        $pageCompanies = $pageIds ? Capsule::table('pages')->whereIn('id', array_unique($pageIds))->pluck('company_id', 'id') : collect();
+        $staffRequests = [];
+        foreach ($entries as &$entry) {
+            if ($entry['_resolve'] && $entry['page_id'] && $pageCompanies->has($entry['page_id'])) {
+                $entry['company_id'] = $pageCompanies[$entry['page_id']];
+            }
+            if ($entry['_resolve'] && $entry['user_role'] === 'admin' && $entry['company_id'] !== null
+                && (int) $entry['company_id'] !== (int) $entry['_user_company'] && $entry['request_id']) {
+                $staffRequests[$entry['request_id']] = true;
+            }
+        }
+        unset($entry);
+
+        foreach ($entries as &$entry) {
+            if (isset($staffRequests[$entry['request_id']])) {
+                $entry['properties']['staff_view'] = true;
+            }
+        }
+        unset($entry);
+
+        return $entries;
+    }
+
+    /**
+     * Autosalvataggio dell'editor: se lo stesso utente ha già salvato la stessa pagina negli
+     * ultimi SAVE_WINDOW_MINUTES minuti, il salvataggio si somma a quella voce invece di
+     * crearne una nuova. È l'unico caso in cui una voce viene aggiornata: solo il contatore,
+     * l'ora dell'ultimo salvataggio e i blocchi aggiunti/tolti, con il Query Builder.
+     * Restituisce true se la voce è stata unita.
+     */
+    private function mergeIntoRecentSave(array $entry): bool
+    {
+        if (!$entry['user_id'] || !$entry['subject_id']) {
+            return false;
+        }
+        $recent = Capsule::table('audit_logs')
+            ->where('action', $entry['action'])
+            ->where('user_id', $entry['user_id'])
+            ->where('subject_id', $entry['subject_id'])
+            ->where('created_at', '>=', date('Y-m-d H:i:s', strtotime('-' . self::SAVE_WINDOW_MINUTES . ' minutes', (int) $entry['created_at_ts'])))
+            ->orderByDesc('id')
+            ->first(['id', 'properties', 'status']);
+        if (!$recent || (int) $recent->status >= 400 || $entry['status'] >= 400) {
+            return false;
+        }
+
+        $old = json_decode((string) $recent->properties, true) ?: [];
+        $new = $entry['properties'];
+        $merged = $old;
+        $merged['saves'] = ($old['saves'] ?? 1) + 1;
+        $merged['last_saved_at'] = $entry['created_at'];
+        $merged['blocks']['count'] = $new['blocks']['count'] ?? ($old['blocks']['count'] ?? null);
+        foreach (['added', 'removed'] as $kind) {
+            foreach ($new['blocks'][$kind] ?? [] as $type => $count) {
+                $merged['blocks'][$kind][$type] = ($merged['blocks'][$kind][$type] ?? 0) + $count;
+            }
+        }
+
+        Capsule::table('audit_logs')->where('id', $recent->id)->update([
+            'properties' => json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
+        ]);
+        return true;
     }
 
     /**
@@ -283,7 +411,8 @@ class Auditor
         }
 
         return [
-            'created_at' => self::formatTime($data['at'] ?? microtime(true)),
+            'created_at' => self::formatTime($at = $data['at'] ?? microtime(true)),
+            'created_at_ts' => $at,
             'request_id' => $this->request['id'] ?? null,
             'channel' => $source['channel'] ?? $this->request['channel'] ?? (PHP_SAPI === 'cli' ? 'console' : 'api'),
             'category' => $category,
@@ -305,11 +434,16 @@ class Auditor
             'ip' => $this->request['ip'] ?? null,
             'user_agent' => $this->request['user_agent'] ?? null,
             'properties' => $properties,
+            // Chiavi interne, tolte prima dell'INSERT
+            '_resolve' => !empty($data['resolve_subject']),
+            '_coalesce' => !empty($data['coalesce']),
+            '_user_company' => $user?->company_id,
         ];
     }
 
     private static function toRow(array $entry): array
     {
+        unset($entry['_resolve'], $entry['_coalesce'], $entry['_user_company'], $entry['created_at_ts']);
         $entry['properties'] = $entry['properties']
             ? json_encode($entry['properties'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE)
             : null;
