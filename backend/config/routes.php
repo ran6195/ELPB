@@ -32,6 +32,11 @@ $app->delete('/api/admin/companies/{id}', '\App\Controllers\AuthController:delet
 $app->put('/api/admin/users/{id}', '\App\Controllers\AuthController:updateUser')->add(AuthMiddleware::class);
 $app->delete('/api/admin/users/{id}', '\App\Controllers\AuthController:deleteUser')->add(AuthMiddleware::class);
 
+// Registro attività (solo admin). Le rotte fisse prima di eventuali {id}
+$app->get('/api/admin/audit-logs/export', '\App\Controllers\AuditLogController:export')->add(AuthMiddleware::class);
+$app->get('/api/admin/audit-logs/new', '\App\Controllers\AuditLogController:newer')->add(AuthMiddleware::class);
+$app->get('/api/admin/audit-logs', '\App\Controllers\AuditLogController:index')->add(AuthMiddleware::class);
+
 // Company routes (solo company manager)
 $app->post('/api/company/users', '\App\Controllers\AuthController:createUserInCompany')->add(AuthMiddleware::class);
 $app->delete('/api/company/users/{id}', '\App\Controllers\AuthController:deleteUserFromCompany')->add(AuthMiddleware::class);
