@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📝 Modifiche Recenti
 
+### Sessione 2026-10-27
+- **Scheda Renderer per Pagina** 📡: `GET /api/renderers` restituisce una riga per pagina e sito che la mostra (prima raggruppava per sito/IP), con domini associati alla pagina, flag `associated`, IP del server sempre presente e `lead_hosts` (siti dei contatti) per i renderer vecchi senza sito. La scheda admin "Renderer" raggruppa le righe per pagina (link all'editor), evidenzia le pagine senza dominio associato e i siti non associati, con conteggi e filtro (tutte, senza dominio, renderer da aggiornare) (TrackController.php, RendererOverview.vue)
+
 ### Sessione 2026-10-26
 - **Sicurezza Produzione** 🔒: Nuovo `backend/.htaccess` che lascia raggiungibile dal web solo `backend/public/` (verificato 403 su `composer.json`, zip e script di test, API ok), rimosso `frontend/public/debug.html` (lo script di deploy lo ricaricava a ogni deploy). `GET /api/page/{slug}` (pubblico) non espone più `secret_key` reCAPTCHA, `notification_settings`, `user_id`, `company_id`. JWT_SECRET e password DB/SMTP ruotati in produzione. Nota: il repo GitHub è pubblico, mai versionare segreti (backend/.htaccess, PageController.php, debug.html)
 - **Deploy FTP** 🚀: `scripts/deploy-ftp.sh` versionato; usa il curl di Homebrew (quello di macOS con SecureTransport e TLS 1.3 interrompe gli upload su ProFTPD con `426` lasciando file troncati: successo con PageController.php → API 500 per qualche minuto), `tls-max 1.2`, host `mu001625.arubabiz.net` (nome nel certificato) al posto di `insecure` (deploy-ftp.sh, .gitignore)

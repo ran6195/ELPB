@@ -83,91 +83,58 @@ class TrackController
 
     /**
      * GET /api/renderers
-     * Panoramica dei siti che mostrano le pagine visibili all'utente, con renderer e versione.
-     * I renderer non aggiornati (senza sito) sono raggruppati per IP del server.
+     * Una riga per pagina e sito che la mostra (pagine visibili all'utente), con renderer,
+     * versione, IP del server e domini associati alla pagina. I renderer non aggiornati
+     * non comunicano il sito: restano l'IP e i siti da cui sono arrivati i contatti.
      */
     public function index(Request $request, Response $response)
     {
         $user = $request->getAttribute('user');
 
-        $rows = Capsule::table('renderer_hits as h')
+        $hits = Capsule::table('renderer_hits as h')
             ->join('pages as p', 'p.id', '=', 'h.page_id')
             ->whereNull('p.deleted_at')
             ->where(fn($query) => $this->restrictToVisiblePages($query, $user))
-            ->selectRaw("h.host, h.renderer, h.version,
-                CASE WHEN h.host = '' THEN h.ip ELSE '' END as ip,
-                COUNT(DISTINCT h.page_id) as pages_count,
-                GROUP_CONCAT(DISTINCT h.page_id) as page_ids,
-                SUM(h.hits) as hits,
-                MIN(h.first_seen_at) as first_seen_at,
-                MAX(h.last_seen_at) as last_seen_at")
-            ->groupBy('h.host', 'h.renderer', 'h.version', Capsule::raw("CASE WHEN h.host = '' THEN h.ip ELSE '' END"))
-            ->orderByDesc('last_seen_at')
+            ->select('h.*')
+            ->orderByDesc('h.last_seen_at')
             ->get();
 
-        $pageIds = $rows->flatMap(fn($row) => explode(',', (string) $row->page_ids))->filter()->unique()->values()->all();
+        $pageIds = $hits->pluck('page_id')->unique()->values()->all();
         $pages = Page::with('domains:id,hostname')->whereIn('id', $pageIds)->get(['id', 'title', 'slug'])->keyBy('id');
         $leadHosts = $this->leadHostsByPage($pageIds);
 
-        $rows = $rows
-            ->map(fn($row) => [
-                'host' => $row->host,
-                'display_host' => $row->host !== '' ? Hostname::display($row->host) : '',
-                'renderer' => $row->renderer,
-                'version' => $row->version,
-                'outdated' => TrackingService::isOutdated($row->version),
-                'is_app' => Hostname::isAppHost($row->host),
-                'ip' => $row->ip !== '' ? $row->ip : null,
-                'pages_count' => (int) $row->pages_count,
-                'pages' => $this->pagesOf($row->page_ids, $pages),
-                // Renderer non aggiornati: il sito si deduce da domini associati e contatti delle pagine
-                'likely_hosts' => $row->host === '' ? $this->likelyHosts($row->page_ids, $pages, $leadHosts) : [],
-                'hits' => (int) $row->hits,
-                'first_seen_at' => $row->first_seen_at,
-                'last_seen_at' => $row->last_seen_at,
-            ]);
+        $rows = $hits
+            ->map(function ($hit) use ($pages, $leadHosts) {
+                $page = $pages->get($hit->page_id);
+                $domains = $page ? $page->domains->pluck('hostname')->all() : [];
+                return [
+                    'page' => $page ? ['id' => $page->id, 'title' => $page->title, 'slug' => $page->slug] : null,
+                    'host' => $hit->host,
+                    'display_host' => $hit->host !== '' ? Hostname::display($hit->host) : '',
+                    'associated' => $hit->host !== '' && in_array($hit->host, $domains, true),
+                    'domains' => array_map(fn($host) => Hostname::display($host), $domains),
+                    // Renderer non aggiornati: il sito si deduce dai contatti arrivati
+                    'lead_hosts' => $hit->host === ''
+                        ? array_map(fn($host) => Hostname::display($host), $leadHosts->get($hit->page_id, []))
+                        : [],
+                    'renderer' => $hit->renderer,
+                    'version' => $hit->version,
+                    'outdated' => TrackingService::isOutdated($hit->version),
+                    'is_app' => Hostname::isAppHost($hit->host),
+                    'ip' => $hit->ip !== '' ? $hit->ip : null,
+                    'hits' => (int) $hit->hits,
+                    'first_seen_at' => $hit->first_seen_at,
+                    'last_seen_at' => $hit->last_seen_at,
+                ];
+            })
+            ->filter(fn($row) => $row['page'] !== null)
+            ->sortBy(fn($row) => mb_strtolower($row['page']['title']) . '|' . $row['host'])
+            ->values();
 
         return $this->json($response, [
             'data' => $rows,
             'current_version' => TrackingService::CURRENT_RENDERER_VERSION,
         ]);
-    }
-
-    private function pagesOf(?string $pageIds, $pages): array
-    {
-        return collect(explode(',', (string) $pageIds))
-            ->map(fn($id) => $pages->get((int) $id))
-            ->filter()
-            ->map(fn($page) => ['id' => $page->id, 'title' => $page->title, 'slug' => $page->slug])
-            ->sortBy('title')
-            ->values()
-            ->all();
-    }
-
-    /** Siti probabili: domini associati alle pagine e siti da cui sono arrivati i loro contatti */
-    private function likelyHosts(?string $pageIds, $pages, $leadHosts): array
-    {
-        $hosts = [];
-        foreach (explode(',', (string) $pageIds) as $id) {
-            $page = $pages->get((int) $id);
-            foreach ($page ? $page->domains : [] as $domain) {
-                $hosts[$domain->hostname]['domain'] = true;
-            }
-            foreach ($leadHosts->get((int) $id, []) as $host) {
-                $hosts[$host]['leads'] = true;
-            }
-        }
-
-        return collect($hosts)
-            ->map(fn($sources, $host) => [
-                'host' => $host,
-                'display_host' => Hostname::display($host),
-                'from_domain' => !empty($sources['domain']),
-                'from_leads' => !empty($sources['leads']),
-            ])
-            ->sortBy('host')
-            ->values()
-            ->all();
     }
 
     /** Siti misurati (non stimati) da cui sono arrivati i contatti, per pagina */
