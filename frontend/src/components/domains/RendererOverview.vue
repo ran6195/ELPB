@@ -13,6 +13,16 @@
         <span class="px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700">{{ groups.length }} {{ groups.length === 1 ? 'pagina' : 'pagine' }}</span>
         <span v-if="withoutDomain" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800">{{ withoutDomain }} senza dominio associato</span>
         <span v-if="outdated" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800">{{ outdated }} con renderer da aggiornare</span>
+        <button
+          v-if="botCount"
+          type="button"
+          class="px-3 py-1.5 rounded-lg text-sm border"
+          :class="showBots ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 text-gray-500 hover:text-gray-700'"
+          :title="'Bot, assistenti IA e strumenti che scaricano le pagine dall\'API: non sono renderer'"
+          @click="showBots = !showBots"
+        >
+          {{ showBots ? 'Nascondi' : 'Mostra' }} richieste automatiche ({{ botCount }})
+        </button>
         <select v-model="filter" class="ml-auto px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
           <option value="all">Tutte le pagine</option>
           <option value="no-domain">Senza dominio associato</option>
@@ -107,9 +117,12 @@ const error = ref('')
 const rows = ref([])
 const currentVersion = ref('2.1.0')
 const filter = ref('all')
+const showBots = ref(false)
 
-// L'anteprima dell'applicazione non è un sito del cliente
-const sites = computed(() => rows.value.filter(r => !r.is_app))
+// L'anteprima dell'applicazione non è un sito del cliente; bot e assistenti IA
+// (richieste automatiche) si vedono solo a richiesta e non entrano nei conteggi
+const botCount = computed(() => rows.value.filter(r => !r.is_app && r.is_bot).length)
+const sites = computed(() => rows.value.filter(r => !r.is_app && (showBots.value || !r.is_bot)))
 
 // Righe raggruppate per pagina, nell'ordine (per titolo) restituito dal backend
 const groups = computed(() => {
@@ -123,8 +136,10 @@ const groups = computed(() => {
   return [...byPage.values()]
 })
 
-const withoutDomain = computed(() => groups.value.filter(g => !g.domains.length).length)
-const outdated = computed(() => groups.value.filter(g => g.rows.some(r => r.outdated)).length)
+// Conteggi solo sui renderer veri, anche quando i bot sono visibili
+const realGroups = computed(() => groups.value.filter(g => g.rows.some(r => !r.is_bot)))
+const withoutDomain = computed(() => realGroups.value.filter(g => !g.domains.length).length)
+const outdated = computed(() => realGroups.value.filter(g => g.rows.some(r => r.outdated)).length)
 
 const filteredGroups = computed(() => {
   if (filter.value === 'no-domain') return groups.value.filter(g => !g.domains.length)

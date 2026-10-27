@@ -28,10 +28,63 @@ class TrackingService
 
     private const BOT_PATTERN = '/bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|curl|wget|python|java\/|go-http|monitor|uptime/i';
 
+    /**
+     * Reti di bot e servizi di IA che scaricano le pagine direttamente dall'API
+     * (non sono renderer). Non includere le reti cloud generiche (es. Google Cloud
+     * 35.208.0.0/12): ci sono anche siti dei clienti (SiteGround).
+     */
+    private const BOT_NETWORKS = [
+        '160.79.104.0/21',  // Anthropic (Claude), verificato via RDAP
+        '66.249.64.0/19',   // Googlebot
+        '157.55.39.0/24',   // Bingbot
+        '207.46.13.0/24',   // Bingbot
+        '40.77.167.0/24',   // Bingbot
+        '66.220.144.0/20',  // Meta (facebookexternalhit)
+        '69.63.176.0/20',   // Meta
+        '173.252.64.0/18',  // Meta
+    ];
+
+    /** User agent di bot, crawler, assistenti IA e strumenti da riga di comando */
+    private const AUTOMATED_AGENT = '/bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|curl|wget|python|java\/|go-http|monitor|uptime|claude|anthropic|chatgpt|openai|perplexity|ccbot|bytespider|postman|insomnia|httpie/i';
+
     /** Renderer senza versione (precedente alla 2.1) o con una versione superata */
     public static function isOutdated(?string $version): bool
     {
         return $version === null || version_compare($version, self::CURRENT_RENDERER_VERSION, '<');
+    }
+
+    /**
+     * Richiesta automatica (bot, assistente IA, strumento) e non di un renderer.
+     * Si valuta alla lettura, quindi vale anche per le righe già registrate.
+     * I renderer 2.1 si dichiarano (versione): non sono mai automatici.
+     */
+    public static function isAutomated(?string $version, ?string $ip, ?string $userAgent): bool
+    {
+        if ($version !== null) {
+            return false;
+        }
+        if ($userAgent !== null && $userAgent !== '' && stripos($userAgent, 'joomla') === false
+            && preg_match(self::AUTOMATED_AGENT, $userAgent)) {
+            return true;
+        }
+        return $ip !== null && self::inNetworks($ip, self::BOT_NETWORKS);
+    }
+
+    /** IPv4 in una delle reti CIDR indicate */
+    private static function inNetworks(string $ip, array $networks): bool
+    {
+        $address = ip2long($ip);
+        if ($address === false) {
+            return false;
+        }
+        foreach ($networks as $network) {
+            [$base, $bits] = explode('/', $network);
+            $mask = $bits === '0' ? 0 : (~0 << (32 - (int) $bits)) & 0xFFFFFFFF;
+            if (($address & $mask) === (ip2long($base) & $mask)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

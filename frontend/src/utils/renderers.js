@@ -6,6 +6,8 @@ const RENDERER_NAMES = { standalone: 'Standalone', joomla: 'Joomla', altro: 'Sco
 
 /** "Standalone 2.1.0", oppure solo il nome per i renderer precedenti alla 2.1 */
 export function rendererLabel(hit) {
+  // Bot, assistenti IA e strumenti che scaricano la pagina dall'API: non sono renderer
+  if (hit.is_bot) return 'Bot / automatico'
   const name = RENDERER_NAMES[hit.renderer] || hit.renderer || 'Sconosciuto'
   return hit.version ? `${name} ${hit.version}` : name
 }

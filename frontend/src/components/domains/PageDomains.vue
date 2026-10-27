@@ -78,12 +78,12 @@
     <!-- Dove viene mostrata (registro dei renderer) e visite -->
     <div v-if="renderers" class="mt-5">
       <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Dove viene mostrata</p>
-      <p v-if="!renderers.hits.length" class="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+      <p v-if="!visibleHits.length && !botHits.length" class="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
         Nessun sito ha ancora scaricato la pagina da quando è attivo il registro.
       </p>
       <div v-else class="space-y-1.5">
         <div
-          v-for="hit in renderers.hits"
+          v-for="hit in visibleHits"
           :key="`${hit.host}|${hit.renderer}|${hit.ip}`"
           class="p-2.5 rounded-lg border text-xs"
           :class="hit.outdated ? 'border-amber-200 bg-amber-50' : 'border-gray-200'"
@@ -112,6 +112,15 @@
           </div>
           <div v-if="hit.last_url" class="mt-0.5 text-gray-400 truncate" :title="hit.last_url">{{ hit.last_url }}</div>
         </div>
+        <button
+          v-if="botHits.length"
+          type="button"
+          class="text-xs text-gray-500 hover:text-gray-700 hover:underline"
+          title="Bot, assistenti IA e strumenti che scaricano la pagina dall'API: non sono renderer"
+          @click="showBots = !showBots"
+        >
+          {{ showBots ? 'Nascondi' : 'Mostra' }} richieste automatiche ({{ botHits.length }})
+        </button>
       </div>
 
       <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">
@@ -157,6 +166,10 @@ const error = ref('')
 const newHostname = ref('')
 const suggestions = ref([])
 const renderers = ref(null)
+const showBots = ref(false)
+// Richieste automatiche (bot, assistenti IA): nascoste finché non si chiede di vederle
+const botHits = computed(() => (renderers.value?.hits || []).filter(h => h.is_bot))
+const visibleHits = computed(() => (renderers.value?.hits || []).filter(h => showBots.value || !h.is_bot))
 
 const canManage = computed(() => authStore.isAdmin || authStore.isCompany)
 
