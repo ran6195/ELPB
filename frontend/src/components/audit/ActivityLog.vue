@@ -91,12 +91,13 @@
     </div>
     <div v-else :class="['divide-y divide-gray-100', loading ? 'opacity-60' : '']">
       <template v-for="(row, index) in rows" :key="row.id">
-        <div v-if="index === 0 || dayOf(row) !== dayOf(rows[index - 1])" class="px-6 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <div v-if="index === 0 || dayOf(row) !== dayOf(rows[index - 1])" class="px-6 py-2 bg-gray-100 border-y border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
           {{ formatDay(row.created_at) }}
         </div>
 
-        <details :class="['group', freshIds.has(row.id) ? 'bg-green-50/70' : '']">
-          <summary class="px-6 py-3 cursor-pointer list-none hover:bg-gray-50 flex flex-wrap lg:flex-nowrap items-start gap-x-4 gap-y-1 text-sm">
+        <!-- Righe a colori alterni; le voci nuove della diretta restano evidenziate -->
+        <details :class="['group', freshIds.has(row.id) ? 'bg-green-50/70' : index % 2 ? 'bg-gray-50' : 'bg-white']">
+          <summary class="px-6 py-3 cursor-pointer list-none hover:bg-blue-50/50 flex flex-wrap lg:flex-nowrap items-start gap-x-4 gap-y-1 text-sm">
             <span class="w-24 shrink-0 text-xs text-gray-500 pt-0.5 tabular-nums" :title="row.created_at">{{ formatTime(row.created_at) }}</span>
             <span :class="['w-32 shrink-0 text-center px-2 py-0.5 rounded text-xs font-medium', categoryClass(row.category)]">{{ row.category_label }}</span>
 
