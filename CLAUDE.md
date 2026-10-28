@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📝 Modifiche Recenti
 
+### Sessione 2026-10-28
+- **Export CSV Scheda Renderer** 📄: Pulsante "Esporta CSV" nella scheda admin "Renderer", export nel browser delle righe mostrate (rispetta filtro e richieste automatiche visibili), una riga per pagina e sito con ID/titolo/slug, proprietario, azienda, domini associati, sito, associato sì/no, contatti da (renderer vecchi), renderer, da aggiornare, server, richieste, ultimo accesso; separatore `;` e BOM UTF-8 come l'export del registro attività, celle che iniziano con `= + - @` rese testo. **Non deployato** (RendererOverview.vue)
+
 ### Sessione 2026-10-27
 - **Scheda Renderer per Pagina** 📡: `GET /api/renderers` restituisce una riga per pagina e sito che la mostra (prima raggruppava per sito/IP), con domini associati alla pagina, flag `associated`, IP del server sempre presente e `lead_hosts` (siti dei contatti) per i renderer vecchi senza sito. La scheda admin "Renderer" raggruppa le righe per pagina (link all'editor), evidenzia le pagine senza dominio associato e i siti non associati, con conteggi e filtro (tutte, senza dominio, renderer da aggiornare); colonna Proprietario con utente e azienda della pagina (TrackController.php, RendererOverview.vue)
 - **Registrazione Pubblica Chiusa** 🔒: `POST /api/auth/register` era pubblica e accettava qualunque ruolo (anche admin, la pagina `/register` lo offriva nella tendina). Ora richiede un admin (`AuthMiddleware` + controllo nel controller; il pannello admin la usa per creare utenti), pagina `Register.vue` rimossa e `/register` → `/login`. Deploy correttivo dal ramo `hotfix-registrazione` (d808bcb, solo index.php/AuthController/frontend), poi merge `-s ours` in main. Verificato in produzione (401 anonimo) e nessun utente sconosciuto (index.php, AuthController.php, router/index.js, Register.vue)

@@ -28,6 +28,15 @@
           <option value="no-domain">Senza dominio associato</option>
           <option value="outdated">Renderer da aggiornare</option>
         </select>
+        <button
+          type="button"
+          class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap"
+          :disabled="!filteredGroups.length"
+          title="Esporta le righe mostrate, con il filtro attuale"
+          @click="exportCsv"
+        >
+          Esporta CSV
+        </button>
       </div>
 
       <div v-if="error" class="rounded-md bg-red-50 p-3 text-sm text-red-800">{{ error }}</div>
@@ -146,6 +155,54 @@ const filteredGroups = computed(() => {
   if (filter.value === 'outdated') return groups.value.filter(g => g.rows.some(r => r.outdated))
   return groups.value
 })
+
+// Valori che Excel interpreterebbe come formule vengono resi testo
+function csvCell(value) {
+  let text = value == null ? '' : String(value)
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`
+  return `"${text.replace(/"/g, '""')}"`
+}
+
+// Una riga per pagina e sito, come la tabella (filtro e richieste automatiche compresi);
+// separatore ";" come l'export del registro attività, per Excel in italiano
+function exportCsv() {
+  const headers = [
+    'ID pagina', 'Pagina', 'Slug', 'Proprietario', 'Azienda', 'Domini associati',
+    'Sito che la mostra', 'Sito associato', 'Contatti da', 'Renderer', 'Da aggiornare',
+    'Server', 'Richieste', 'Ultimo accesso'
+  ]
+  const lines = []
+  for (const group of filteredGroups.value) {
+    for (const row of group.rows) {
+      lines.push([
+        group.page.id,
+        group.page.title,
+        group.page.slug,
+        group.page.owner || '',
+        group.page.company || 'Senza azienda',
+        group.domains.join(', '),
+        row.host ? row.display_host : 'non comunicato',
+        row.host && group.domains.length ? (row.associated ? 'sì' : 'no') : '',
+        row.host ? '' : (row.lead_hosts || []).join(', '),
+        rendererLabel(row),
+        row.outdated ? 'sì' : 'no',
+        row.ip || '',
+        row.hits,
+        row.last_seen_at || ''
+      ])
+    }
+  }
+
+  const csv = [headers, ...lines].map(cells => cells.map(csvCell).join(';')).join('\r\n')
+  const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `renderer_${new Date().toISOString().split('T')[0]}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
 
 onMounted(async () => {
   try {
