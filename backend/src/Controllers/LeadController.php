@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Audit\ExportEvents;
 use App\Audit\PublicationEvents;
 use App\Models\Domain;
 use App\Models\Lead;
@@ -23,24 +24,10 @@ class LeadController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
         }
 
-        // If admin, get all leads (including those from archived pages)
-        if ($user->role === 'admin') {
-            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()->with('domains:id,hostname'), 'domain:id,hostname,label'])
-                ->orderBy('created_at', 'desc')->get();
-        }
-        // If company or user, get only leads from their company's pages (including archived)
-        else if ($user->company_id) {
-            $leads = Lead::with(['page' => fn($q) => $q->withTrashed()->with('domains:id,hostname'), 'domain:id,hostname,label'])
-                ->whereHas('page', function($query) use ($user) {
-                    $query->withTrashed()->where('company_id', $user->company_id);
-                })
-                ->orderBy('created_at', 'desc')
-                ->get();
-        }
-        // No company associated
-        else {
-            $leads = [];
-        }
+        $leads = self::visibleTo($user)
+            ->with(['page' => fn($q) => $q->withTrashed()->with('domains:id,hostname'), 'domain:id,hostname,label'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         foreach ($leads as $lead) {
             $lead->setAttribute('origin_status', $lead->originStatus());
@@ -48,6 +35,111 @@ class LeadController
 
         $response->getBody()->write(json_encode($leads));
         return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * GET /api/leads/{id}
+     * Dettaglio di un lead, chiamato all'apertura della scheda nei pannelli: la consultazione
+     * resta nel registro attività con lead, pagina e azienda.
+     */
+    public function show(Request $request, Response $response, $args)
+    {
+        $user = $request->getAttribute('user');
+
+        if (!Lead::whereKey($args['id'])->exists()) {
+            $response->getBody()->write(json_encode(['error' => 'Lead not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        $lead = self::visibleTo($user)
+            ->with(['page' => fn($q) => $q->withTrashed()->with('domains:id,hostname'), 'domain:id,hostname,label'])
+            ->find($args['id']);
+        if (!$lead) {
+            $response->getBody()->write(json_encode(['error' => 'Forbidden']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        $lead->setAttribute('origin_status', $lead->originStatus());
+        $response->getBody()->write(json_encode($lead));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * GET /api/leads/calendar?mese=AAAA-MM&pannello=admin|company
+     * Il calendario usa i lead già caricati: questa rotta serve solo a registrare nel
+     * registro attività quale mese è stato consultato (si legge dall'URL della voce).
+     */
+    public function calendarView(Request $request, Response $response)
+    {
+        $month = $request->getQueryParams()['mese'] ?? '';
+        if (!is_string($month) || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+            $response->getBody()->write(json_encode(['error' => 'mese deve essere nel formato AAAA-MM']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+        return $response->withStatus(204);
+    }
+
+    /**
+     * POST /api/leads/exports
+     * L'export CSV dei lead si crea nel browser: questa rotta lo registra nel registro
+     * attività prima del download (id dei lead esportati, pannello, filtri usati).
+     * Gli id non visibili all'utente vengono scartati e contati.
+     */
+    public function logExport(Request $request, Response $response)
+    {
+        $user = $request->getAttribute('user');
+        $data = json_decode((string) $request->getBody(), true) ?: [];
+
+        $ids = $data['lead_ids'] ?? null;
+        if (!is_array($ids) || !$ids || count($ids) > 50000) { // sotto il limite di 65535 parametri di MySQL
+            $response->getBody()->write(json_encode(['error' => 'lead_ids deve essere un elenco non vuoto']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn($id) => $id > 0)));
+
+        $leads = self::visibleTo($user)
+            ->with(['page' => fn($q) => $q->withTrashed()->select('id', 'title', 'company_id')])
+            ->whereIn('id', $ids)
+            ->get(['id', 'page_id']);
+
+        $panel = in_array($data['panel'] ?? null, ['admin', 'company'], true) ? $data['panel'] : null;
+        ExportEvents::leadsExported($user, $leads, count($ids) - $leads->count(), $panel ?? 'unknown', self::exportFilters($data['filters'] ?? null));
+
+        $response->getBody()->write(json_encode(['logged' => $leads->count()]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    /** Lead visibili: admin tutti, altri quelli delle pagine della propria azienda (anche archiviate) */
+    private static function visibleTo($user)
+    {
+        if ($user->role === 'admin') {
+            return Lead::query();
+        }
+        if (!$user->company_id) {
+            return Lead::whereRaw('1 = 0');
+        }
+        return Lead::whereHas('page', fn($query) => $query->withTrashed()->where('company_id', $user->company_id));
+    }
+
+    /**
+     * Filtri dell'elenco al momento dell'export. Della ricerca libera si registra solo
+     * che c'era: può contenere nome, email o telefono di un visitatore.
+     */
+    private static function exportFilters($filters): array
+    {
+        if (!is_array($filters)) {
+            return [];
+        }
+        $clean = [];
+        foreach (['page_id', 'site', 'status', 'appointment'] as $key) {
+            if (isset($filters[$key]) && is_scalar($filters[$key]) && $filters[$key] !== '') {
+                $clean[$key] = mb_substr((string) $filters[$key], 0, 255);
+            }
+        }
+        if (!empty($filters['text'])) {
+            $clean['text_search'] = true;
+        }
+        return $clean;
     }
 
     public function addNote(Request $request, Response $response, $args)

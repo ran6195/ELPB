@@ -32,6 +32,7 @@ Adattamento a Slim 4 + Eloquent standalone del prompt pensato per Laravel
 | `Audit/AccessEvents.php` | login, login_failed, logout |
 | `Audit/PublicationEvents.php` | page.published/unpublished, page.reassigned, lead.received |
 | `Audit/DomainEvents.php` | page.domains_updated (sync/attach/detach non emettono eventi) |
+| `Audit/ExportEvents.php` | lead.exported (export CSV dei lead fatto nel browser) |
 | `Audit/ScriptAudit.php` | Script di `backend/scripts` (canale console) |
 | `Middleware/RecordActivity.php` | Voce per ogni richiesta all'API |
 | `Controllers/AuditLogController.php` | API di consultazione (solo admin) |
@@ -55,6 +56,7 @@ Modelli con il trait: User, Company, Page, Domain, Media, MediaFolder, Lead.
 | access | Accessi | `login`, `login_failed`, `logout` |
 | publish | Pubblicazione e assegnazione | `page.published`, `page.unpublished`, `page.reassigned` |
 | system | Lead ricevuto, script, pulizia | `lead.received`, `script`, `audit_prune` |
+| export | Export dei lead dai pannelli admin e aziendale | `lead.exported` |
 
 Non si registrano: GET anonime (pagine servite ai renderer), OPTIONS/HEAD, rotte
 inesistenti, `POST /api/track/view`, `POST /api/pages/check-slug`, `GET /api/media/{id}/file`,
@@ -63,6 +65,30 @@ inesistenti, `POST /api/track/view`, `POST /api/pages/check-slug`, `GET /api/med
 Esito dallo status: 400/422 `invalid` (qui la validazione risponde 400), 401/403 `denied`,
 404 `not_found`, 429 `throttled`, altri ≥400 e ≥500 `error`, altrimenti `ok`. Per gli errori
 `properties.error` contiene il `message`/`error` della risposta.
+
+### Export dei lead
+
+Il CSV dei lead si crea nel browser, quindi il server non lo vedrebbe: prima del download
+il frontend chiama `POST /api/leads/exports` con gli id dei lead, il pannello e i filtri
+(`pageStore.logLeadExport`). Il backend tiene solo gli id visibili all'utente (stessa regola
+di `GET /api/leads`) e registra `export/lead.exported`: numero, id scartati, id dei lead
+(fino a 1000, oltre solo l'intervallo), pagine con il numero di lead (prime 20), aziende se
+più di una, filtri. Della ricerca libera si registra solo `text_search: true` (può contenere
+email o telefono di un visitatore); nessun dato dei lead. Azienda e pagina della voce sono
+valorizzate solo se l'export ne riguarda una sola. Se la chiamata fallisce l'export procede
+comunque (il registro non blocca l'app). Un nuovo export di dati personali fatto nel browser
+deve passare da una rotta simile.
+
+### Dettaglio di un lead e calendario
+
+Anche scheda del lead e calendario usano i lead già caricati. Per la traccia:
+- all'apertura della scheda (lista o calendario) il frontend chiama `GET /api/leads/{id}`
+  (`pageStore.viewLead`): voce `view` con lead, pagina e azienda; 403 se il lead non è
+  visibile all'utente. La risposta non viene usata dalla scheda.
+- il calendario segnala il mese mostrato all'apertura e a ogni cambio
+  (`month-shown` di `LeadsCalendar`), il frontend chiama dopo 1 secondo di pausa
+  `GET /api/leads/calendar?mese=AAAA-MM&pannello=admin|company` (`pageStore.logCalendarView`),
+  che risponde 204: il mese si legge dall'URL della voce e il dettaglio del registro lo mostra.
 
 **Staff:** un admin che agisce su un'azienda diversa dalla propria → `properties.staff_view`.
 

@@ -295,7 +295,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // ---------------------------------------------------------------------------
 // Props & Emits
@@ -307,7 +307,8 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['show-lead'])
+// month-shown: mese visualizzato ("AAAA-MM"), all'apertura e a ogni cambio
+const emit = defineEmits(['show-lead', 'month-shown'])
 
 // ---------------------------------------------------------------------------
 // Costanti
@@ -386,6 +387,10 @@ const hasAnyAppointment = computed(() => {
 // ---------------------------------------------------------------------------
 // Navigazione mese
 // ---------------------------------------------------------------------------
+watch([currentYear, currentMonth], ([year, month]) => {
+  emit('month-shown', `${year}-${String(month + 1).padStart(2, '0')}`)
+}, { immediate: true })
+
 const currentMonthLabel = computed(() => {
   return `${monthNames[currentMonth.value]} ${currentYear.value}`
 })

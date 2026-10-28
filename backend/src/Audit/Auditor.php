@@ -25,6 +25,7 @@ class Auditor
     public const ACCESS = 'access';
     public const PUBLISH = 'publish';
     public const SYSTEM = 'system';
+    public const EXPORT = 'export';
 
     /** Oltre questo numero di voci in attesa si scrive subito (script lunghi) */
     private const BUFFER_LIMIT = 200;

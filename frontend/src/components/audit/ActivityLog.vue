@@ -179,6 +179,33 @@
               {{ labels.notifications?.[row.properties.notification] || row.properties.notification }}
             </p>
 
+            <!-- Calendario dei lead -->
+            <p v-if="row.action === 'GET /api/leads/calendar' && calendarMonth(row)" class="text-gray-700">
+              Mese consultato: {{ calendarMonth(row) }}
+            </p>
+
+            <!-- Lead esportati -->
+            <div v-if="row.action === 'lead.exported'" class="text-gray-700 space-y-1">
+              <p>
+                {{ row.properties.count }} lead in {{ String(row.properties.format || 'csv').toUpperCase() }}
+                dal {{ EXPORT_PANELS[row.properties.panel] || 'pannello' }}
+                <span v-if="row.properties.companies"> · {{ row.properties.companies }} aziende</span>
+                <span v-if="row.properties.refused" class="text-amber-700"> · {{ row.properties.refused }} id scartati (non visibili)</span>
+              </p>
+              <p v-if="row.properties.filters">Filtri: {{ exportFiltersText(row.properties.filters) }}</p>
+              <p v-if="row.properties.pages?.length">
+                Pagine: {{ row.properties.pages.map(p => `${p.title || '#' + p.id} (${p.leads})`).join(', ') }}
+                <template v-if="row.properties.pages_total"> … su {{ row.properties.pages_total }}</template>
+              </p>
+              <details v-if="row.properties.lead_ids" class="text-xs">
+                <summary class="cursor-pointer text-gray-500">Id dei lead esportati</summary>
+                <p class="font-mono mt-1 break-words">{{ row.properties.lead_ids.join(', ') }}</p>
+              </details>
+              <p v-else-if="row.properties.lead_id_range" class="text-xs text-gray-500">
+                Id dei lead da {{ row.properties.lead_id_range[0] }} a {{ row.properties.lead_id_range[1] }}
+              </p>
+            </div>
+
             <p v-if="row.properties?.error" class="text-red-700">Messaggio: {{ row.properties.error }}</p>
 
             <div v-if="row.properties?.input">
@@ -294,7 +321,25 @@ const hasFilters = computed(() => Object.entries(filters).some(([, v]) => v !== 
 
 // Proprietà mostrate in sezioni dedicate: il resto va in "Altri dettagli"
 const SHOWN_KEYS = ['old', 'new', 'blocks', 'saves', 'last_saved_at', 'attached', 'detached', 'reason', 'from', 'to',
-  'notification', 'origin_host', 'error', 'input', 'staff_view', 'source', 'params']
+  'notification', 'origin_host', 'error', 'input', 'staff_view', 'source', 'params',
+  'format', 'panel', 'count', 'refused', 'lead_ids', 'lead_id_range', 'companies', 'pages', 'pages_total', 'filters']
+
+// Mese dal parametro ?mese=AAAA-MM dell'URL, es. "novembre 2026"
+function calendarMonth(row) {
+  try {
+    const month = new URL(row.url).searchParams.get('mese')
+    if (!/^\d{4}-\d{2}$/.test(month || '')) return null
+    return new Date(`${month}-01T00:00:00`).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+  } catch (e) {
+    return null
+  }
+}
+
+const EXPORT_PANELS = { admin: 'pannello admin', company: 'pannello aziendale' }
+const EXPORT_FILTERS = { page_id: 'pagina', site: 'sito', status: 'stato', appointment: 'appuntamento' }
+const exportFiltersText = (filters) => Object.entries(filters)
+  .map(([key, value]) => (key === 'text_search' ? 'ricerca libera' : `${EXPORT_FILTERS[key] || key} ${value}`))
+  .join(', ')
 
 async function load(targetPage = page.value) {
   loading.value = true
@@ -402,7 +447,8 @@ const CATEGORY_CLASSES = {
   change: 'bg-amber-50 text-amber-800',
   access: 'bg-indigo-50 text-indigo-700',
   publish: 'bg-green-50 text-green-700',
-  system: 'bg-purple-50 text-purple-700'
+  system: 'bg-purple-50 text-purple-700',
+  export: 'bg-rose-50 text-rose-700'
 }
 const categoryClass = (code) => CATEGORY_CLASSES[code] || 'bg-gray-100 text-gray-700'
 const outcomeClass = (code) => (code === 'invalid' || code === 'not_found' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800')

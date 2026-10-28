@@ -31,6 +31,7 @@ class RecordActivity implements MiddlewareInterface
     /** Input non registrato: dati personali dei visitatori o contenuto completo della pagina */
     private const NO_INPUT_ROUTES = [
         'POST /api/leads',
+        'POST /api/leads/exports',       // elenco degli id: il riepilogo è nella voce lead.exported
         'PUT /api/pages/{id}',
         'POST /api/pages/import',
     ];

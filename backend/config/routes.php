@@ -100,6 +100,10 @@ $app->delete('/api/domains/{id}', '\App\Controllers\DomainController:delete')->a
 
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);
+// calendar prima di {id}: le rotte fisse vanno registrate prima di quelle con parametri
+$app->get('/api/leads/calendar', '\App\Controllers\LeadController:calendarView')->add(AuthMiddleware::class); // solo per il registro attività
+$app->get('/api/leads/{id}', '\App\Controllers\LeadController:show')->add(AuthMiddleware::class);
+$app->post('/api/leads/exports', '\App\Controllers\LeadController:logExport')->add(AuthMiddleware::class); // export CSV fatto nel browser
 $app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(AuthMiddleware::class);
 $app->post('/api/leads/{id}/notes', '\App\Controllers\LeadController:addNote')->add(AuthMiddleware::class);
 $app->put('/api/leads/{id}/appointment', '\App\Controllers\LeadController:updateAppointment')->add(AuthMiddleware::class);

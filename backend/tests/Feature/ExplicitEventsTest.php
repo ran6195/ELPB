@@ -119,6 +119,100 @@ class ExplicitEventsTest extends TestCase
         $this->assertSame(['origin_host' => 'cliente.it', 'notification' => 'not_configured'], $event->properties);
     }
 
+    private function createLead(int $pageId): int
+    {
+        return Capsule::table('leads')->insertGetId([
+            'page_id' => $pageId, 'name' => 'Mario Rossi', 'email' => uniqid() . '@example.test',
+            'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function test_export_dei_lead_con_id_visibili_e_senza_dati_personali(): void
+    {
+        $companyId = $this->createCompany();
+        $otherCompanyId = $this->createCompany('Altra');
+        $pageId = $this->createPage(['company_id' => $companyId, 'title' => 'Offerta']);
+        $otherPageId = $this->createPage(['company_id' => $otherCompanyId]);
+        $own = [$this->createLead($pageId), $this->createLead($pageId)];
+        $foreign = $this->createLead($otherPageId);
+        $user = $this->createUser(['role' => 'company', 'company_id' => $companyId]);
+
+        $response = $this->request('POST', '/api/leads/exports', [
+            'lead_ids' => [...$own, $foreign],
+            'panel' => 'company',
+            'filters' => ['text' => 'mario.rossi@example.test', 'status' => 'published', 'site' => ''],
+        ], [], $user);
+        $this->assertSame(['logged' => 2], $this->json($response));
+
+        [$event] = $this->byAction('lead.exported');
+        $this->assertSame(['export', 'ok', $user->id, $companyId, $pageId, '2 lead'], [$event->category, $event->outcome, $event->user_id, $event->company_id, $event->page_id, $event->subject_label]);
+        // assertEquals: il JSON di MySQL riordina le chiavi
+        $this->assertEquals([
+            'format' => 'csv',
+            'panel' => 'company',
+            'count' => 2,
+            'refused' => 1,
+            'lead_ids' => $own,
+            'pages' => [['id' => $pageId, 'title' => 'Offerta', 'leads' => 2]],
+            'filters' => ['status' => 'published', 'text_search' => true],
+        ], $event->properties);
+
+        // La voce della richiesta non contiene l'input, e nel registro non c'è la ricerca
+        [$request] = $this->byAction('POST /api/leads/exports');
+        $this->assertSame($event->request_id, $request->request_id);
+        $this->assertStringNotContainsString('mario.rossi', json_encode(array_map(fn($e) => $e->toArray(), $this->auditEntries())));
+    }
+
+    public function test_export_dei_lead_di_piu_aziende_e_richiesta_non_valida(): void
+    {
+        $pageA = $this->createPage(['company_id' => $this->createCompany('A')]);
+        $pageB = $this->createPage(['company_id' => $this->createCompany('B')]);
+        $ids = [$this->createLead($pageA), $this->createLead($pageB)];
+        $admin = $this->createUser(['role' => 'admin']);
+
+        $this->request('POST', '/api/leads/exports', ['lead_ids' => $ids, 'panel' => 'admin'], [], $admin);
+
+        [$event] = $this->byAction('lead.exported');
+        $this->assertSame([null, null, 2, 2], [$event->company_id, $event->page_id, $event->properties['count'], $event->properties['companies']]);
+
+        $this->assertSame(400, $this->request('POST', '/api/leads/exports', ['lead_ids' => []], [], $admin)->getStatusCode());
+        $this->assertSame(401, $this->request('POST', '/api/leads/exports', ['lead_ids' => $ids])->getStatusCode());
+    }
+
+    public function test_apertura_di_un_lead_registrata_con_lead_pagina_e_azienda(): void
+    {
+        $companyId = $this->createCompany();
+        $pageId = $this->createPage(['company_id' => $companyId]);
+        $leadId = $this->createLead($pageId);
+        $foreignId = $this->createLead($this->createPage(['company_id' => $this->createCompany('Altra')]));
+        $user = $this->createUser(['role' => 'company', 'company_id' => $companyId]);
+
+        $response = $this->request('GET', "/api/leads/$leadId", null, [], $user);
+        $this->assertSame([200, $leadId], [$response->getStatusCode(), $this->json($response)['id']]);
+        $this->assertSame(403, $this->request('GET', "/api/leads/$foreignId", null, [], $user)->getStatusCode());
+        $this->assertSame(404, $this->request('GET', '/api/leads/999999', null, [], $user)->getStatusCode());
+
+        [$ok, $denied, $missing] = $this->byAction('GET /api/leads/{id}');
+        $this->assertSame(['view', 'ok', 'lead', $leadId, $pageId, $companyId], [$ok->category, $ok->outcome, $ok->subject_type, $ok->subject_id, $ok->page_id, $ok->company_id]);
+        $this->assertSame(['denied', $foreignId], [$denied->outcome, $denied->subject_id]);
+        $this->assertSame('not_found', $missing->outcome);
+        // Nessun dato del visitatore nel registro
+        $this->assertStringNotContainsString('Mario Rossi', json_encode(array_map(fn($e) => $e->toArray(), $this->auditEntries())));
+    }
+
+    public function test_consultazione_del_calendario_dei_lead(): void
+    {
+        $user = $this->createUser(['role' => 'admin']);
+
+        $this->assertSame(204, $this->request('GET', '/api/leads/calendar?mese=2026-11&pannello=admin', null, [], $user)->getStatusCode());
+        $this->assertSame(400, $this->request('GET', '/api/leads/calendar?mese=2026-13', null, [], $user)->getStatusCode());
+
+        [$view, $invalid] = $this->byAction('GET /api/leads/calendar');
+        $this->assertSame(['view', 'ok', $user->id], [$view->category, $view->outcome, $view->user_id]);
+        $this->assertStringEndsWith('/api/leads/calendar?mese=2026-11&pannello=admin', $view->url);
+        $this->assertSame('invalid', $invalid->outcome);
+    }
+
     public function test_gli_script_si_registrano_come_system_sul_canale_console(): void
     {
         $this->runScript('--dry-run');

@@ -3,6 +3,9 @@ import {
 } from 'pinia'
 import apiClient from '../api/axios'
 
+// Attesa prima di registrare il mese mostrato dal calendario dei lead
+let calendarViewTimer = null
+
 export const usePageStore = defineStore('page', {
   state: () => ({
     pages: [],
@@ -155,6 +158,41 @@ export const usePageStore = defineStore('page', {
       } finally {
         this.loading = false
       }
+    },
+
+    /**
+     * Registra nel registro attività un export dei lead fatto nel browser.
+     * Non blocca l'export: se la chiamata fallisce il file si scarica comunque.
+     */
+    async logLeadExport(leads, panel, filters) {
+      try {
+        await apiClient.post('/leads/exports', { lead_ids: leads.map(l => l.id), panel, filters })
+      } catch (error) {
+        console.error('Export dei lead non registrato:', error)
+      }
+    },
+
+    /** Apertura della scheda di un lead: la chiamata resta nel registro attività */
+    async viewLead(leadId) {
+      try {
+        const response = await apiClient.get(`/leads/${leadId}`)
+        return response.data
+      } catch (error) {
+        console.error('Apertura del lead non registrata:', error)
+        return null
+      }
+    },
+
+    /**
+     * Mese mostrato dal calendario dei lead, per il registro attività. Attende un secondo
+     * di pausa: scorrendo velocemente i mesi si registra solo quello su cui ci si ferma.
+     */
+    logCalendarView(month, panel) {
+      clearTimeout(calendarViewTimer)
+      calendarViewTimer = setTimeout(() => {
+        apiClient.get('/leads/calendar', { params: { mese: month, pannello: panel } })
+          .catch(error => console.error('Consultazione del calendario non registrata:', error))
+      }, 1000)
     },
 
     async addLeadNote(leadId, note) {

@@ -20,6 +20,7 @@ class AuditCatalog
         Auditor::ACCESS => 'Accesso',
         Auditor::PUBLISH => 'Pubblicazione',
         Auditor::SYSTEM => 'Sistema',
+        Auditor::EXPORT => 'Esportazione',
     ];
 
     public const OUTCOMES = [
@@ -116,6 +117,9 @@ class AuditCatalog
         'DELETE /api/domains/{id}' => 'Eliminazione dominio',
 
         'GET /api/leads' => 'Elenco lead',
+        'POST /api/leads/exports' => 'Esportazione lead',
+        'GET /api/leads/calendar' => 'Calendario dei lead',
+        'GET /api/leads/{id}' => 'Dettaglio lead',
         'DELETE /api/leads/{id}' => 'Eliminazione lead',
         'POST /api/leads/{id}/notes' => 'Nota sul lead',
         'PUT /api/leads/{id}/appointment' => 'Appuntamento del lead',
@@ -162,6 +166,7 @@ class AuditCatalog
         'login_failed' => 'Accesso non riuscito',
         'logout' => 'Uscita',
         'lead.received' => 'Lead ricevuto',
+        'lead.exported' => 'Lead esportati',
         'script' => 'Script eseguito',
         'audit_prune' => 'Pulizia del registro',
     ];

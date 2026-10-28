@@ -457,6 +457,7 @@
             v-if="leadsView === 'calendario'"
             :leads="leads"
             @show-lead="showLeadDetails"
+            @month-shown="month => pageStore.logCalendarView(month, 'admin')"
           />
 
           <template v-if="leadsView === 'lista'">
@@ -1337,6 +1338,7 @@ const handleDeleteLead = async (leadId) => {
 
 const showLeadDetails = (lead) => {
   selectedLead.value = lead
+  pageStore.viewLead(lead.id) // solo per il registro attività: la scheda usa i dati già caricati
   editingAppointment.value = false
   const existing = lead.metadata?._appointment
   appointmentForm.value = {
@@ -1357,7 +1359,16 @@ const formatDate = (dateString) => {
   }).format(date)
 }
 
-const exportLeads = () => {
+const exportLeads = async () => {
+  if (!filteredLeads.value.length) return
+  await pageStore.logLeadExport(filteredLeads.value, 'admin', {
+    text: filterText.value,
+    page_id: filterPage.value,
+    site: filterSite.value,
+    status: filterStatus.value,
+    appointment: filterAppointment.value
+  })
+
   const EXCLUDE_META_KEYS = ['privacy_accepted', 'recaptcha_token', '_notes', '_appointment']
 
   // Raccogli tutte le chiavi metadata uniche tra i lead filtrati
