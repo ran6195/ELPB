@@ -1,7 +1,16 @@
 <template>
   <div class="bg-white rounded-lg shadow">
     <div class="px-6 py-4 border-b border-gray-200">
-      <h2 class="text-lg font-medium text-gray-900">Renderer</h2>
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-lg font-medium text-gray-900">Renderer</h2>
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none" title="Aggiorna la tabella ogni 4 secondi">
+          <input v-model="live" type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+          <span class="flex items-center gap-1.5">
+            Diretta
+            <span v-if="live" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+          </span>
+        </label>
+      </div>
       <p class="text-sm text-gray-500 mt-1">
         Per ogni pagina: domini associati, sito che la mostra, renderer e server. I renderer precedenti alla
         {{ currentVersion }} non comunicano il sito: si riconoscono dall'IP del server e vanno aggiornati.
@@ -61,7 +70,12 @@
             </tr>
           </thead>
           <tbody v-for="group in filteredGroups" :key="group.page.id" class="bg-white divide-y divide-gray-100 border-t border-gray-200">
-            <tr v-for="(row, i) in group.rows" :key="`${row.host}|${row.renderer}|${row.ip}`" class="hover:bg-gray-50">
+            <tr
+              v-for="(row, i) in group.rows"
+              :key="rowKey(row)"
+              :class="freshKeys.has(rowKey(row)) ? 'bg-green-50' : 'hover:bg-gray-50'"
+              class="transition-colors duration-700"
+            >
               <template v-if="i === 0">
                 <td :rowspan="group.rows.length" class="px-4 py-3 text-sm align-top">
                   <router-link :to="`/editor/${group.page.id}`" class="font-medium text-primary-600 hover:underline">{{ group.page.title }}</router-link>
@@ -101,7 +115,7 @@
               </td>
               <td class="px-4 py-3 text-sm text-gray-500 font-mono whitespace-nowrap align-top">{{ row.ip || '—' }}</td>
               <td class="px-4 py-3 text-sm text-gray-500 align-top">{{ row.hits }}</td>
-              <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap align-top" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at) }}</td>
+              <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap align-top" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at, now) }}</td>
             </tr>
           </tbody>
         </table>
@@ -111,13 +125,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useDomainStore } from '../../stores/domainStore'
 import { rendererLabel, timeAgo } from '../../utils/renderers'
 
 /**
  * Registro dei renderer per pagina (renderer_hits): quale sito mostra ogni pagina,
  * se la pagina ha domini associati e quali renderer vanno aggiornati.
+ * Diretta ogni 4 secondi come il registro attività: arrivano solo le righe con accessi
+ * nuovi, che restano evidenziate per qualche secondo.
  */
 const domainStore = useDomainStore()
 
@@ -127,6 +143,14 @@ const rows = ref([])
 const currentVersion = ref('2.1.0')
 const filter = ref('all')
 const showBots = ref(false)
+
+const LIVE_INTERVAL = 4000
+const FRESH_FOR = 15000
+const LIVE_KEY = 'elpb.renderersLive'
+const live = ref(readLivePreference())
+const lastSeenAt = ref(null)
+const freshKeys = ref(new Set())
+const now = ref(Date.now())
 
 // L'anteprima dell'applicazione non è un sito del cliente; bot e assistenti IA
 // (richieste automatiche) si vedono solo a richiesta e non entrano nei conteggi
@@ -204,15 +228,88 @@ function exportCsv() {
   URL.revokeObjectURL(url)
 }
 
+// Chiave di una riga: pagina, sito, renderer e IP (come l'indice univoco di renderer_hits)
+const rowKey = (row) => `${row.page.id}|${row.host}|${row.renderer}|${row.ip}`
+
+// Stesso ordine del backend: titolo della pagina, poi sito
+const sortKey = (row) => `${row.page.title.toLowerCase()}|${row.host}`
+const sortRows = (list) => [...list].sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+
+// --- Diretta -------------------------------------------------------------
+let liveTimer = null
+let polling = false
+
+async function pollUpdates() {
+  now.value = Date.now()
+  if (!live.value || loading.value || polling || document.hidden || !lastSeenAt.value) return
+  polling = true
+  try {
+    const result = await domainStore.fetchRendererUpdates(lastSeenAt.value)
+    lastSeenAt.value = result.last_seen_at || lastSeenAt.value
+    // Righe dello stesso secondo dell'ultimo giro tornano uguali: si evidenziano solo i cambi
+    const byKey = new Map(rows.value.map(row => [rowKey(row), row]))
+    const changed = result.data.filter(row => {
+      const known = byKey.get(rowKey(row))
+      return !known || known.hits !== row.hits || known.last_seen_at !== row.last_seen_at
+    })
+    if (changed.length) {
+      for (const row of changed) byKey.set(rowKey(row), row)
+      rows.value = sortRows([...byKey.values()])
+      markFresh(changed.map(rowKey))
+    }
+  } catch (e) {
+    // La diretta riprova al giro successivo
+  } finally {
+    polling = false
+  }
+}
+
+function markFresh(keys) {
+  freshKeys.value = new Set([...freshKeys.value, ...keys])
+  setTimeout(() => {
+    const next = new Set(freshKeys.value)
+    keys.forEach(key => next.delete(key))
+    freshKeys.value = next
+  }, FRESH_FOR)
+}
+
+function readLivePreference() {
+  try {
+    return localStorage.getItem(LIVE_KEY) !== '0'
+  } catch (e) {
+    return true
+  }
+}
+
+watch(live, (value) => {
+  try {
+    localStorage.setItem(LIVE_KEY, value ? '1' : '0')
+  } catch (e) {
+    // Preferenza non salvata: resta per questa visita
+  }
+})
+
 onMounted(async () => {
   try {
     const result = await domainStore.fetchRenderers()
     rows.value = result.data
     currentVersion.value = result.current_version || currentVersion.value
+    // Senza accessi registrati la diretta parte da adesso (ora del database: italiana)
+    lastSeenAt.value = result.last_seen_at || databaseNow()
   } catch (e) {
     error.value = 'Impossibile caricare il registro dei renderer'
   } finally {
     loading.value = false
   }
+  liveTimer = setInterval(pollUpdates, LIVE_INTERVAL)
 })
+
+onUnmounted(() => {
+  clearInterval(liveTimer)
+})
+
+/** Adesso nel formato del database, ora italiana: "2026-10-28 15:30:00" */
+function databaseNow() {
+  return new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Rome' })
+}
 </script>

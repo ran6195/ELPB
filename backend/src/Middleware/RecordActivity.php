@@ -26,6 +26,7 @@ class RecordActivity implements MiddlewareInterface
         'POST /api/pages/check-slug',    // controllo dello slug mentre si scrive
         'GET /api/media/{id}/file',      // file per l'editor immagini
         'GET /api/admin/audit-logs/new', // diretta del registro stesso
+        'GET /api/renderers/new',        // diretta della scheda Renderer (ogni 4 secondi)
     ];
 
     /** Input non registrato: dati personali dei visitatori o contenuto completo della pagina */

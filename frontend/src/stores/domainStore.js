@@ -84,6 +84,12 @@ export const useDomainStore = defineStore('domain', {
       return response.data
     },
 
+    /** Diretta della scheda Renderer: righe con un accesso dal momento indicato */
+    async fetchRendererUpdates(after) {
+      const response = await apiClient.get('/renderers/new', { params: { dopo: after } })
+      return response.data
+    },
+
     /** Aggiorna i domini nella pagina corrente e nella lista dello store pagine */
     _setPageDomains(pageId, domains) {
       if (!domains) return

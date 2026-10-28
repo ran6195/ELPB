@@ -85,6 +85,7 @@ class AuditCatalog
         'GET /api/pages/{id}/domain-suggestions' => 'Domini suggeriti',
         'GET /api/pages/{id}/renderers' => 'Siti che mostrano la pagina',
         'GET /api/renderers' => 'Registro renderer',
+        'GET /api/renderers/new' => 'Diretta dei renderer',
         'PUT /api/pages/{id}' => 'Salvataggio pagina',
         'DELETE /api/pages/{id}' => 'Archiviazione pagina',
 

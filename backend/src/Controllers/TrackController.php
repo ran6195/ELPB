@@ -89,12 +89,46 @@ class TrackController
      */
     public function index(Request $request, Response $response)
     {
-        $user = $request->getAttribute('user');
+        return $this->json($response, [
+            'data' => $this->rendererRows($request->getAttribute('user')),
+            'current_version' => TrackingService::CURRENT_RENDERER_VERSION,
+            'last_seen_at' => $this->lastSeenAt(),
+        ]);
+    }
 
+    /**
+     * GET /api/renderers/new?dopo=<last_seen_at>
+     * Diretta della scheda Renderer: righe con un accesso dal momento indicato in poi
+     * (anche nello stesso secondo, il frontend le sostituisce per chiave).
+     * Non finisce nel registro attività (RecordActivity::SKIP_ROUTES).
+     */
+    public function newer(Request $request, Response $response)
+    {
+        $after = (string) ($request->getQueryParams()['dopo'] ?? '');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $after)) {
+            return $this->json($response, ['error' => 'dopo deve essere una data AAAA-MM-GG HH:MM:SS'], 400);
+        }
+
+        return $this->json($response, [
+            'data' => $this->rendererRows($request->getAttribute('user'), $after),
+            'last_seen_at' => $this->lastSeenAt() ?? $after,
+        ]);
+    }
+
+    /** Ultimo accesso registrato da un renderer: punto di partenza della diretta */
+    private function lastSeenAt(): ?string
+    {
+        return Capsule::table('renderer_hits')->max('last_seen_at');
+    }
+
+    /** Righe per pagina e sito; con $since solo quelle con un accesso da quel momento */
+    private function rendererRows(User $user, ?string $since = null)
+    {
         $hits = Capsule::table('renderer_hits as h')
             ->join('pages as p', 'p.id', '=', 'h.page_id')
             ->whereNull('p.deleted_at')
             ->where(fn($query) => $this->restrictToVisiblePages($query, $user))
+            ->when($since, fn($query) => $query->where('h.last_seen_at', '>=', $since))
             ->select('h.*')
             ->orderByDesc('h.last_seen_at')
             ->get();
@@ -106,7 +140,7 @@ class TrackController
             ->keyBy('id');
         $leadHosts = $this->leadHostsByPage($pageIds);
 
-        $rows = $hits
+        return $hits
             ->map(function ($hit) use ($pages, $leadHosts) {
                 $page = $pages->get($hit->page_id);
                 $domains = $page ? $page->domains->pluck('hostname')->all() : [];
@@ -141,11 +175,6 @@ class TrackController
             ->filter(fn($row) => $row['page'] !== null)
             ->sortBy(fn($row) => mb_strtolower($row['page']['title']) . '|' . $row['host'])
             ->values();
-
-        return $this->json($response, [
-            'data' => $rows,
-            'current_version' => TrackingService::CURRENT_RENDERER_VERSION,
-        ]);
     }
 
     /** Siti misurati (non stimati) da cui sono arrivati i contatti, per pagina */

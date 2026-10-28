@@ -12,12 +12,15 @@ export function rendererLabel(hit) {
   return hit.version ? `${name} ${hit.version}` : name
 }
 
-/** Data del database ("2026-10-26 20:05:09", ora italiana) come "2 ore fa" */
-export function timeAgo(value) {
+/**
+ * Data del database ("2026-10-26 20:05:09", ora italiana) come "2 ore fa".
+ * `now` permette alle viste in diretta di ricalcolare il testo a ogni giro.
+ */
+export function timeAgo(value, now = Date.now()) {
   if (!value) return '—'
   const date = new Date(String(value).replace(' ', 'T'))
   if (Number.isNaN(date.getTime())) return '—'
-  const minutes = Math.round((Date.now() - date.getTime()) / 60000)
+  const minutes = Math.round((now - date.getTime()) / 60000)
   if (minutes < 2) return 'adesso'
   if (minutes < 60) return `${minutes} minuti fa`
   const hours = Math.round(minutes / 60)
