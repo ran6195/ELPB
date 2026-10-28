@@ -80,6 +80,7 @@
                 <td :rowspan="group.rows.length" class="px-4 py-3 text-sm align-top">
                   <router-link :to="`/editor/${group.page.id}`" class="font-medium text-primary-600 hover:underline">{{ group.page.title }}</router-link>
                   <span class="block font-mono text-xs text-gray-400">#{{ group.page.id }} · {{ group.page.slug }}</span>
+                  <span class="block text-xs text-gray-500 mt-0.5">{{ group.hits }} {{ group.hits === 1 ? 'richiesta' : 'richieste' }} in totale</span>
                 </td>
                 <td :rowspan="group.rows.length" class="px-4 py-3 text-sm align-top">
                   <span class="block text-gray-700">{{ group.page.owner || '—' }}</span>
@@ -157,16 +158,23 @@ const now = ref(Date.now())
 const botCount = computed(() => rows.value.filter(r => !r.is_app && r.is_bot).length)
 const sites = computed(() => rows.value.filter(r => !r.is_app && (showBots.value || !r.is_bot)))
 
-// Righe raggruppate per pagina, nell'ordine (per titolo) restituito dal backend
+// Righe raggruppate per pagina: prima le pagine con più richieste (somma delle righe
+// visibili), dentro ogni pagina i siti con più richieste; a parità titolo e sito
 const groups = computed(() => {
   const byPage = new Map()
   for (const row of sites.value) {
     if (!byPage.has(row.page.id)) {
-      byPage.set(row.page.id, { page: row.page, domains: row.domains, rows: [] })
+      byPage.set(row.page.id, { page: row.page, domains: row.domains, rows: [], hits: 0 })
     }
-    byPage.get(row.page.id).rows.push(row)
+    const group = byPage.get(row.page.id)
+    group.rows.push(row)
+    group.hits += row.hits
   }
-  return [...byPage.values()]
+  const list = [...byPage.values()]
+  for (const group of list) {
+    group.rows.sort((a, b) => b.hits - a.hits || a.host.localeCompare(b.host))
+  }
+  return list.sort((a, b) => b.hits - a.hits || a.page.title.localeCompare(b.page.title, 'it'))
 })
 
 // Conteggi solo sui renderer veri, anche quando i bot sono visibili
@@ -231,10 +239,6 @@ function exportCsv() {
 // Chiave di una riga: pagina, sito, renderer e IP (come l'indice univoco di renderer_hits)
 const rowKey = (row) => `${row.page.id}|${row.host}|${row.renderer}|${row.ip}`
 
-// Stesso ordine del backend: titolo della pagina, poi sito
-const sortKey = (row) => `${row.page.title.toLowerCase()}|${row.host}`
-const sortRows = (list) => [...list].sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
-
 // --- Diretta -------------------------------------------------------------
 let liveTimer = null
 let polling = false
@@ -254,7 +258,7 @@ async function pollUpdates() {
     })
     if (changed.length) {
       for (const row of changed) byKey.set(rowKey(row), row)
-      rows.value = sortRows([...byKey.values()])
+      rows.value = [...byKey.values()] // l'ordine lo decide groups
       markFresh(changed.map(rowKey))
     }
   } catch (e) {
