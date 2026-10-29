@@ -179,6 +179,12 @@
               {{ labels.notifications?.[row.properties.notification] || row.properties.notification }}
             </p>
 
+            <!-- Stesso modulo inviato di nuovo -->
+            <p v-if="row.action === 'lead.duplicate'" class="text-gray-700">
+              <template v-if="row.properties?.origin_host">Dal sito {{ row.properties.origin_host }} · </template>
+              Stesso modulo del lead #{{ row.subject_id }}<template v-if="row.properties?.seconds_after != null">, inviato {{ row.properties.seconds_after }} secondi prima</template>: nessun nuovo lead né email
+            </p>
+
             <!-- Calendario dei lead -->
             <p v-if="row.action === 'GET /api/leads/calendar' && calendarMonth(row)" class="text-gray-700">
               Mese consultato: {{ calendarMonth(row) }}
@@ -321,7 +327,7 @@ const hasFilters = computed(() => Object.entries(filters).some(([, v]) => v !== 
 
 // Proprietà mostrate in sezioni dedicate: il resto va in "Altri dettagli"
 const SHOWN_KEYS = ['old', 'new', 'blocks', 'saves', 'last_saved_at', 'attached', 'detached', 'reason', 'from', 'to',
-  'notification', 'origin_host', 'error', 'input', 'staff_view', 'source', 'params',
+  'notification', 'origin_host', 'seconds_after', 'error', 'input', 'staff_view', 'source', 'params',
   'format', 'panel', 'count', 'refused', 'lead_ids', 'lead_id_range', 'companies', 'pages', 'pages_total', 'filters']
 
 // Mese dal parametro ?mese=AAAA-MM dell'URL, es. "novembre 2026"

@@ -119,6 +119,33 @@ class ExplicitEventsTest extends TestCase
         $this->assertSame(['origin_host' => 'cliente.it', 'notification' => 'not_configured'], $event->properties);
     }
 
+    public function test_stesso_modulo_inviato_di_nuovo_non_crea_un_secondo_lead(): void
+    {
+        $pageId = $this->createPage();
+        $form = ['page_id' => $pageId, 'name' => 'Mario', 'email' => 'v@example.test', 'phone' => '333', 'message' => 'Info', 'privacy_accepted' => true, 'citta' => 'Lecce'];
+
+        $first = $this->request('POST', '/api/leads', $form, ['Origin' => 'https://www.cliente.it']);
+        $again = $this->request('POST', '/api/leads', $form, ['Origin' => 'https://www.cliente.it']);
+
+        $this->assertSame([201, 201], [$first->getStatusCode(), $again->getStatusCode()]);
+        $id = json_decode((string) $first->getBody(), true)['lead']['id'];
+        $this->assertSame($id, json_decode((string) $again->getBody(), true)['lead']['id']);
+        $this->assertSame(1, Capsule::table('leads')->where('page_id', $pageId)->count());
+
+        [$event] = $this->byAction('lead.duplicate');
+        $this->assertSame(['system', 'lead', $id, $pageId], [$event->category, $event->subject_type, $event->subject_id, $event->page_id]);
+        $this->assertSame('cliente.it', $event->properties['origin_host']);
+        $this->assertCount(1, $this->byAction('lead.received'));
+
+        // Contenuto diverso, altra pagina o più di 10 minuti dopo: lead nuovi
+        $this->request('POST', '/api/leads', ['message' => 'Altro'] + $form);
+        $this->request('POST', '/api/leads', ['citta' => 'Bari'] + $form);
+        $this->request('POST', '/api/leads', ['page_id' => $this->createPage()] + $form);
+        Capsule::table('leads')->where('id', $id)->update(['created_at' => date('Y-m-d H:i:s', time() - 11 * 60)]);
+        $this->request('POST', '/api/leads', $form);
+        $this->assertSame(5, Capsule::table('leads')->where('email', 'v@example.test')->count());
+    }
+
     private function createLead(int $pageId): int
     {
         return Capsule::table('leads')->insertGetId([

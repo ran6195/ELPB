@@ -1670,6 +1670,7 @@ HTML;
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        let sent = false;
 
         // Get form data
         const formData = new FormData(form);
@@ -1712,6 +1713,10 @@ HTML;
             const result = await response.json();
 
             if (response.ok) {
+                // Form svuotato e pulsante disattivato: tornando indietro dalla thank-you
+                // il browser non ripropone il modulo compilato da reinviare
+                sent = true;
+                form.reset();
                 // Success - redirect to thank you page
                 const thankYouUrl = formData.get('thank_you_url');
                 if (thankYouUrl && thankYouUrl.trim() !== '') {
@@ -1735,9 +1740,20 @@ HTML;
                 grecaptcha.reset();
             }
         } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+            if (!sent) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            }
         }
+    });
+
+    // Pagina ripristinata dalla cache del browser (indietro dalla thank-you): modulo pronto e vuoto
+    window.addEventListener('pageshow', function(e) {
+        if (!e.persisted) return;
+        form.reset();
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+        if (window.grecaptcha) { try { grecaptcha.reset(); } catch (err) {} }
     });
 
     function showMessage(message, type) {
@@ -1966,6 +1982,7 @@ HTML;
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        let sent = false;
 
         const formData = new FormData(form);
         const data = {
@@ -2010,6 +2027,10 @@ HTML;
             const result = await response.json();
 
             if (response.ok) {
+                // Form svuotato e pulsante disattivato: tornando indietro dalla thank-you
+                // il browser non ripropone il modulo compilato da reinviare
+                sent = true;
+                form.reset();
                 const thankYouUrl = formData.get('thank_you_url');
                 if (thankYouUrl && thankYouUrl.trim() !== '') {
                     window.location.href = thankYouUrl;
@@ -2027,9 +2048,20 @@ HTML;
             showMessage('Si è verificato un errore. Riprova più tardi.', 'error');
             if (window.grecaptcha) { grecaptcha.reset(); }
         } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+            if (!sent) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            }
         }
+    });
+
+    // Pagina ripristinata dalla cache del browser (indietro dalla thank-you): modulo pronto e vuoto
+    window.addEventListener('pageshow', function(e) {
+        if (!e.persisted) return;
+        form.reset();
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+        if (window.grecaptcha) { try { grecaptcha.reset(); } catch (err) {} }
     });
 
     function showMessage(message, type) {

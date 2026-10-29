@@ -30,7 +30,7 @@ Adattamento a Slim 4 + Eloquent standalone del prompt pensato per Laravel
 | `Audit/Auditable.php` | Trait sui modelli: created, updated (campo per campo), deleted, force_deleted, restored |
 | `Audit/AuditCatalog.php` | Etichette: categorie, esiti, ruoli, canali, **rotte**, tipi di record, eventi |
 | `Audit/AccessEvents.php` | login, login_failed, logout |
-| `Audit/PublicationEvents.php` | page.published/unpublished, page.reassigned, lead.received |
+| `Audit/PublicationEvents.php` | page.published/unpublished, page.reassigned, lead.received, lead.duplicate |
 | `Audit/DomainEvents.php` | page.domains_updated (sync/attach/detach non emettono eventi) |
 | `Audit/ExportEvents.php` | lead.exported (export CSV dei lead fatto nel browser) |
 | `Audit/ScriptAudit.php` | Script di `backend/scripts` (canale console) |
@@ -55,7 +55,7 @@ Modelli con il trait: User, Company, Page, Domain, Media, MediaFolder, Lead.
 | change | Modifiche ai modelli, domini delle pagine | `page.updated`, `page.domains_updated` |
 | access | Accessi | `login`, `login_failed`, `logout` |
 | publish | Pubblicazione e assegnazione | `page.published`, `page.unpublished`, `page.reassigned` |
-| system | Lead ricevuto, script, pulizia | `lead.received`, `script`, `audit_prune` |
+| system | Lead ricevuto, lead doppio ignorato, script, pulizia | `lead.received`, `lead.duplicate`, `script`, `audit_prune` |
 | export | Export dei lead dai pannelli admin e aziendale | `lead.exported` |
 
 Non si registrano: GET anonime (pagine servite ai renderer), OPTIONS/HEAD, rotte

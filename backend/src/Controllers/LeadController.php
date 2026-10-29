@@ -14,6 +14,9 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class LeadController
 {
+    /** Un lead identico entro questi minuti è un nuovo invio dello stesso modulo */
+    private const DUPLICATE_WINDOW_MINUTES = 10;
+
     public function index(Request $request, Response $response)
     {
         // Get authenticated user from middleware
@@ -320,6 +323,18 @@ class LeadController
             }
         }
 
+        // Stesso modulo inviato di nuovo (su Android "indietro" dalla thank-you ripropone il
+        // form compilato): si risponde come per il primo invio, senza un secondo lead né email
+        $duplicate = $this->recentDuplicate($data, $metadata);
+        if ($duplicate) {
+            PublicationEvents::leadDuplicate($duplicate, Page::find($duplicate->page_id));
+            $response->getBody()->write(json_encode([
+                'message' => 'Lead saved successfully',
+                'lead' => $duplicate
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+        }
+
         // Sito da cui è stato inviato il form (header del browser: funziona anche
         // con i renderer già installati). Non blocca mai il salvataggio.
         $originHost = null;
@@ -391,6 +406,34 @@ class LeadController
             'lead' => $lead
         ]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+    }
+
+    /**
+     * Lead identico (pagina, nome, email, telefono, messaggio e campi extra) ricevuto
+     * negli ultimi DUPLICATE_WINDOW_MINUTES minuti, se c'è.
+     */
+    private function recentDuplicate(array $data, array $metadata): ?Lead
+    {
+        if (empty($data['page_id'])) {
+            return null;
+        }
+
+        $candidates = Lead::where('page_id', $data['page_id'])
+            ->where('email', $data['email'])
+            ->where('created_at', '>=', date('Y-m-d H:i:s', time() - self::DUPLICATE_WINDOW_MINUTES * 60))
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($candidates as $lead) {
+            // == sugli array: stesse coppie chiave/valore in qualunque ordine (il JSON di MySQL riordina)
+            if ($lead->name === ($data['name'] ?? null)
+                && $lead->phone === ($data['phone'] ?? null)
+                && $lead->message === ($data['message'] ?? null)
+                && ($lead->metadata ?? []) == $metadata) {
+                return $lead;
+            }
+        }
+        return null;
     }
 
     /**

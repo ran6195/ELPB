@@ -171,6 +171,7 @@ class AuditCatalog
         'login_failed' => 'Accesso non riuscito',
         'logout' => 'Uscita',
         'lead.received' => 'Lead ricevuto',
+        'lead.duplicate' => 'Lead doppio ignorato',
         'lead.exported' => 'Lead esportati',
         'script' => 'Script eseguito',
         'audit_prune' => 'Pulizia del registro',

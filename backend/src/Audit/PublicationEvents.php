@@ -57,6 +57,24 @@ class PublicationEvents
         ]);
     }
 
+    /**
+     * Stesso modulo inviato di nuovo: nessun lead né email, la voce indica il lead originale.
+     */
+    public static function leadDuplicate(Lead $lead, ?Page $page): void
+    {
+        Auditor::get()->record(Auditor::SYSTEM, 'lead.duplicate', [
+            'user' => null,
+            ...($page ? self::pageSubject($page) : []),
+            'subject_type' => 'lead',
+            'subject_id' => $lead->id,
+            'subject_label' => null,
+            'properties' => array_filter([
+                'origin_host' => $lead->origin_host,
+                'seconds_after' => $lead->created_at ? max(0, time() - $lead->created_at->getTimestamp()) : null,
+            ], fn($value) => $value !== null),
+        ]);
+    }
+
     private static function pageSubject(Page $page): array
     {
         return [
