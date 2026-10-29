@@ -398,7 +398,15 @@ const calendarOption = computed(() => {
 
 // --- Tabella --------------------------------------------------------------
 
+// Dalla conversione più alta; senza visitatori (conversione non calcolabile) in fondo, per lead
+const sortedConversion = computed(() => [...conversion.value].sort((a, b) =>
+  (a.conversion_pct == null) - (b.conversion_pct == null)
+  || (b.conversion_pct ?? 0) - (a.conversion_pct ?? 0)
+  || b.leads_tracked - a.leads_tracked
+  || b.leads - a.leads
+))
+
 const visibleConversion = computed(() =>
-  showAllRows.value ? conversion.value : conversion.value.slice(0, TABLE_ROWS)
+  showAllRows.value ? sortedConversion.value : sortedConversion.value.slice(0, TABLE_ROWS)
 )
 </script>
