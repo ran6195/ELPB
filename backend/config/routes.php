@@ -7,7 +7,7 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Middleware\AuthMiddleware;
-use App\Middleware\StatsKeyMiddleware;
+use App\Middleware\StatsAccessMiddleware;
 
 // Routes
 $app->get('/', function (Request $request, Response $response) {
@@ -116,7 +116,7 @@ $app->group('/api/stats', function ($group) {
     $group->get('/leads', '\App\Controllers\StatsController:leads');
     $group->get('/views', '\App\Controllers\StatsController:views');
     $group->get('/conversion', '\App\Controllers\StatsController:conversion');
-})->add(StatsKeyMiddleware::class);
+})->add(StatsAccessMiddleware::class);
 
 // ===== PUBLIC ROUTES (accessibili senza auth) =====
 // Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti

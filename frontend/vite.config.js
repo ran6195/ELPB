@@ -57,6 +57,10 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/swiper/')) {
             return 'swiper'
           }
+          // ECharts: solo con la scheda Statistiche (caricata on demand)
+          if (id.includes('node_modules/echarts/') || id.includes('node_modules/zrender/') || id.includes('node_modules/vue-echarts/')) {
+            return 'echarts'
+          }
           // Tutte le altre dipendenze vendor in un chunk comune (include vuedraggable)
           if (id.includes('node_modules/')) {
             return 'vendor'

@@ -27,6 +27,9 @@ class RecordActivity implements MiddlewareInterface
         'GET /api/media/{id}/file',      // file per l'editor immagini
         'GET /api/admin/audit-logs/new', // diretta del registro stesso
         'GET /api/renderers/new',        // diretta della scheda Renderer (ogni 4 secondi)
+        'GET /api/stats/leads',          // grafici della scheda Statistiche: basta la voce di
+        'GET /api/stats/views',          // GET /api/stats/summary, una per apertura o periodo
+        'GET /api/stats/conversion',
     ];
 
     /** Input non registrato: dati personali dei visitatori o contenuto completo della pagina */

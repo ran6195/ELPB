@@ -1,6 +1,7 @@
-# Statistiche per Grafana
+# Statistiche (scheda del pannello e Grafana)
 
-Numeri e andamenti di lead, visite e conversione per le dashboard Grafana (uso interno).
+Numeri e andamenti di lead, visite e conversione per la scheda **Statistiche** del pannello
+admin e per le dashboard Grafana (uso interno).
 Solo dati aggregati: nessun nome, email o telefono dei lead esce dall'applicazione.
 
 Grafana non conserva i dati: a ogni apertura o aggiornamento della dashboard li chiede
@@ -44,19 +45,42 @@ Note sui numeri:
 
 Esempio: `/leads?from=1790000000000&to=1792600000000&interval=week&group=site&limit=5`
 
-## Chiave di accesso
+## Accesso
 
-Le rotte non usano gli utenti dell'applicazione ma una chiave in sola lettura
-(`StatsKeyMiddleware`), `STATS_API_KEY` nel `.env` del backend, almeno 32 caratteri.
-Si invia come `Authorization: Bearer <chiave>` o nell'header `X-Stats-Key`.
-Senza chiave configurata le rotte rispondono 503, con chiave errata 401.
+`StatsAccessMiddleware` accetta due credenziali:
+
+- **chiave di Grafana** in sola lettura, `STATS_API_KEY` nel `.env` del backend, almeno
+  32 caratteri, come `Authorization: Bearer <chiave>` o nell'header `X-Stats-Key`: vede tutto;
+- **token di un utente del pannello** (login normale) con un ruolo tra `STATS_USER_ROLES`
+  (`.env`, separati da virgola, predefinito `admin`; altri ruoli → 403).
+
+Visibilità come per i lead (`StatsController::visiblePages()`): Grafana e admin tutto, gli
+altri utenti solo le pagine della propria azienda (anche archiviate), senza azienda nulla.
+Il filtro è già attivo e verificato dai test: per aprire le statistiche alle aziende basta
+`STATS_USER_ROLES=admin,company,user` e mostrare la scheda nel pannello aziendale.
+
+Senza chiave configurata e senza utente valido le rotte rispondono 503, con chiave errata 401.
 
 Generarla con `php -r 'echo bin2hex(random_bytes(32));'`. Il repository è pubblico:
 la chiave va solo nel `.env` del server e in Grafana, mai in git. Per revocarla basta
 cambiarla nel `.env` (e aggiornarla in Grafana).
 
-Le richieste non finiscono nel registro attività (sono GET senza utente, come le pagine
-servite ai renderer): Grafana interroga ogni pochi secondi.
+Le richieste di Grafana non finiscono nel registro attività (GET senza utente): Grafana
+interroga ogni pochi secondi. Dalla scheda del pannello si registra solo
+`GET /api/stats/summary` (una voce per apertura o cambio di periodo); i grafici
+(`leads`, `views`, `conversion`) sono in `SKIP_ROUTES`.
+
+## Scheda Statistiche
+
+`frontend/src/components/stats/` (`StatsDashboard.vue`, `StatCard.vue`, `charts.js`), store
+`statsStore.js`, scheda "Statistiche" del pannello admin caricata solo all'apertura insieme
+ad ECharts (`echarts` + `vue-echarts`, chunk separato in `vite.config.js`). Contiene: periodo
+(7/30/90 giorni, 12 mesi) e raggruppamento (pagina, sito, azienda) in una riga; numeri del
+periodo (lead con variazione sul periodo precedente, visitatori, conversione sui lead
+tracciati, pagine pubblicate) con andamento; lead nel tempo; lead per gruppo (barre impilate,
+prime 7 + "Altre", colore legato alla serie); calendario dei lead degli ultimi 12 mesi;
+tabella della conversione per gruppo. Palette categoriale a ordine fisso, validata per il
+daltonismo; i colori con poco contrasto sono sempre accompagnati da legenda e tabella.
 
 ## Configurazione di Grafana Cloud
 
@@ -94,5 +118,5 @@ Se Aruba non inoltrasse l'header `Authorization` a PHP, in Infinity usare invece
 
 ## File
 
-`Controllers/StatsController.php`, `Middleware/StatsKeyMiddleware.php`, rotte in
+`Controllers/StatsController.php`, `Middleware/StatsAccessMiddleware.php`, rotte in
 `config/routes.php` (gruppo `/api/stats`), test `tests/Feature/StatsTest.php`.

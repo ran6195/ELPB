@@ -29,6 +29,7 @@ class StatsTest extends TestCase
     {
         $_ENV['STATS_API_KEY'] = $this->previousKey;
         $_ENV['APP_URL'] = $this->previousAppUrl;
+        unset($_ENV['STATS_USER_ROLES']);
         parent::tearDown();
     }
 
@@ -54,8 +55,6 @@ class StatsTest extends TestCase
     {
         $this->assertSame(401, $this->request('GET', '/api/stats/summary')->getStatusCode());
         $this->assertSame(401, $this->request('GET', '/api/stats/summary', null, ['Authorization' => 'Bearer sbagliata'])->getStatusCode());
-        // Un token di un utente non apre le statistiche
-        $this->assertSame(401, $this->request('GET', '/api/stats/summary', null, [], $this->createUser(['role' => 'admin']))->getStatusCode());
         $this->assertSame(200, $this->request('GET', '/api/stats/summary', null, ['X-Stats-Key' => self::KEY])->getStatusCode());
         $this->assertSame(200, $this->stats('/api/stats/summary')->getStatusCode());
 
@@ -64,6 +63,70 @@ class StatsTest extends TestCase
 
         // Grafana interroga spesso: le statistiche non finiscono nel registro attività
         $this->assertSame([], array_filter($this->auditEntries(), fn($e) => str_starts_with($e->action, 'GET /api/stats')));
+    }
+
+    public function test_utenti_del_pannello_solo_con_i_ruoli_ammessi(): void
+    {
+        $admin = $this->createUser(['role' => 'admin']);
+        $company = $this->createUser(['role' => 'company', 'company_id' => $this->createCompany()]);
+
+        $this->assertSame(200, $this->request('GET', '/api/stats/summary', null, [], $admin)->getStatusCode());
+        // Per ora solo gli admin (STATS_USER_ROLES predefinito)
+        $this->assertSame(403, $this->request('GET', '/api/stats/summary', null, [], $company)->getStatusCode());
+        $_ENV['STATS_USER_ROLES'] = 'admin, company';
+        $this->assertSame(200, $this->request('GET', '/api/stats/summary', null, [], $company)->getStatusCode());
+
+        // Anche senza chiave di Grafana configurata
+        $_ENV['STATS_API_KEY'] = '';
+        $this->assertSame(200, $this->request('GET', '/api/stats/summary', null, [], $admin)->getStatusCode());
+
+        // Nel registro: la consultazione (riepilogo), non ogni grafico
+        $this->request('GET', '/api/stats/leads', null, [], $admin);
+        $actions = array_map(fn($e) => $e->action, array_filter($this->auditEntries(), fn($e) => str_starts_with($e->action, 'GET /api/stats')));
+        $this->assertSame(['GET /api/stats/summary'], array_values(array_unique($actions)));
+    }
+
+    public function test_un_azienda_vede_solo_le_proprie_pagine(): void
+    {
+        $_ENV['STATS_USER_ROLES'] = 'admin,company,user';
+        $mia = $this->createCompany('Mia');
+        $altra = $this->createCompany('Altra');
+        $miaPagina = $this->createPage(['company_id' => $mia, 'title' => 'Mia offerta', 'is_published' => 1]);
+        $archiviata = $this->createPage(['company_id' => $mia, 'title' => 'Vecchia']);
+        $altraPagina = $this->createPage(['company_id' => $altra, 'title' => 'Altra offerta', 'is_published' => 1]);
+        Capsule::table('pages')->where('id', $archiviata)->update(['deleted_at' => '2026-10-04 00:00:00']);
+
+        $this->lead($miaPagina, '2026-10-02 10:00:00', 'mio.it');
+        $this->lead($archiviata, '2026-10-02 11:00:00', 'mio.it');
+        foreach (range(1, 3) as $i) {
+            $this->lead($altraPagina, '2026-10-02 10:00:00', 'altro.it');
+        }
+        $this->lead(null, '2026-10-02 10:00:00');
+        $this->views($miaPagina, 'mio.it', '2026-10-02', 40, 20);
+        $this->views($altraPagina, 'altro.it', '2026-10-02', 90, 60);
+
+        $user = $this->createUser(['role' => 'user', 'company_id' => $mia]);
+        $period = 'from=2026-10-01&to=2026-10-08';
+
+        $summary = $this->json($this->request('GET', "/api/stats/summary?$period", null, [], $user));
+        $this->assertEquals([2, 20, 1], [$summary['leads'], $summary['visitors'], $summary['published_pages']]);
+
+        $byPage = $this->json($this->request('GET', "/api/stats/conversion?$period&group=page", null, [], $user));
+        $this->assertEqualsCanonicalizing(["Mia offerta (#$miaPagina)", "Vecchia (#$archiviata) – archiviata"], array_column($byPage, 'series'));
+
+        $bySite = $this->json($this->request('GET', "/api/stats/views?$period&group=site", null, [], $user));
+        $this->assertSame(['mio.it'], array_values(array_unique(array_column($bySite, 'series'))));
+
+        $leads = $this->json($this->request('GET', "/api/stats/leads?$period&interval=week&group=company", null, [], $user));
+        $this->assertSame([['Mia', 2], ['Mia', 0]], array_map(fn($r) => [$r['series'], $r['leads']], $leads));
+
+        // Senza azienda: nulla
+        $orphan = $this->createUser(['role' => 'user']);
+        $this->assertSame(0, $this->json($this->request('GET', "/api/stats/summary?$period", null, [], $orphan))['leads']);
+
+        // Admin e Grafana: tutto (lead senza pagina compresi)
+        $this->assertSame(6, $this->json($this->request('GET', "/api/stats/summary?$period", null, [], $this->createUser(['role' => 'admin'])))['leads']);
+        $this->assertSame(6, $this->json($this->stats("/api/stats/summary?$period"))['leads']);
     }
 
     public function test_lead_per_giorno_con_gli_zeri_e_senza_l_anteprima(): void

@@ -89,6 +89,17 @@
             Registro attività
           </button>
           <button
+            @click="activeTab = 'stats'"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors',
+              activeTab === 'stats'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+            ]"
+          >
+            Statistiche
+          </button>
+          <button
             @click="activeTab = 'leads'"
             :class="[
               'px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors',
@@ -430,6 +441,9 @@
 
       <!-- TAB: REGISTRO ATTIVITÀ -->
       <ActivityLog v-if="activeTab === 'activity'" :companies="companies" />
+
+      <!-- STATISTICHE (ECharts caricato solo all'apertura della scheda) -->
+      <StatsDashboard v-if="activeTab === 'stats'" />
 
       <!-- TAB: LEADS -->
       <div v-if="activeTab === 'leads'" class="bg-white rounded-lg shadow">
@@ -962,7 +976,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { usePageStore } from '../stores/pageStore'
@@ -970,6 +984,7 @@ import LeadsCalendar from '../components/LeadsCalendar.vue'
 import DomainManager from '../components/domains/DomainManager.vue'
 import RendererOverview from '../components/domains/RendererOverview.vue'
 import ActivityLog from '../components/audit/ActivityLog.vue'
+const StatsDashboard = defineAsyncComponent(() => import('../components/stats/StatsDashboard.vue'))
 import { leadOrigin, leadSiteText, siteOptions, matchesSite } from '../utils/leadOrigin'
 
 const router = useRouter()

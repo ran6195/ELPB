@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\User;
 use App\Services\TrackingService;
 use App\Utils\Hostname;
 use DateTimeImmutable;
@@ -11,8 +12,11 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 /**
- * Statistiche aggregate per Grafana (plugin Infinity), protette da StatsKeyMiddleware.
- * Solo numeri e andamenti: nessun dato personale dei lead.
+ * Statistiche aggregate per Grafana (plugin Infinity) e per la scheda Statistiche del pannello,
+ * protette da StatsAccessMiddleware. Solo numeri e andamenti: nessun dato personale dei lead.
+ *
+ * Con la chiave di Grafana e per gli admin si vede tutto; gli altri utenti vedono solo le
+ * pagine della propria azienda (anche archiviate), come per i lead.
  *
  * Parametri comuni:
  *   from, to   epoch in millisecondi (${__from}, ${__to} di Grafana) oppure AAAA-MM-GG;
@@ -39,6 +43,9 @@ class StatsController
 
     private DateTimeZone $tz;
 
+    /** Utente del pannello (null: chiave di Grafana) */
+    private ?User $user = null;
+
     public function __construct()
     {
         $this->tz = new DateTimeZone(date_default_timezone_get());
@@ -51,6 +58,7 @@ class StatsController
      */
     public function summary(Request $request, Response $response)
     {
+        $this->user = $request->getAttribute('user');
         try {
             [$from, $to] = $this->range($request->getQueryParams());
         } catch (\InvalidArgumentException $e) {
@@ -66,8 +74,8 @@ class StatsController
             ->first();
 
         // Siti e renderer visti nel periodo, esclusi anteprima e richieste automatiche
-        $hits = Capsule::table('renderer_hits as h')
-            ->join('pages as p', 'p.id', '=', 'h.page_id')
+        $hits = $this->visiblePages(Capsule::table('renderer_hits as h')
+            ->join('pages as p', 'p.id', '=', 'h.page_id'))
             ->whereNull('p.deleted_at')
             ->where('h.last_seen_at', '>=', $this->sql($from))
             ->where('h.last_seen_at', '<', $this->sql($to))
@@ -85,7 +93,7 @@ class StatsController
             'visitors' => (int) $views->visitors,
             'leads_tracked' => $tracked,
             'conversion_pct' => self::rate($tracked, (int) $views->visitors),
-            'published_pages' => Capsule::table('pages')->whereNull('deleted_at')->where('is_published', 1)->count(),
+            'published_pages' => $this->visiblePages(Capsule::table('pages as p'))->whereNull('p.deleted_at')->where('p.is_published', 1)->count(),
             'active_sites' => $hits->where('host', '!=', '')->pluck('host')->unique()->count(),
             'outdated_renderers' => $hits->filter(fn($hit) => TrackingService::isOutdated($hit->version, $hit->renderer))->count(),
         ]);
@@ -97,6 +105,7 @@ class StatsController
      */
     public function leads(Request $request, Response $response)
     {
+        $this->user = $request->getAttribute('user');
         try {
             $params = $request->getQueryParams();
             [$from, $to] = $this->range($params);
@@ -124,6 +133,7 @@ class StatsController
      */
     public function views(Request $request, Response $response)
     {
+        $this->user = $request->getAttribute('user');
         try {
             $params = $request->getQueryParams();
             [$from, $to] = $this->range($params);
@@ -152,6 +162,7 @@ class StatsController
      */
     public function conversion(Request $request, Response $response)
     {
+        $this->user = $request->getAttribute('user');
         try {
             $params = $request->getQueryParams();
             [$from, $to] = $this->range($params);
@@ -200,8 +211,8 @@ class StatsController
     /** Lead del periodo (anche di pagine archiviate o eliminate), senza quelli dall'anteprima */
     private function leadsQuery(DateTimeImmutable $from, DateTimeImmutable $to)
     {
-        $query = Capsule::table('leads as l')
-            ->leftJoin('pages as p', 'p.id', '=', 'l.page_id')
+        $query = $this->visiblePages(Capsule::table('leads as l')
+            ->leftJoin('pages as p', 'p.id', '=', 'l.page_id'))
             ->where('l.created_at', '>=', $this->sql($from))
             ->where('l.created_at', '<', $this->sql($to));
 
@@ -232,10 +243,25 @@ class StatsController
     {
         // "to" a mezzanotte esclude quel giorno, a metà giornata lo comprende
         $lastDay = $to->format('H:i:s') === '00:00:00' ? $to : $to->modify('+1 day');
-        return Capsule::table('page_views_daily as v')
-            ->leftJoin('pages as p', 'p.id', '=', 'v.page_id')
+        return $this->visiblePages(Capsule::table('page_views_daily as v')
+            ->leftJoin('pages as p', 'p.id', '=', 'v.page_id'))
             ->where('v.day', '>=', $from->format('Y-m-d'))
             ->where('v.day', '<', $lastDay->format('Y-m-d'));
+    }
+
+    /**
+     * Solo le pagine (alias "p") visibili all'utente, come LeadController::visibleTo():
+     * Grafana e admin tutto, gli altri la propria azienda, senza azienda nulla.
+     */
+    private function visiblePages($query)
+    {
+        if (!$this->user || $this->user->role === 'admin') {
+            return $query;
+        }
+        if (!$this->user->company_id) {
+            return $query->whereRaw('1 = 0');
+        }
+        return $query->where('p.company_id', $this->user->company_id);
     }
 
     /** Inizio del periodo (ora italiana, come le date del database) */
