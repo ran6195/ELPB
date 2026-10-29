@@ -71,7 +71,7 @@ class StatsController
             ->whereNull('p.deleted_at')
             ->where('h.last_seen_at', '>=', $this->sql($from))
             ->where('h.last_seen_at', '<', $this->sql($to))
-            ->get(['h.host', 'h.version', 'h.ip', 'h.user_agent'])
+            ->get(['h.host', 'h.renderer', 'h.version', 'h.ip', 'h.user_agent'])
             ->reject(fn($hit) => Hostname::isAppHost($hit->host)
                 || TrackingService::isAutomated($hit->version, $hit->ip, $hit->user_agent));
 
@@ -87,7 +87,7 @@ class StatsController
             'conversion_pct' => self::rate($tracked, (int) $views->visitors),
             'published_pages' => Capsule::table('pages')->whereNull('deleted_at')->where('is_published', 1)->count(),
             'active_sites' => $hits->where('host', '!=', '')->pluck('host')->unique()->count(),
-            'outdated_renderers' => $hits->filter(fn($hit) => TrackingService::isOutdated($hit->version))->count(),
+            'outdated_renderers' => $hits->filter(fn($hit) => TrackingService::isOutdated($hit->version, $hit->renderer))->count(),
         ]);
     }
 

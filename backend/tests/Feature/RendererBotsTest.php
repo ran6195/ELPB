@@ -11,6 +11,17 @@ use Tests\TestCase;
  */
 class RendererBotsTest extends TestCase
 {
+    public function test_versione_da_aggiornare_per_renderer(): void
+    {
+        $this->assertTrue(TrackingService::isOutdated(null, ''));
+        $this->assertTrue(TrackingService::isOutdated('2.1.0', 'standalone'));
+        $this->assertFalse(TrackingService::isOutdated('2.1.1', 'standalone'));
+        // Joomla non ha la 2.1.1: la 2.1.0 è l'ultima
+        $this->assertFalse(TrackingService::isOutdated('2.1.0', 'joomla'));
+        // Renderer sconosciuto: confronto con la versione più recente
+        $this->assertTrue(TrackingService::isOutdated('2.1.0', 'altro'));
+    }
+
     public function test_classificazione_delle_richieste_automatiche(): void
     {
         $cases = [

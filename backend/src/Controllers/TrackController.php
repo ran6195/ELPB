@@ -91,7 +91,7 @@ class TrackController
     {
         return $this->json($response, [
             'data' => $this->rendererRows($request->getAttribute('user')),
-            'current_version' => TrackingService::CURRENT_RENDERER_VERSION,
+            'current_versions' => TrackingService::CURRENT_RENDERER_VERSIONS,
             'last_seen_at' => $this->lastSeenAt(),
         ]);
     }
@@ -164,7 +164,7 @@ class TrackController
                     'version' => $hit->version,
                     'is_bot' => $bot = TrackingService::isAutomated($hit->version, $hit->ip, $hit->user_agent),
                     // Un bot non è un renderer da aggiornare
-                    'outdated' => !$bot && TrackingService::isOutdated($hit->version),
+                    'outdated' => !$bot && TrackingService::isOutdated($hit->version, $hit->renderer),
                     'is_app' => Hostname::isAppHost($hit->host),
                     'ip' => $hit->ip !== '' ? $hit->ip : null,
                     'hits' => (int) $hit->hits,
@@ -201,7 +201,7 @@ class TrackController
             'renderer' => $hit->renderer,
             'version' => $hit->version,
             'is_bot' => $bot = TrackingService::isAutomated($hit->version, $hit->ip, $hit->user_agent),
-            'outdated' => !$bot && TrackingService::isOutdated($hit->version),
+            'outdated' => !$bot && TrackingService::isOutdated($hit->version, $hit->renderer),
             'associated' => $hit->host !== '' && in_array($hit->host, $associated, true),
             'is_app' => Hostname::isAppHost($hit->host),
             // L'IP serve solo a riconoscere i renderer non aggiornati

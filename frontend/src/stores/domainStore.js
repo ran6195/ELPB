@@ -78,7 +78,7 @@ export const useDomainStore = defineStore('domain', {
       return response.data.data
     },
 
-    /** Siti e versioni dei renderer delle pagine visibili; current_version è l'ultima distribuita */
+    /** Siti e versioni dei renderer delle pagine visibili; current_versions: ultima versione distribuita per renderer */
     async fetchRenderers() {
       const response = await apiClient.get('/renderers')
       return response.data

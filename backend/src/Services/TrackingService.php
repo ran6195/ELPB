@@ -20,8 +20,8 @@ use Psr\Http\Message\ServerRequestInterface as Request;
  */
 class TrackingService
 {
-    /** Versione dei renderer distribuiti: le precedenti risultano da aggiornare */
-    public const CURRENT_RENDERER_VERSION = '2.1.0';
+    /** Ultima versione distribuita di ogni renderer: le precedenti risultano da aggiornare */
+    public const CURRENT_RENDERER_VERSIONS = ['standalone' => '2.1.1', 'joomla' => '2.1.0'];
 
     /** Aggregati giornalieri conservati per 16 mesi, come GA4 */
     private const RETENTION_MONTHS = 16;
@@ -48,9 +48,15 @@ class TrackingService
     private const AUTOMATED_AGENT = '/bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|curl|wget|python|java\/|go-http|monitor|uptime|claude|anthropic|chatgpt|openai|perplexity|ccbot|bytespider|postman|insomnia|httpie/i';
 
     /** Renderer senza versione (precedente alla 2.1) o con una versione superata */
-    public static function isOutdated(?string $version): bool
+    public static function isOutdated(?string $version, ?string $renderer = null): bool
     {
-        return $version === null || version_compare($version, self::CURRENT_RENDERER_VERSION, '<');
+        if ($version === null) {
+            return true;
+        }
+        // Renderer sconosciuto: confronto con la versione più recente
+        $current = self::CURRENT_RENDERER_VERSIONS[$renderer ?? '']
+            ?? array_reduce(self::CURRENT_RENDERER_VERSIONS, fn($max, $v) => version_compare($v, $max, '>') ? $v : $max, '0');
+        return version_compare($version, $current, '<');
     }
 
     /**

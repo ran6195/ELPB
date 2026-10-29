@@ -13,7 +13,8 @@
       </div>
       <p class="text-sm text-gray-500 mt-1">
         Per ogni pagina: domini associati, sito che la mostra, renderer e server. I renderer precedenti alla
-        {{ currentVersion }} non comunicano il sito: si riconoscono dall'IP del server e vanno aggiornati.
+        2.1 non comunicano il sito: si riconoscono dall'IP del server e vanno aggiornati.
+        <template v-if="currentVersionsText">Ultime versioni: {{ currentVersionsText }}.</template>
       </p>
     </div>
 
@@ -141,7 +142,10 @@ const domainStore = useDomainStore()
 const loading = ref(true)
 const error = ref('')
 const rows = ref([])
-const currentVersion = ref('2.1.0')
+const currentVersions = ref({})
+const currentVersionsText = computed(() => Object.entries(currentVersions.value)
+  .map(([renderer, version]) => rendererLabel({ renderer, version }))
+  .join(' · '))
 const filter = ref('all')
 const showBots = ref(false)
 
@@ -297,7 +301,7 @@ onMounted(async () => {
   try {
     const result = await domainStore.fetchRenderers()
     rows.value = result.data
-    currentVersion.value = result.current_version || currentVersion.value
+    currentVersions.value = result.current_versions || {}
     // Senza accessi registrati la diretta parte da adesso (ora del database: italiana)
     lastSeenAt.value = result.last_seen_at || databaseNow()
   } catch (e) {

@@ -17,7 +17,7 @@ date_default_timezone_set('Europe/Rome');
 
 // Costanti utili
 define('RENDERER_NAME', 'standalone');
-define('RENDERER_VERSION', '2.1.0');
+define('RENDERER_VERSION', '2.1.1');
 define('RENDERER_PATH', __DIR__);
 
 /**
