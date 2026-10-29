@@ -86,6 +86,10 @@ class AuditCatalog
         'GET /api/pages/{id}/renderers' => 'Siti che mostrano la pagina',
         'GET /api/renderers' => 'Registro renderer',
         'GET /api/renderers/new' => 'Diretta dei renderer',
+        'GET /api/stats/summary' => 'Statistiche: riepilogo',
+        'GET /api/stats/leads' => 'Statistiche: lead',
+        'GET /api/stats/views' => 'Statistiche: visite',
+        'GET /api/stats/conversion' => 'Statistiche: conversione',
         'PUT /api/pages/{id}' => 'Salvataggio pagina',
         'DELETE /api/pages/{id}' => 'Archiviazione pagina',
 

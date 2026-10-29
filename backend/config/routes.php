@@ -7,6 +7,7 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Middleware\AuthMiddleware;
+use App\Middleware\StatsKeyMiddleware;
 
 // Routes
 $app->get('/', function (Request $request, Response $response) {
@@ -108,6 +109,14 @@ $app->post('/api/leads/exports', '\App\Controllers\LeadController:logExport')->a
 $app->delete('/api/leads/{id}', '\App\Controllers\LeadController:delete')->add(AuthMiddleware::class);
 $app->post('/api/leads/{id}/notes', '\App\Controllers\LeadController:addNote')->add(AuthMiddleware::class);
 $app->put('/api/leads/{id}/appointment', '\App\Controllers\LeadController:updateAppointment')->add(AuthMiddleware::class);
+
+// Statistiche aggregate per Grafana: chiave in sola lettura STATS_API_KEY, non un utente
+$app->group('/api/stats', function ($group) {
+    $group->get('/summary', '\App\Controllers\StatsController:summary');
+    $group->get('/leads', '\App\Controllers\StatsController:leads');
+    $group->get('/views', '\App\Controllers\StatsController:views');
+    $group->get('/conversion', '\App\Controllers\StatsController:conversion');
+})->add(StatsKeyMiddleware::class);
 
 // ===== PUBLIC ROUTES (accessibili senza auth) =====
 // Public page route (by slug) - Le LP pubblicate devono essere visibili a tutti
