@@ -13,10 +13,10 @@ Tutte `GET`, base `https://elpb.edysma.com/backend/public/api/stats`.
 
 | Rotta | Restituisce |
 |---|---|
-| `/summary` | Un oggetto: `leads`, `leads_previous` e `leads_change_pct` (periodo precedente di uguale durata), `views`, `visitors`, `conversion_pct`, `published_pages`, `active_sites`, `outdated_renderers` |
+| `/summary` | Un oggetto: `leads`, `leads_previous` e `leads_change_pct` (periodo precedente di uguale durata), `views`, `visitors`, `leads_tracked`, `conversion_pct`, `published_pages`, `active_sites`, `outdated_renderers` |
 | `/leads` | Serie temporale `[{time, series, series_id, leads}]` |
 | `/views` | Serie temporale `[{time, series, series_id, views, visitors}]` (niente `interval=hour`: le visite sono per giorno) |
-| `/conversion` | Tabella `[{series, series_id, leads, views, visitors, conversion_pct}]`, dalla riga con più lead |
+| `/conversion` | Tabella `[{series, series_id, leads, leads_tracked, views, visitors, conversion_pct}]`, dalla riga con più lead |
 
 Parametri:
 
@@ -34,10 +34,12 @@ Note sui numeri:
   si contano quelli delle pagine archiviate ("– archiviata") ed eliminate ("Pagina eliminata");
 - le pagine hanno l'id nel nome ("Offerta (#105)"), così due pagine con lo stesso titolo
   restano serie separate;
-- `visitors` è la somma dei visitatori unici di ogni giorno, conversione = lead / visitatori;
-- per sito: i renderer precedenti alla 2.1 non comunicano il sito delle visite, che finiscono
-  in "Sito sconosciuto"; i loro lead hanno comunque il sito (dal browser), quindi la
-  conversione per sito è affidabile solo sui siti con il renderer aggiornato;
+- `visitors` è la somma dei visitatori unici di ogni giorno;
+- conversione = lead tracciati / visitatori. Le visite le contano solo i renderer 2.1 o
+  successivi, quindi un lead è **tracciato** solo se la sua pagina, sul suo sito, contava già
+  le visite il giorno in cui è arrivato (lead dei renderer vecchi e dei giorni prima
+  dell'aggiornamento esclusi). `leads_tracked` dice su quanti lead si basa la percentuale;
+  senza visitatori `conversion_pct` è `null`;
 - date in ora italiana, come nel database.
 
 Esempio: `/leads?from=1790000000000&to=1792600000000&interval=week&group=site&limit=5`
@@ -74,7 +76,7 @@ Pannelli suggeriti (*Type*: JSON, *Parser*: Backend, *Source*: URL):
 | Lead nel tempo (Time series o Bar chart) | `/leads?from=${__from}&to=${__to}&interval=${intervallo}` | colonne: `time` *Timestamp*, `leads` *Number* |
 | Lead per pagina nel tempo | `/leads?from=${__from}&to=${__to}&interval=${intervallo}&group=page` | colonne `time`, `series`, `leads`; trasformazione **Partition by values** su `series` |
 | Visite per sito | `/views?from=${__from}&to=${__to}&interval=day&group=site` | come sopra, campi `views` o `visitors` |
-| Conversione per pagina (Table) | `/conversion?from=${__from}&to=${__to}&group=page` | colonne `series`, `leads`, `visitors`, `conversion_pct` (unità *Percent*) |
+| Conversione per pagina (Table) | `/conversion?from=${__from}&to=${__to}&group=page` | colonne `series`, `leads`, `leads_tracked`, `visitors`, `conversion_pct` (unità *Percent*) |
 
 Aggiornamento automatico della dashboard: 30 s o 1 m sono più che sufficienti (l'intervallo
 si sceglie in alto a destra).

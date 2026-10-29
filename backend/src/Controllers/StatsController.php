@@ -24,6 +24,10 @@ use Psr\Http\Message\ServerRequestInterface as Request;
  * Le serie temporali sono in formato lungo (time, series, valori), con gli zeri per i
  * periodi senza dati: in Grafana si separano con la trasformazione "Partition by values".
  * I lead arrivati dall'anteprima dell'applicazione non vengono contati.
+ *
+ * Conversione = lead / visitatori, ma solo con i lead "tracciati": quelli di una pagina e di
+ * un sito che contavano già le visite il giorno del lead (renderer 2.1 o successivo). Gli altri
+ * lead non hanno visite con cui confrontarli e gonfierebbero la percentuale.
  */
 class StatsController
 {
@@ -55,6 +59,7 @@ class StatsController
 
         $previousFrom = $from->sub($from->diff($to));
         $leads = (int) $this->leadsQuery($from, $to)->count();
+        $tracked = (int) $this->trackedLeadsQuery($from, $to)->count();
         $previousLeads = (int) $this->leadsQuery($previousFrom, $from)->count();
         $views = $this->viewsQuery($from, $to)
             ->selectRaw('COALESCE(SUM(v.views), 0) as views, COALESCE(SUM(v.visitors), 0) as visitors')
@@ -78,7 +83,8 @@ class StatsController
             'leads_change_pct' => $previousLeads > 0 ? round(($leads - $previousLeads) / $previousLeads * 100, 1) : null,
             'views' => (int) $views->views,
             'visitors' => (int) $views->visitors,
-            'conversion_pct' => self::rate($leads, (int) $views->visitors),
+            'leads_tracked' => $tracked,
+            'conversion_pct' => self::rate($tracked, (int) $views->visitors),
             'published_pages' => Capsule::table('pages')->whereNull('deleted_at')->where('is_published', 1)->count(),
             'active_sites' => $hits->where('host', '!=', '')->pluck('host')->unique()->count(),
             'outdated_renderers' => $hits->filter(fn($hit) => TrackingService::isOutdated($hit->version))->count(),
@@ -139,8 +145,9 @@ class StatsController
 
     /**
      * GET /api/stats/conversion?from&to&group
-     * Tabella per pagina, sito o azienda: [{series, series_id, leads, views, visitors, conversion_pct}],
-     * dalla più alta per lead. Conversione = lead / visitatori.
+     * Tabella per pagina, sito o azienda: [{series, series_id, leads, leads_tracked, views, visitors,
+     * conversion_pct}], dalla più alta per lead. Conversione = lead tracciati / visitatori
+     * (null senza visitatori).
      * Per sito i renderer precedenti alla 2.1 non comunicano il sito delle visite ("Sito sconosciuto").
      */
     public function conversion(Request $request, Response $response)
@@ -157,6 +164,10 @@ class StatsController
             ->selectRaw($this->leadSeriesSql($group) . ' as series_id, COUNT(*) as leads')
             ->groupBy('series_id')
             ->pluck('leads', 'series_id');
+        $tracked = $this->trackedLeadsQuery($from, $to)
+            ->selectRaw($this->leadSeriesSql($group) . ' as series_id, COUNT(*) as leads')
+            ->groupBy('series_id')
+            ->pluck('leads', 'series_id');
         $views = $this->viewsQuery($from, $to)
             ->selectRaw($this->viewSeriesSql($group) . ' as series_id, SUM(v.views) as views, SUM(v.visitors) as visitors')
             ->groupBy('series_id')
@@ -166,16 +177,16 @@ class StatsController
         $ids = collect($leads->keys())->merge($views->keys())->map(fn($id) => (string) $id)->unique()->values();
         $labels = $this->labels($group, $ids->all());
 
-        $rows = $ids->map(function ($id) use ($leads, $views, $labels) {
-            $count = (int) ($leads[$id] ?? 0);
+        $rows = $ids->map(function ($id) use ($leads, $tracked, $views, $labels) {
             $visitors = (int) ($views[$id]->visitors ?? 0);
             return [
                 'series' => $labels[$id],
                 'series_id' => $id,
-                'leads' => $count,
+                'leads' => (int) ($leads[$id] ?? 0),
+                'leads_tracked' => (int) ($tracked[$id] ?? 0),
                 'views' => (int) ($views[$id]->views ?? 0),
                 'visitors' => $visitors,
-                'conversion_pct' => self::rate($count, $visitors),
+                'conversion_pct' => self::rate((int) ($tracked[$id] ?? 0), $visitors),
             ];
         })
             ->sortBy([['leads', 'desc'], ['visitors', 'desc'], ['series', 'asc']])
@@ -199,6 +210,21 @@ class StatsController
             $query->where(fn($q) => $q->whereNull('l.origin_host')->orWhere('l.origin_host', '!=', $appHost));
         }
         return $query;
+    }
+
+    /**
+     * Lead tracciati: pagina e sito contavano le visite dal giorno del lead o da prima.
+     * Il primo giorno è cercato su tutto lo storico delle visite (16 mesi), non solo nel periodo.
+     */
+    private function trackedLeadsQuery(DateTimeImmutable $from, DateTimeImmutable $to)
+    {
+        $firstDays = Capsule::table('page_views_daily')
+            ->selectRaw('page_id, host, MIN(day) as first_day')
+            ->groupBy('page_id', 'host');
+
+        return $this->leadsQuery($from, $to)
+            ->joinSub($firstDays, 't', fn($join) => $join->on('t.page_id', '=', 'l.page_id')->on('t.host', '=', 'l.origin_host'))
+            ->whereRaw('DATE(l.created_at) >= t.first_day');
     }
 
     /** Visite giornaliere dei giorni compresi nel periodo */
