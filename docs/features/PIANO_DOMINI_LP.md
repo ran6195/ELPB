@@ -140,6 +140,7 @@ renderer_hits
 
 - Aggiornato in `showBySlug` con un upsert per chiamata: una query in più, senza effetti sulla risposta.
 - Chiamata senza header → riga con `host` NULL = **renderer non aggiornato**, identificato dall'IP del server.
+- Dopo l'aggiornamento la riga vecchia confluisce in quella nuova se, per la stessa pagina, c'è una sola riga aggiornata dello stesso renderer con lo stesso IP del server (`TrackingService::mergeUpdatedRenderers()`): richieste sommate, primo accesso il più vecchio, non più "da aggiornare" (scheda Renderer, sezione della pagina, `outdated_renderers` delle statistiche). Con più siti aggiornati sullo stesso IP la riga vecchia resta separata.
 - In interfaccia, per ogni pagina: "Pubblicata su: `cliente.it` (standalone 2.1.0, ultimo accesso ieri) · 1 renderer non aggiornato (IP 1.2.3.4)". Serve a sapere quali dei ~20 siti mancano all'appello e a suggerire domini da associare.
 
 ---

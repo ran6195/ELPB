@@ -60,6 +60,49 @@ class TrackingService
     }
 
     /**
+     * Righe di renderer_hits con il renderer vecchio unite a quella del renderer aggiornato.
+     *
+     * Il renderer vecchio non comunica il sito: dopo l'aggiornamento la stessa installazione
+     * compare in una nuova riga (sito e versione). Se per la stessa pagina c'è una sola riga
+     * aggiornata dello stesso renderer e con lo stesso IP del server, la vecchia confluisce
+     * in quella: richieste sommate, primo accesso il più vecchio, sito e versione della nuova.
+     * Con più siti aggiornati sullo stesso IP non si sa quale fosse: la vecchia resta.
+     * Le righe unite hanno `merged`: [[host, renderer, ip], ...] delle righe assorbite.
+     *
+     * @param iterable $hits righe con page_id, host, renderer, version, ip, user_agent,
+     *                       hits, first_seen_at, last_seen_at
+     */
+    public static function mergeUpdatedRenderers(iterable $hits): array
+    {
+        $rows = [];
+        foreach ($hits as $hit) {
+            $row = clone $hit;
+            $row->merged = [];
+            $rows[] = $row;
+        }
+
+        foreach ($rows as $i => $old) {
+            if ($old->host !== '' || $old->version !== null || (string) $old->ip === ''
+                || self::isAutomated($old->version, $old->ip, $old->user_agent)) {
+                continue;
+            }
+            $updated = array_keys(array_filter($rows, fn($row) => $row->host !== '' && $row->version !== null
+                && $row->page_id == $old->page_id && $row->renderer === $old->renderer && $row->ip === $old->ip));
+            if (count($updated) !== 1) {
+                continue;
+            }
+            $new = $rows[$updated[0]];
+            $new->hits = (int) $new->hits + (int) $old->hits;
+            $new->first_seen_at = min($new->first_seen_at, $old->first_seen_at);
+            $new->last_seen_at = max($new->last_seen_at, $old->last_seen_at);
+            $new->merged[] = ['host' => $old->host, 'renderer' => $old->renderer, 'ip' => $old->ip, 'hits' => (int) $old->hits];
+            unset($rows[$i]);
+        }
+
+        return array_values($rows);
+    }
+
+    /**
      * Richiesta automatica (bot, assistente IA, strumento) e non di un renderer.
      * Si valuta alla lettura, quindi vale anche per le righe già registrate.
      * I renderer 2.1 si dichiarano (versione): non sono mai automatici.

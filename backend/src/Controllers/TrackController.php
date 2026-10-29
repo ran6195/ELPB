@@ -52,10 +52,10 @@ class TrackController
 
         $associated = $page->domains->pluck('hostname')->all();
 
-        $hits = Capsule::table('renderer_hits')
+        $hits = collect(TrackingService::mergeUpdatedRenderers(Capsule::table('renderer_hits')
             ->where('page_id', $page->id)
             ->orderByDesc('last_seen_at')
-            ->get()
+            ->get()))
             ->map(fn($hit) => $this->presentHit($hit, $associated));
 
         $since = date('Y-m-d', strtotime('-' . (self::PAGE_VIEWS_DAYS - 1) . ' days'));
@@ -128,10 +128,12 @@ class TrackController
             ->join('pages as p', 'p.id', '=', 'h.page_id')
             ->whereNull('p.deleted_at')
             ->where(fn($query) => $this->restrictToVisiblePages($query, $user))
-            ->when($since, fn($query) => $query->where('h.last_seen_at', '>=', $since))
             ->select('h.*')
             ->orderByDesc('h.last_seen_at')
             ->get();
+        // Unione prima del filtro della diretta: la riga aggiornata porta con sé le richieste vecchie
+        $hits = collect(TrackingService::mergeUpdatedRenderers($hits))
+            ->when($since, fn($rows) => $rows->filter(fn($hit) => $hit->last_seen_at >= $since));
 
         $pageIds = $hits->pluck('page_id')->unique()->values()->all();
         $pages = Page::with(['domains:id,hostname', 'user:id,name', 'company:id,name'])
@@ -168,6 +170,8 @@ class TrackController
                     'is_app' => Hostname::isAppHost($hit->host),
                     'ip' => $hit->ip !== '' ? $hit->ip : null,
                     'hits' => (int) $hit->hits,
+                    // Righe del renderer vecchio assorbite (la diretta le toglie dalla tabella)
+                    'merged' => $hit->merged,
                     'first_seen_at' => $hit->first_seen_at,
                     'last_seen_at' => $hit->last_seen_at,
                 ];
@@ -208,6 +212,7 @@ class TrackController
             'ip' => $hit->host === '' ? $hit->ip : null,
             'last_url' => $hit->last_url,
             'hits' => (int) $hit->hits,
+            'merged_hits' => array_sum(array_column($hit->merged, 'hits')),
             'first_seen_at' => $hit->first_seen_at,
             'last_seen_at' => $hit->last_seen_at,
         ];

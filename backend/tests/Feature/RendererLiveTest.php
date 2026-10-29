@@ -54,4 +54,45 @@ class RendererLiveTest extends TestCase
         $live = $this->json($this->request('GET', '/api/renderers/new?dopo=2026-10-28%2011:00:00', null, [], $manager));
         $this->assertSame(['mio.it'], array_column($live['data'], 'host'));
     }
+
+    public function test_il_renderer_aggiornato_assorbe_la_riga_vecchia_con_lo_stesso_ip(): void
+    {
+        $admin = $this->createUser(['role' => 'admin']);
+        $pageId = $this->createPage();
+        $other = $this->createPage();
+        $row = fn($page, $host, $version, $ip, $hits, $first, $last) => Capsule::table('renderer_hits')->insert([
+            'page_id' => $page, 'host' => $host, 'renderer' => 'standalone', 'version' => $version,
+            'ip' => $ip, 'hits' => $hits, 'first_seen_at' => $first, 'last_seen_at' => $last,
+        ]);
+        // Prima dell'aggiornamento (senza sito) e dopo, dallo stesso server
+        $row($pageId, '', null, '93.186.242.100', 40, '2026-09-01 08:00:00', '2026-10-27 09:00:00');
+        $row($pageId, 'cliente.it', '2.1.1', '93.186.242.100', 5, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
+        // Server diverso: è un'altra installazione, resta da aggiornare
+        $row($pageId, '', null, '80.88.87.10', 3, '2026-09-01 08:00:00', '2026-10-28 11:00:00');
+        // Due siti aggiornati sullo stesso IP: non si sa quale fosse, la riga vecchia resta
+        $row($other, '', null, '93.186.242.100', 9, '2026-09-01 08:00:00', '2026-10-27 09:00:00');
+        $row($other, 'uno.it', '2.1.1', '93.186.242.100', 1, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
+        $row($other, 'due.it', '2.1.1', '93.186.242.100', 1, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
+
+        $rows = collect($this->json($this->request('GET', '/api/renderers', null, [], $admin))['data'])
+            ->where('page.id', $pageId)->keyBy('ip');
+        $this->assertCount(2, $rows);
+        $merged = $rows['93.186.242.100'];
+        $this->assertSame(['cliente.it', 45, false, '2026-09-01 08:00:00'],
+            [$merged['host'], $merged['hits'], $merged['outdated'], $merged['first_seen_at']]);
+        $this->assertSame([['host' => '', 'renderer' => 'standalone', 'ip' => '93.186.242.100', 'hits' => 40]], $merged['merged']);
+        $this->assertTrue($rows['80.88.87.10']['outdated']);
+
+        // La diretta manda la riga unita, con le righe assorbite da togliere
+        $live = $this->json($this->request('GET', '/api/renderers/new?dopo=2026-10-28%2012:00:00', null, [], $admin))['data'];
+        $this->assertSame(45, collect($live)->firstWhere('host', 'cliente.it')['hits']);
+
+        $page = $this->json($this->request('GET', "/api/pages/{$pageId}/renderers", null, [], $admin))['data']['hits'];
+        $this->assertSame([45, 40], [$page[0]['hits'], $page[0]['merged_hits']]);
+        $this->assertCount(2, $page);
+
+        // Da aggiornare: il server diverso e la riga vecchia della pagina con due siti
+        $summary = $this->json($this->request('GET', '/api/stats/summary?from=2026-10-01&to=2026-10-29', null, [], $admin));
+        $this->assertSame(2, $summary['outdated_renderers']);
+    }
 }

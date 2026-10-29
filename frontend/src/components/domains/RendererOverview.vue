@@ -116,7 +116,12 @@
                 >da aggiornare</span>
               </td>
               <td class="px-4 py-3 text-sm text-gray-500 font-mono whitespace-nowrap align-top">{{ row.ip || '—' }}</td>
-              <td class="px-4 py-3 text-sm text-gray-500 align-top">{{ row.hits }}</td>
+              <td class="px-4 py-3 text-sm text-gray-500 align-top">
+                {{ row.hits }}
+                <span v-if="mergedHits(row)" class="block text-xs text-gray-400 whitespace-nowrap" title="Stessa pagina e stesso IP del server: richieste fatte prima dell'aggiornamento del renderer">
+                  {{ mergedHits(row) }} prima dell'aggiornamento
+                </span>
+              </td>
               <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap align-top" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at, now) }}</td>
             </tr>
           </tbody>
@@ -243,6 +248,9 @@ function exportCsv() {
 // Chiave di una riga: pagina, sito, renderer e IP (come l'indice univoco di renderer_hits)
 const rowKey = (row) => `${row.page.id}|${row.host}|${row.renderer}|${row.ip}`
 
+// Richieste del renderer vecchio confluite nella riga aggiornata (stessa pagina e IP)
+const mergedHits = (row) => (row.merged || []).reduce((sum, m) => sum + m.hits, 0)
+
 // --- Diretta -------------------------------------------------------------
 let liveTimer = null
 let polling = false
@@ -261,7 +269,11 @@ async function pollUpdates() {
       return !known || known.hits !== row.hits || known.last_seen_at !== row.last_seen_at
     })
     if (changed.length) {
-      for (const row of changed) byKey.set(rowKey(row), row)
+      for (const row of changed) {
+        // La riga del renderer vecchio ora è dentro quella aggiornata
+        for (const m of row.merged || []) byKey.delete(rowKey({ ...m, page: row.page }))
+        byKey.set(rowKey(row), row)
+      }
       rows.value = [...byKey.values()] // l'ordine lo decide groups
       markFresh(changed.map(rowKey))
     }

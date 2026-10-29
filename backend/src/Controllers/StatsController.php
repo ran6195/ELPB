@@ -79,7 +79,9 @@ class StatsController
             ->whereNull('p.deleted_at')
             ->where('h.last_seen_at', '>=', $this->sql($from))
             ->where('h.last_seen_at', '<', $this->sql($to))
-            ->get(['h.host', 'h.renderer', 'h.version', 'h.ip', 'h.user_agent'])
+            ->get(['h.page_id', 'h.host', 'h.renderer', 'h.version', 'h.ip', 'h.user_agent', 'h.hits', 'h.first_seen_at', 'h.last_seen_at']);
+        // Renderer aggiornati: la riga vecchia con lo stesso IP non conta più tra quelli da aggiornare
+        $hits = collect(TrackingService::mergeUpdatedRenderers($hits))
             ->reject(fn($hit) => Hostname::isAppHost($hit->host)
                 || TrackingService::isAutomated($hit->version, $hit->ip, $hit->user_agent));
 
