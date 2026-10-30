@@ -105,18 +105,20 @@ class TrackingService
     /**
      * Richiesta automatica (bot, assistente IA, strumento) e non di un renderer.
      * Si valuta alla lettura, quindi vale anche per le righe già registrate.
-     * I renderer 2.1 si dichiarano (versione): non sono mai automatici.
+     * Le reti di bot contano sempre: un renderer gira sul server del sito, mai lì,
+     * e gli header del renderer 2.1 si copiano (es. Claude che apre la pagina con
+     * gli header di config.php). Lo user agent invece si guarda solo senza versione.
      */
     public static function isAutomated(?string $version, ?string $ip, ?string $userAgent): bool
     {
+        if ($ip !== null && self::inNetworks($ip, self::BOT_NETWORKS)) {
+            return true;
+        }
         if ($version !== null) {
             return false;
         }
-        if ($userAgent !== null && $userAgent !== '' && stripos($userAgent, 'joomla') === false
-            && preg_match(self::AUTOMATED_AGENT, $userAgent)) {
-            return true;
-        }
-        return $ip !== null && self::inNetworks($ip, self::BOT_NETWORKS);
+        return $userAgent !== null && $userAgent !== '' && stripos($userAgent, 'joomla') === false
+            && (bool) preg_match(self::AUTOMATED_AGENT, $userAgent);
     }
 
     /** IPv4 in una delle reti CIDR indicate */

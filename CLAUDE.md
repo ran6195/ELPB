@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📝 Modifiche Recenti
 
+### Sessione 2026-10-30
+- **Bot anche con Header del Renderer 2.1** 🤖: Nella scheda Renderer 6 righe "pavaniarredamenti.it · Standalone 2.1.1" venivano da IP 160.79.106.x (rete di Anthropic, già in `BOT_NETWORKS`) e non erano classificate come bot perché `isAutomated()` considerava mai automatica una richiesta con versione. Ora le reti di bot contano sempre (un renderer gira sul server del sito e gli header `X-ELPB-*` si possono copiare); lo user agent si guarda ancora solo senza versione. Vale anche per le righe già registrate (valutazione alla lettura). Test aggiornato (85 in tutto). Versione 1.1.48, solo backend (TrackingService.php, RendererBotsTest.php)
+
 ### Sessione 2026-10-29
 - **Conversione per Gruppo Ordinata per Conversione** ↕️: Nella scheda Statistiche la tabella "Conversione per …" è ordinata per conversione decrescente (a parità per lead tracciati e lead), le righe senza visitatori (conversione non calcolabile) in fondo per lead. Solo frontend, la rotta `/api/stats/conversion` per Grafana resta ordinata per lead. Deployato il 2026-10-29 (e193af6, versione 1.1.46, solo frontend) (StatsDashboard.vue)
 - **Scheda Renderer Compatta** 📏: Righe più basse e tabella senza scorrimento orizzontale su desktop: titolo della pagina su una riga (troncato, titolo completo al passaggio del mouse), id, slug troncato e richieste totali in una sola riga sotto, "Contatti da" su una riga, intestazioni senza a capo, celle `px-3 py-2`, nota delle richieste unite accorciata in "di cui N prima". Verificato in Chromium a 1680 px con dati simulati. Deployato il 2026-10-29 (d890f16, versione 1.1.44, solo frontend) (RendererOverview.vue)
