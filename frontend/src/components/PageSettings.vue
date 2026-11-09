@@ -516,9 +516,12 @@
         </div>
         <button
           @click="togglePublish"
+          :aria-disabled="!localPage.is_published && !hasDomains"
+          :title="!localPage.is_published && !hasDomains ? 'Associa almeno un dominio per pubblicare' : ''"
           :class="[
             'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-            localPage.is_published ? 'bg-primary-600' : 'bg-gray-200'
+            localPage.is_published ? 'bg-primary-600' : 'bg-gray-200',
+            !localPage.is_published && !hasDomains ? 'opacity-50 cursor-not-allowed' : ''
           ]"
         >
           <span
@@ -529,6 +532,12 @@
           />
         </button>
       </div>
+      <!-- Per pubblicare serve almeno un dominio (controllo dell'app, il renderer non lo verifica) -->
+      <p v-if="!hasDomains" class="mt-2 text-xs" :class="localPage.is_published || publishBlocked ? 'text-amber-700' : 'text-gray-500'">
+        {{ localPage.is_published
+          ? 'Pagina pubblicata senza domini associati: in futuro le pagine senza dominio verranno ritirate dalla pubblicazione. Associane almeno uno qui sotto.'
+          : 'Per pubblicare la pagina associala ad almeno un dominio nella sezione Domini qui sotto.' }}
+      </p>
     </div>
 
     <!-- Domini del cliente -->
@@ -1012,7 +1021,21 @@ const gtmId = computed({
   }
 })
 
+// Domini associati (aggiornati da PageDomains nello store)
+const hasDomains = computed(() => {
+  const domains = pageStore.currentPage?.id === props.page.id
+    ? pageStore.currentPage.domains
+    : props.page.domains
+  return (domains?.length || 0) > 0
+})
+const publishBlocked = ref(false)
+watch(hasDomains, (value) => { if (value) publishBlocked.value = false })
+
 const togglePublish = () => {
+  if (!localPage.value.is_published && !hasDomains.value) {
+    publishBlocked.value = true
+    return
+  }
   localPage.value.is_published = !localPage.value.is_published
 }
 

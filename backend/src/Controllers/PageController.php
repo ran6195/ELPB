@@ -84,6 +84,11 @@ class PageController
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
+            // Una pagina nuova non ha ancora domini: nasce in bozza
+            if (!empty($data['is_published'])) {
+                return $this->domainRequired($response, Page::MSG_PUBLISH_NEEDS_DOMAIN);
+            }
+
             // Ensure unique slug (check also soft-deleted pages)
             $slug = $data['slug'];
             $counter = 1;
@@ -150,6 +155,11 @@ class PageController
         }
 
         $data = json_decode($request->getBody()->getContents(), true);
+
+        // Pubblicazione solo con almeno un dominio (le pagine già pubblicate senza domini restano così)
+        if (!empty($data['is_published']) && !$page->is_published && !$page->domains()->exists()) {
+            return $this->domainRequired($response, Page::MSG_PUBLISH_NEEDS_DOMAIN);
+        }
 
         // Ensure unique slug if it's being changed (check also soft-deleted pages)
         $newSlug = $data['slug'] ?? $page->slug;
@@ -297,6 +307,15 @@ class PageController
         if ($currentUser->isCompany() && $newUser->company_id !== $currentUser->company_id) {
             $response->getBody()->write(json_encode(['error' => 'Target user does not belong to your company']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+        }
+
+        // Una pagina pubblicata non può perdere tutti i domini passando a un'altra azienda
+        $newOwner = (object) ['company_id' => $newUser->company_id, 'user_id' => $newUser->id];
+        $currentDomains = $page->domains()->get();
+        if ($page->is_published && $currentDomains->isNotEmpty()
+            && $currentDomains->every(fn($domain) => !$domain->sameOwnerAs($newOwner))) {
+            return $this->domainRequired($response,
+                "La pagina è pubblicata e i suoi domini appartengono all'azienda attuale: assegnandola perderebbe tutti i domini. Ritira prima la pubblicazione");
         }
 
         // L'azienda segue il nuovo proprietario (l'admin può spostare pagine tra aziende;
@@ -866,7 +885,7 @@ class PageController
 
     /**
      * PUT/POST /api/pages/{id}/domains  { domain_ids: [] }
-     * Associazione facoltativa: un elenco vuoto riporta la pagina al comportamento di sempre.
+     * Un elenco vuoto è ammesso solo per le pagine non pubblicate (Page::DOMAIN_REQUIRED).
      */
     public function updateDomains(Request $request, Response $response, array $args)
     {
@@ -901,6 +920,9 @@ class PageController
         }
 
         $before = $page->domains()->pluck('hostname', 'domains.id')->all();
+        if (!$ids && $before && $page->is_published) {
+            return $this->domainRequired($response, Page::MSG_LAST_DOMAIN);
+        }
         $changes = $page->domains()->sync($ids);
         $hostnames = $domains->pluck('hostname', 'id')->all() + $before;
         DomainEvents::pageDomainsChanged(
@@ -960,6 +982,12 @@ class PageController
             ->values();
 
         return $this->jsonResponse($response, ['data' => $suggestions]);
+    }
+
+    /** 422 con codice riconoscibile dal frontend (Page::DOMAIN_REQUIRED) */
+    private function domainRequired(Response $response, string $message): Response
+    {
+        return $this->jsonResponse($response, ['error' => $message, 'code' => Page::DOMAIN_REQUIRED], 422);
     }
 
     private function jsonResponse(Response $response, $data, int $status = 200): Response

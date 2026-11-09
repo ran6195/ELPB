@@ -72,6 +72,9 @@ class ExplicitEventsTest extends TestCase
     {
         $admin = $this->createUser(['role' => 'admin']);
         $pageId = $this->createPage(['is_published' => 0, 'title' => 'Offerta', 'user_id' => $admin->id]);
+        $now = date('Y-m-d H:i:s');
+        $domainId = Capsule::table('domains')->insertGetId(['hostname' => 'offerta.it', 'user_id' => $admin->id, 'created_at' => $now, 'updated_at' => $now]);
+        Capsule::table('domain_page')->insert(['domain_id' => $domainId, 'page_id' => $pageId]);
 
         $this->request('PUT', "/api/pages/$pageId", ['is_published' => true], [], $admin);
         $this->request('PUT', "/api/pages/$pageId", ['is_published' => true], [], $admin); // già pubblicata
@@ -82,13 +85,15 @@ class ExplicitEventsTest extends TestCase
         $this->assertSame(['Offerta', $pageId], [$events[0]->subject_label, $events[0]->page_id]);
     }
 
-    public function test_pagina_creata_gia_pubblicata(): void
+    public function test_pagina_nuova_non_nasce_pubblicata_senza_domini(): void
     {
         $user = $this->createUser();
 
-        $this->request('POST', '/api/pages', ['title' => 'Subito online', 'slug' => 'subito', 'is_published' => true], [], $user);
+        $response = $this->request('POST', '/api/pages', ['title' => 'Subito online', 'slug' => 'subito', 'is_published' => true], [], $user);
 
-        $this->assertCount(1, $this->byAction('page.published'));
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame('domain_required', $this->json($response)['code']);
+        $this->assertCount(0, $this->byAction('page.published'));
     }
 
     public function test_pagina_assegnata_ad_altri_con_i_nomi(): void

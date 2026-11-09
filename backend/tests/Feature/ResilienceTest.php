@@ -34,6 +34,9 @@ class ResilienceTest extends TestCase
     {
         $admin = $this->createUser(['role' => 'admin']);
         $pageId = $this->createPage(['user_id' => $admin->id, 'title' => 'Prima', 'is_published' => 0]);
+        $now = date('Y-m-d H:i:s');
+        $domainId = Capsule::table('domains')->insertGetId(['hostname' => 'prima.it', 'user_id' => $admin->id, 'created_at' => $now, 'updated_at' => $now]);
+        Capsule::table('domain_page')->insert(['domain_id' => $domainId, 'page_id' => $pageId]);
 
         $this->request('PUT', "/api/pages/$pageId", ['title' => 'Dopo', 'is_published' => true], [], $admin);
         Auditor::get()->flush();

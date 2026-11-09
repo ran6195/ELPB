@@ -75,6 +75,16 @@ class Page extends Model
         return $this->belongsToMany(Domain::class, 'domain_page')->orderBy('hostname');
     }
 
+    /**
+     * Per pubblicare una pagina serve almeno un dominio associato, e una pagina pubblicata
+     * non può perdere l'ultimo. Controllo solo dell'applicazione: i renderer mostrano
+     * la pagina su qualunque sito. Le pagine pubblicate prima della regola senza domini
+     * restano pubblicate.
+     */
+    public const DOMAIN_REQUIRED = 'domain_required';
+    public const MSG_PUBLISH_NEEDS_DOMAIN = 'Per pubblicare la pagina associala ad almeno un dominio';
+    public const MSG_LAST_DOMAIN = 'La pagina è pubblicata: deve restare associata ad almeno un dominio. Ritira prima la pubblicazione';
+
     public function user()
     {
         return $this->belongsTo(User::class);

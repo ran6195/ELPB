@@ -4,7 +4,7 @@
       Domini
     </h4>
     <p class="text-xs text-gray-500 mb-4">
-      Siti del cliente su cui è pubblicata la pagina. Facoltativo: serve a sapere da quale sito arrivano i contatti.
+      Siti del cliente su cui è pubblicata la pagina. Serve almeno un dominio per pubblicarla e per sapere da quale sito arrivano i contatti.
     </p>
 
     <!-- Domini dell'azienda selezionabili -->
@@ -19,7 +19,8 @@
         <input
           type="checkbox"
           :checked="selectedIds.includes(domain.id)"
-          :disabled="saving"
+          :disabled="saving || isLastRequired(domain.id)"
+          :title="isLastRequired(domain.id) ? 'La pagina è pubblicata: deve restare associata ad almeno un dominio' : ''"
           @change="toggleDomain(domain.id)"
           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
         />
@@ -227,6 +228,11 @@ async function run(action) {
   } finally {
     saving.value = false
   }
+}
+
+// Una pagina pubblicata non può perdere l'ultimo dominio (il backend lo rifiuta comunque)
+function isLastRequired(id) {
+  return props.page.is_published && selectedIds.value.length === 1 && selectedIds.value[0] === id
 }
 
 function toggleDomain(id) {

@@ -21,7 +21,7 @@ Associare una LP a uno o più domini (i siti del cliente su cui è pubblicata), 
 | Dati per i clienti | Lead per dominio; visite e conversioni |
 | Visite | Conteggio **senza cookie** e senza dati personali |
 | Vincolo | Rigido per pagina, attivato gradualmente; una pagina vincolata servita da un renderer **non aggiornato** viene mostrata comunque |
-| Pagine future | Associazione facoltativa |
+| Pagine future | Almeno un dominio per pubblicare (dal 2026-11-09, controllo solo dell'applicazione, vedi sotto) |
 | Deploy | Solo dopo test in locale |
 | Gestione anagrafica | Admin e responsabile aziendale; gli utenti associano alle proprie pagine i domini esistenti |
 | Lead vecchi | Dominio stimato per le pagine con un solo dominio, con avvertenza "pagina vecchia, dato non certo" |
@@ -181,6 +181,15 @@ Un upsert per visita, senza tabelle che crescono per evento: dimensione prevedib
 - Le visite partono dal giorno in cui il renderer del sito viene aggiornato: prima di allora le conversioni non sono calcolabili (lo mostriamo).
 
 ---
+
+## Dominio obbligatorio per pubblicare (controllo debole, 2026-11-09)
+
+Prima del vincolo della fase 4, l'applicazione chiede almeno un dominio associato per pubblicare una pagina. È un controllo **solo dell'applicazione**: `showBySlug` e i renderer non cambiano e mostrano la pagina su qualunque sito la richieda.
+
+- `PUT /api/pages/{id}` con `is_published: true` su una pagina in bozza senza domini → 422 `{ error, code: "domain_required" }`; `POST /api/pages` già pubblicata → 422 (una pagina nuova non ha domini).
+- Le pagine **già pubblicate senza domini restano pubblicate** e si salvano come prima (il controllo scatta solo al passaggio bozza → pubblicata); nella dashboard hanno l'avviso "Senza dominio: verrà ritirata dalla pubblicazione con le prossime versioni dell'app" e in PageSettings la stessa avvertenza: in futuro le pagine pubblicate senza domini verranno ritirate dalla pubblicazione.
+- Una pagina pubblicata non può perdere l'ultimo dominio: `PUT /api/pages/{id}/domains` con elenco vuoto → 422, `DELETE /api/domains/{id}` del dominio unico di pagine pubblicate → 409 con le pagine in `pages`, assegnazione a un'altra azienda che toglierebbe tutti i domini → 422. Si ritira prima la pubblicazione.
+- Frontend: interruttore di pubblicazione bloccato con spiegazione in PageSettings, ultimo dominio non deselezionabile in PageDomains, finestra "Assegna a…" con avviso e pulsante disattivato.
 
 ## Fase 4 — Vincolo per pagina
 

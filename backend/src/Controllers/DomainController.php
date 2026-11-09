@@ -152,6 +152,21 @@ class DomainController
             return $this->notFound($response);
         }
 
+        // Non si può togliere l'ultimo dominio a una pagina pubblicata (Page::DOMAIN_REQUIRED)
+        $orphaned = $domain->pages()
+            ->where('pages.is_published', true)
+            ->withCount('domains')
+            ->get()
+            ->filter(fn($page) => $page->domains_count <= 1);
+        if ($orphaned->isNotEmpty()) {
+            $titles = $orphaned->map(fn($page) => "«{$page->title}» (#{$page->id})")->implode(', ');
+            return $this->json($response, [
+                'error' => "Il dominio è l'unico associato a pagine pubblicate: $titles. Associa loro un altro dominio o ritira la pubblicazione",
+                'code' => Page::DOMAIN_REQUIRED,
+                'pages' => $orphaned->map(fn($page) => ['id' => $page->id, 'title' => $page->title])->values(),
+            ], 409);
+        }
+
         foreach ($domain->pages()->get() as $page) {
             DomainEvents::pageDomainsChanged($page, [], [$domain->hostname], 'domain_deleted');
         }

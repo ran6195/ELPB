@@ -50,6 +50,11 @@
           </p>
         </div>
 
+        <!-- Una pagina pubblicata non può restare senza domini -->
+        <p v-if="losesAllDomains" class="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+          La pagina è pubblicata e resterebbe senza domini: per assegnarla a un'altra azienda ritira prima la pubblicazione.
+        </p>
+
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       </div>
 
@@ -57,7 +62,7 @@
         <button @click="$emit('close')" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">Annulla</button>
         <button
           @click="assign"
-          :disabled="saving || !userId || unchanged"
+          :disabled="saving || !userId || unchanged || losesAllDomains"
           class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ saving ? 'Assegnazione...' : 'Assegna' }}
@@ -101,6 +106,7 @@ const companyUsers = computed(() => users.value
   .sort((a, b) => (a.role === 'company' ? -1 : 0) - (b.role === 'company' ? -1 : 0) || a.name.localeCompare(b.name)))
 
 const companyChanges = computed(() => (companyId.value === NO_COMPANY ? null : companyId.value) !== (props.page.company_id ?? null))
+const losesAllDomains = computed(() => companyChanges.value && props.page.is_published && props.page.domains?.length > 0)
 const unchanged = computed(() => !companyChanges.value && userId.value === props.page.user_id)
 const targetCompanyName = computed(() => companies.value.find(c => c.id === companyId.value)?.name || 'nessuna (admin)')
 

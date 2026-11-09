@@ -288,6 +288,11 @@
                 class="text-xs text-gray-500 truncate mt-0.5"
                 :title="page.domains.map(d => d.display_hostname).join(', ')"
               >🌐 {{ page.domains.map(d => d.display_hostname).join(', ') }}</p>
+              <p
+                v-else-if="page.is_published"
+                class="text-xs text-amber-700 mt-0.5"
+                title="Le pagine pubblicate senza dominio verranno ritirate dalla pubblicazione: associa almeno un dominio dalle impostazioni della pagina"
+              >⚠️ Senza dominio: verrà ritirata dalla pubblicazione con le prossime versioni dell'app</p>
               <p class="text-gray-400 text-xs">
                 {{ page.blocks?.length || 0 }} blocchi
               </p>
