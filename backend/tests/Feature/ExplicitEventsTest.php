@@ -261,6 +261,12 @@ class ExplicitEventsTest extends TestCase
         $this->assertSame(['action', 'ok', $user->id], [$download->category, $download->outcome, $download->user_id]);
         $this->assertSame(['file' => 'renderer-lp-elpb-nolegal.zip', 'version' => '2.1.1'], $download->properties['input']);
         $this->assertSame('invalid', $invalid->outcome);
+
+        $this->assertSame(204, $this->request('POST', '/api/guides/publishing/downloads', ['format' => 'md'], [], $user)->getStatusCode());
+        $this->assertSame(400, $this->request('POST', '/api/guides/publishing/downloads', ['format' => 'pdf'], [], $user)->getStatusCode());
+        [$guideDownload, $badFormat] = $this->byAction('POST /api/guides/publishing/downloads');
+        $this->assertSame(['action', 'ok', ['format' => 'md']], [$guideDownload->category, $guideDownload->outcome, $guideDownload->properties['input']]);
+        $this->assertSame('invalid', $badFormat->outcome);
     }
 
     public function test_gli_script_si_registrano_come_system_sul_canale_console(): void

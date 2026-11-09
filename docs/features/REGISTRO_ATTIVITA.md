@@ -95,7 +95,9 @@ Anche scheda del lead e calendario usano i lead già caricati. Per la traccia:
 La guida (`/guida-pubblicazione`) e gli zip del renderer sono file statici del frontend:
 per la traccia `PublishGuide.vue` chiama all'apertura `GET /api/guides/publishing`
 (voce `view`) e al clic sul download `POST /api/renderer/downloads { file, version }`
-(voce `action`, il dettaglio mostra pacchetto e versione). Entrambe rispondono 204
+(voce `action`, il dettaglio mostra pacchetto e versione); la guida scaricata in HTML o
+Markdown (generata nel browser) si segnala con `POST /api/guides/publishing/downloads { format }`
+(`html` o `md`). Tutte rispondono 204
 (`GuideController`); un nome di pacchetto non previsto → 400. Se la chiamata fallisce
 il download procede comunque.
 

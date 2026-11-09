@@ -122,6 +122,7 @@ class AuditCatalog
         'DELETE /api/domains/{id}' => 'Eliminazione dominio',
 
         'GET /api/guides/publishing' => 'Guida alla pubblicazione',
+        'POST /api/guides/publishing/downloads' => 'Download della guida',
         'POST /api/renderer/downloads' => 'Download del renderer',
 
         'GET /api/leads' => 'Elenco lead',

@@ -7,10 +7,26 @@
           <h1 class="text-2xl font-semibold text-gray-900 mb-1">Pubblicare una pagina su un nuovo sito</h1>
           <p class="text-gray-500 text-sm">Dominio, cartella sul sito, file del renderer e configurazione</p>
         </div>
+        <!-- Guida da scaricare, generata dal contenuto qui sotto -->
+        <div class="shrink-0 flex items-center gap-2">
+          <span class="hidden sm:inline text-xs text-gray-500">Scarica la guida</span>
+          <button
+            v-for="format in exportFormats"
+            :key="format.id"
+            @click="exportGuide(format)"
+            :title="format.title"
+            class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+            </svg>
+            {{ format.label }}
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+    <div ref="guideRoot" class="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-8">
       <!-- Come funziona -->
       <section class="bg-white rounded-lg border border-gray-200 p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-3">Come funziona</h2>
@@ -20,11 +36,11 @@
           <a href="#download" class="text-primary-600 hover:underline">requisiti</a>): a ogni visita chiede la pagina all'app e la mostra
           con il dominio del cliente. Una sola installazione serve tutte le pagine di quel sito:
         </p>
-        <div class="mt-3 font-mono text-sm bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-800 break-all">
+        <div data-export="code" class="mt-3 font-mono text-sm bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-800 break-all">
           https://www.sito-cliente.it/lp/<span class="text-primary-600">slug-della-pagina</span>
         </div>
         <p class="mt-2 text-xs text-gray-500"><code class="font-mono">lp</code> è il nome della cartella del renderer sul sito: puoi sceglierne uno qualsiasi.</p>
-        <ol class="mt-4 grid sm:grid-cols-5 gap-2 text-xs">
+        <ol data-export-skip class="mt-4 grid sm:grid-cols-5 gap-2 text-xs">
           <li v-for="(step, i) in steps" :key="step.id">
             <a :href="'#' + step.id" class="block h-full p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
               <span class="block text-primary-600 font-semibold mb-0.5">Passo {{ i + 1 }}</span>
@@ -60,7 +76,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
           </svg>
           <span class="truncate">{{ pkg.file || 'Scarica il renderer' }}</span>
-          <span v-if="pkg.size" class="text-white/70 font-normal shrink-0">· {{ formatSize(pkg.size) }}</span>
+          <span v-if="pkg.size" class="text-white/70 font-normal shrink-0">&nbsp;· {{ formatSize(pkg.size) }}</span>
         </a>
 
         <h3 class="text-sm font-semibold text-gray-900 mt-6 mb-2">Requisiti del sito</h3>
@@ -210,7 +226,7 @@
         <StepTitle :n="5" :title="steps[4].title" />
         <ul class="text-sm text-gray-700 space-y-2">
           <li v-for="check in checks" :key="check" class="flex gap-2">
-            <span class="mt-0.5 w-4 h-4 shrink-0 rounded border border-gray-300"></span>
+            <span data-check class="mt-0.5 w-4 h-4 shrink-0 rounded border border-gray-300"></span>
             <span v-html="check"></span>
           </li>
         </ul>
@@ -248,6 +264,8 @@
 import { computed, h, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import apiClient from '../api/axios'
+import { downloadText, toHtmlDocument, toMarkdown } from '../utils/guideExport'
+import pkgJson from '../../package.json'
 
 const authStore = useAuthStore()
 const canManageDomains = computed(() => authStore.isAdmin || authStore.isCompany)
@@ -271,6 +289,25 @@ const logActivity = (request) => request.catch(error => console.error('Attività
 
 function logDownload() {
   logActivity(apiClient.post('/renderer/downloads', { file: pkg.value.file, version: info.value?.version ?? null }))
+}
+
+// Download della guida in HTML autonomo o Markdown
+const guideRoot = ref(null)
+const exportFormats = [
+  { id: 'html', label: 'HTML', title: 'Pagina HTML autonoma, da aprire nel browser o inoltrare', ext: 'html', type: 'text/html' },
+  { id: 'md', label: 'Markdown', title: 'Testo in formato Markdown', ext: 'md', type: 'text/markdown' }
+]
+
+function exportGuide(format) {
+  if (!guideRoot.value) return
+  const today = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+  const options = {
+    title: 'Pubblicare una pagina su un nuovo sito',
+    meta: `Landing Page Builder ${pkgJson.version}` + (info.value ? ` · renderer ${info.value.version}` : '') + ` · guida scaricata il ${today}`
+  }
+  const content = format.id === 'html' ? toHtmlDocument(guideRoot.value, options) : toMarkdown(guideRoot.value, options)
+  downloadText(content, `guida-pubblicazione.${format.ext}`, format.type)
+  logActivity(apiClient.post('/guides/publishing/downloads', { format: format.id }))
 }
 
 onMounted(async () => {
@@ -326,7 +363,7 @@ function formatDate(value) {
 }
 
 // Piccoli componenti locali
-const StepTitle = (props) => h('h2', { class: 'flex items-center gap-3 text-lg font-semibold text-gray-900 mb-3' }, [
+const StepTitle = (props) => h('h2', { 'data-step': props.n, class: 'flex items-center gap-3 text-lg font-semibold text-gray-900 mb-3' }, [
   h('span', { class: 'w-7 h-7 shrink-0 rounded-full bg-primary-600 text-white text-sm flex items-center justify-center' }, props.n),
   props.title
 ])
@@ -338,7 +375,7 @@ const tones = {
   gray: 'bg-gray-50 border-gray-200 text-gray-700',
   blue: 'bg-blue-50 border-blue-200 text-blue-900'
 }
-const Note = (props, { slots }) => h('div', { class: `mt-4 p-3 rounded-lg border text-sm ${tones[props.tone] || tones.gray}` }, slots.default?.())
+const Note = (props, { slots }) => h('div', { 'data-tone': props.tone || 'gray', class: `mt-4 p-3 rounded-lg border text-sm ${tones[props.tone] || tones.gray}` }, slots.default?.())
 Note.props = ['tone']
 </script>
 

@@ -21,6 +21,17 @@ class GuideController
         return $response->withStatus(204);
     }
 
+    /** POST /api/guides/publishing/downloads  { format: html|md }: guida scaricata (generata nel browser) */
+    public function logGuideDownload(Request $request, Response $response)
+    {
+        $data = json_decode((string) $request->getBody(), true) ?: [];
+        if (!in_array($data['format'] ?? null, ['html', 'md'], true)) {
+            $response->getBody()->write(json_encode(['error' => 'Formato non valido']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+        return $response->withStatus(204);
+    }
+
     /** POST /api/renderer/downloads  { file, version }: download di un pacchetto del renderer */
     public function logRendererDownload(Request $request, Response $response)
     {

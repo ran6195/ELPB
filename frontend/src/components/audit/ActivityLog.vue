@@ -195,6 +195,10 @@
               Pacchetto scaricato: {{ row.properties.input.file }}<template v-if="row.properties.input.version"> (versione {{ row.properties.input.version }})</template>
             </p>
 
+            <p v-if="row.action === 'POST /api/guides/publishing/downloads' && row.properties?.input?.format" class="text-gray-700">
+              Guida scaricata in {{ row.properties.input.format === 'md' ? 'Markdown' : 'HTML' }}
+            </p>
+
             <!-- Lead esportati -->
             <div v-if="row.action === 'lead.exported'" class="text-gray-700 space-y-1">
               <p>

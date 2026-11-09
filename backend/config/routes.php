@@ -103,6 +103,7 @@ $app->delete('/api/domains/{id}', '\App\Controllers\DomainController:delete')->a
 // Guida alla pubblicazione e download del renderer: file statici del frontend,
 // queste rotte servono solo al registro attività
 $app->get('/api/guides/publishing', '\App\Controllers\GuideController:view')->add(AuthMiddleware::class);
+$app->post('/api/guides/publishing/downloads', '\App\Controllers\GuideController:logGuideDownload')->add(AuthMiddleware::class);
 $app->post('/api/renderer/downloads', '\App\Controllers\GuideController:logRendererDownload')->add(AuthMiddleware::class);
 
 // Leads routes (protette - solo per admin)
