@@ -1,0 +1,17 @@
+# ========================================
+# Renderer Landing Page - backend elpb.edysma.com
+# Senza pagine legali: il Footer Legale usa i link del sito,
+# impostati a mano nell'editor (modalità manuale)
+# ========================================
+
+# API del backend centrale (obbligatoria, senza barra finale)
+API_BASE_URL=https://elpb.edysma.com/backend/public/api
+
+# Pagina mostrata quando l'URL non contiene uno slug (facoltativa)
+# DEFAULT_SLUG=nome-pagina
+
+# Link "Torna alla home" nella thank-you page (facoltativo)
+# HOME_URL=https://www.SITO-CLIENTE.it
+
+# true solo durante i test: mostra gli errori dettagliati
+DEBUG=false

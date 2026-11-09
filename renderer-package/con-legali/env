@@ -1,0 +1,22 @@
+# ========================================
+# Renderer Landing Page - backend elpb.edysma.com
+# Pagine legali generate in locale (cartella ../menu-legali)
+# ========================================
+
+# API del backend centrale (obbligatoria, senza barra finale)
+API_BASE_URL=https://elpb.edysma.com/backend/public/api
+
+# Indirizzo pubblico di QUESTA cartella del renderer, senza barra finale.
+# I link Privacy / Condizioni / Cookies diventano {LEGAL_BASE_URL}/legal/{slug}/privacy
+# DA MODIFICARE con il dominio del sito cliente.
+# Lasciarla vuota solo se il renderer sta nella radice del dominio.
+LEGAL_BASE_URL=https://www.SITO-CLIENTE.it/lp
+
+# Pagina mostrata quando l'URL non contiene uno slug (facoltativa)
+# DEFAULT_SLUG=nome-pagina
+
+# Link "Torna alla home" nella thank-you page (facoltativo)
+# HOME_URL=https://www.SITO-CLIENTE.it
+
+# true solo durante i test: mostra gli errori dettagliati
+DEBUG=false

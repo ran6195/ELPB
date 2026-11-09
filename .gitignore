@@ -79,3 +79,6 @@ backend/storage/
 
 # Impostazioni locali di Claude Code
 .claude/settings.local.json
+
+# Pacchetti del renderer scaricabili dalla guida (scripts/build-renderer-packages.sh)
+!frontend/public/downloads/*.zip

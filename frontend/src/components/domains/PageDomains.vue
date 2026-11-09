@@ -5,6 +5,7 @@
     </h4>
     <p class="text-xs text-gray-500 mb-4">
       Siti del cliente su cui è pubblicata la pagina. Serve almeno un dominio per pubblicarla e per sapere da quale sito arrivano i contatti.
+      <router-link to="/guida-pubblicazione" target="_blank" class="text-primary-600 hover:underline whitespace-nowrap">Come installarla su un nuovo sito →</router-link>
     </p>
 
     <!-- Domini dell'azienda selezionabili -->

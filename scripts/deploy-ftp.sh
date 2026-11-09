@@ -4,7 +4,8 @@
 #
 # Carica solo ciò che è cambiato dall'ultimo deploy:
 #   - backend: i file modificati/eliminati in git dal commit dell'ultimo deploy
-#   - frontend: build Vite, carica gli asset nuovi e per ultimo index.html
+#   - frontend: build Vite, carica gli asset nuovi, i pacchetti del renderer
+#     cambiati (downloads/) e per ultimo index.html
 #
 # Uso:
 #   ./scripts/deploy-ftp.sh                 # prova: mostra cosa farebbe, nessuna scrittura
@@ -183,6 +184,9 @@ else
     OLD_ASSETS=$(grep -vxFf "$WORK/local_assets" "$WORK/remote_assets" | grep -vxE '\.|\.\.' || true)
     echo "   asset nuovi: $(echo "$NEW_ASSETS" | grep -c . || true)"
     echo "$NEW_ASSETS" | grep . | sed 's/^/   ↑ assets\//' || true
+    # Pacchetti del renderer (scripts/build-renderer-packages.sh): solo quelli cambiati in git
+    DOWNLOADS=$(git diff --name-only --diff-filter=d "$FROM_REV" HEAD -- frontend/public/downloads | sed 's#^frontend/public/##')
+    echo "$DOWNLOADS" | grep . | sed 's/^/   ↑ /' || true
     echo "   ↑ .htaccess, version.json, index.html (per ultimo)"
     if [ -n "$OLD_ASSETS" ]; then
         if [ $CLEAN_ASSETS -eq 1 ]; then
@@ -232,6 +236,9 @@ if [ $DEPLOY_FRONTEND -eq 1 ]; then
     : > "$WORK/frontend_pairs"
     echo "$NEW_ASSETS" | grep . | while read -r f; do
         printf 'frontend/dist/assets/%s\tassets/%s\n' "$f" "$f"
+    done >> "$WORK/frontend_pairs" || true
+    echo "$DOWNLOADS" | grep . | while read -r f; do
+        printf 'frontend/dist/%s\t%s\n' "$f" "$f"
     done >> "$WORK/frontend_pairs" || true
     for f in .htaccess version.json index.html; do
         printf 'frontend/dist/%s\t%s\n' "$f" "$f" >> "$WORK/frontend_pairs"

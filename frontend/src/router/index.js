@@ -10,6 +10,7 @@ import ThankYouPage from '../views/ThankYouPage.vue'
 import Login from '../views/Login.vue'
 import AdminPanel from '../views/AdminPanel.vue'
 import CompanyPanel from '../views/CompanyPanel.vue'
+import PublishGuide from '../views/PublishGuide.vue'
 
 const routes = [
   {
@@ -39,6 +40,13 @@ const routes = [
     path: '/media',
     name: 'MediaLibrary',
     component: MediaLibrary,
+    meta: { requiresAuth: true }
+  },
+  {
+    // Istruzioni per pubblicare su un nuovo sito e pacchetti del renderer
+    path: '/guida-pubblicazione',
+    name: 'PublishGuide',
+    component: PublishGuide,
     meta: { requiresAuth: true }
   },
   {

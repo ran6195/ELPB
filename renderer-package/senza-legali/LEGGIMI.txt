@@ -1,0 +1,99 @@
+RENDERER LANDING PAGE 2.1.1 - INSTALLAZIONE SU UN SITO QUALUNQUE
+Backend: https://elpb.edysma.com   |   Pagine legali: link del sito
+==========================================================
+
+NOVITÀ DELLA VERSIONE 2.1.1
+  - Fix del form: dopo l'invio il modulo viene svuotato e il pulsante resta
+    disattivato, così tornando indietro dalla pagina di ringraziamento il
+    visitatore non reinvia lo stesso contatto (lead doppi).
+
+NOVITÀ DELLA VERSIONE 2.1.0
+  - Il renderer comunica al pannello ELPB il sito e la versione installata
+    (Pannello admin > Renderer): si vede dove è pubblicata ogni pagina.
+  - Conta le visite SENZA COOKIE: una segnalazione anonima per pagina vista,
+    nessun dato salvato nel browser. Servono per visite e tasso di conversione
+    per sito. Citare il conteggio anonimo nella privacy/cookie policy del sito.
+
+AGGIORNARE UN SITO CON UNA VERSIONE PRECEDENTE
+  Sostituire via FTP i file PHP nella cartella del renderer: page.php,
+  BlockRenderer.php, config.php, thank-you.php.
+  NON sovrascrivere .env e .htaccess (contengono le impostazioni del sito).
+
+Questo pacchetto NON genera pagine legali: i link Privacy, Condizioni,
+Cookies del Footer Legale puntano alle pagine già presenti sul sito.
+
+CONTENUTO DEL PACCHETTO
+  lp/                     cartella del renderer (il nome si può cambiare)
+    .env                  configurazione
+    .htaccess             URL puliti e protezioni   -> DA VERIFICARE (RewriteBase)
+    page.php              punto d'ingresso della landing page
+    BlockRenderer.php     genera l'HTML dei blocchi
+    config.php            impostazioni comuni
+    thank-you.php         thank-you statica di ripiego
+
+  ATTENZIONE: i file .env e .htaccess iniziano con un punto e su macOS/Linux
+  sono nascosti. Verificare che vengano caricati.
+
+REQUISITI DEL SERVER
+  - PHP 8.0 o superiore, con estensione cURL
+  - Connessioni HTTPS in uscita verso elpb.edysma.com
+  - Apache con mod_rewrite e AllowOverride attivo (per gli URL puliti)
+
+  Il renderer è scritto in PHP: se il sito NON gira in PHP (siti statici,
+  Node.js, .NET, piattaforme come Wix, Shopify, Squarespace) questo pacchetto
+  non si può usare e serve uno sviluppo ad hoc.
+
+INSTALLAZIONE
+  1. Caricare via FTP la cartella lp/ sul sito. La cartella può avere un
+     NOME QUALSIASI (es. promo/, offerte/) o i file possono stare nella
+     radice: il nome diventa parte dell'indirizzo delle landing page e va
+     riportato nel RewriteBase (punto 2).
+  2. lp/.htaccess -> RewriteBase deve corrispondere alla cartella:
+       cartella /lp/            -> RewriteBase /lp/   (già impostato)
+       altro nome, es. /promo/  -> RewriteBase /promo/
+       radice del dominio       -> RewriteBase /
+  3. Permessi: cartelle 755, file 644.
+  4. Nel pannello ELPB associare alla landing page il dominio del sito
+     (Impostazioni pagina > Domini: obbligatorio per pubblicarla) e
+     verificare che sia PUBBLICATA.
+  5. Se il form usa reCAPTCHA: aggiungere il dominio del sito alla chiave
+     nella console Google reCAPTCHA.
+
+FOOTER LEGALE: IMPOSTAZIONE NELL'EDITOR (per ogni landing page)
+  Nel blocco "Footer Legale" > sezione "Link Legali":
+  1. DISATTIVARE "Genera automaticamente".
+  2. Con "+ Aggiungi Link" inserire testo e URL delle pagine del sito, es.
+       Privacy            https://www.miosito.it/privacy-policy
+       Condizioni d'uso   https://www.miosito.it/condizioni
+       Cookies            https://www.miosito.it/cookie-policy
+     Usare URL completi (https://...): un URL relativo verrebbe risolto
+     rispetto alla cartella lp/.
+
+  Se "Genera automaticamente" resta attivo e la pagina ha i dati legali
+  compilati, i link puntano a /legal/{slug}/... che con questo pacchetto
+  NON esiste (errore 404). Senza dati legali i link puntano a "#".
+
+INDIRIZZI RISULTANTI
+  Landing page:       https://www.miosito.it/lp/{slug}
+  Senza mod_rewrite:  https://www.miosito.it/lp/page.php?slug={slug}
+
+VERIFICHE DOPO L'INSTALLAZIONE
+  [ ] https://elpb.edysma.com/backend/public/api/page/{slug} restituisce JSON
+  [ ] la landing page si vede con immagini, font, slider e video
+  [ ] https://www.miosito.it/lp/.env risponde 403
+  [ ] l'invio del form porta alla thank-you e il lead compare nel pannello
+  [ ] i link del footer aprono le pagine legali del sito
+  [ ] nel pannello ELPB, Admin > Renderer, il sito compare con
+      "Standalone 2.1.1" dopo aver aperto la landing page
+  [ ] DEBUG=false in produzione
+
+PROBLEMI COMUNI
+  "Pagina non trovata"        pagina non pubblicata o slug errato
+  "Si è verificato un errore" cURL assente o connessioni in uscita bloccate
+                              (mettere DEBUG=true per vedere il dettaglio)
+  Pagina bianca / errore 500  PHP inferiore a 8.0
+  404 su ogni URL             RewriteBase errato o mod_rewrite non attivo
+  Link del footer in 404      "Genera automaticamente" ancora attivo nel
+                              blocco Footer Legale
+  Sito WordPress/Joomla       tenere il renderer in una sottocartella con il
+                              suo .htaccess, così il CMS non intercetta gli URL
