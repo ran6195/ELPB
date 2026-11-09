@@ -19,12 +19,6 @@
               </svg>
               <span>Carica file</span>
             </button>
-            <router-link
-              to="/"
-              class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-medium border border-gray-300 transition-colors"
-            >
-              Torna alle Pagine
-            </router-link>
           </div>
         </div>
       </div>

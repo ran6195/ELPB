@@ -6,104 +6,26 @@
         <div class="flex justify-between items-center">
           <div>
             <h1 class="text-2xl font-semibold text-gray-900 mb-1">Le Mie Landing Pages</h1>
-            <div class="flex items-center gap-3">
-              <p class="text-gray-500 text-sm">Crea e gestisci le tue landing pages</p>
-
-              <!-- Badge: versione corrente -->
-              <span class="inline-flex items-center gap-1.5 text-xs text-gray-400 font-mono px-2 py-0.5 rounded-md bg-gray-50 border border-gray-100 select-none">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-400 opacity-70"></span>
-                v{{ currentVersion }}
-              </span>
-            </div>
+            <p class="text-gray-500 text-sm">Crea e gestisci le tue landing pages</p>
           </div>
-          <div class="flex items-center gap-4">
-            <!-- User info -->
-            <div class="flex items-center gap-3">
-              <div class="text-right">
-                <p class="text-sm font-medium text-gray-900">{{ authStore.user?.name }}</p>
-                <div class="flex items-center gap-2 justify-end">
-                  <span
-                    :class="{
-                      'bg-purple-100 text-purple-700': authStore.isAdmin,
-                      'bg-blue-100 text-blue-700': authStore.isCompany,
-                      'bg-gray-100 text-gray-700': authStore.isUser
-                    }"
-                    class="text-xs px-2 py-0.5 rounded-md font-medium"
-                  >
-                    {{ authStore.user?.role }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <!-- Buttons -->
-            <div class="flex gap-2">
-              <router-link
-                v-if="authStore.isAdmin"
-                to="/admin"
-                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <span>⚙️</span>
-                <span>Admin</span>
-              </router-link>
-              <router-link
-                v-if="authStore.isCompany"
-                to="/company"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <span>👥</span>
-                <span>Gestione</span>
-              </router-link>
-              <router-link
-                to="/media"
-                class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Media</span>
-              </router-link>
-              <router-link
-                to="/guida-pubblicazione"
-                title="Pubblicare una pagina su un nuovo sito e scaricare il renderer"
-                class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span>Guida</span>
-              </router-link>
-              <router-link
-                to="/archived"
-                class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-                <span>Archivio</span>
-              </router-link>
-              <button
-                @click="showImportDialog = true"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span>Importa</span>
-              </button>
-              <button
-                @click="createNewPage"
-                class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2"
-              >
-                <span class="text-lg">+</span>
-                <span>Nuova Pagina</span>
-              </button>
-              <button
-                @click="handleLogout"
-                class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg font-medium border border-gray-300 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
+          <div class="flex gap-2">
+            <button
+              @click="showImportDialog = true"
+              title="Importa una pagina esportata in JSON"
+              class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg font-medium border border-gray-300 transition-colors flex items-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Importa</span>
+            </button>
+            <button
+              @click="createNewPage"
+              class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap"
+            >
+              <span class="text-lg leading-none">+</span>
+              <span>Nuova pagina</span>
+            </button>
           </div>
         </div>
       </div>
@@ -429,12 +351,10 @@ import { useRouter } from 'vue-router'
 import { usePageStore } from '../stores/pageStore'
 import { useAuthStore } from '../stores/authStore'
 import AssignPageDialog from '../components/AssignPageDialog.vue'
-import pkg from '../../package.json'
 
 const router = useRouter()
 const pageStore = usePageStore()
 const authStore = useAuthStore()
-const currentVersion = pkg.version
 
 // Filtri
 const filterStatus = ref('all')
@@ -598,13 +518,6 @@ const formatDate = (dateString) => {
   const year = date.getFullYear()
 
   return `${day}/${month}/${year}`
-}
-
-const handleLogout = () => {
-  if (confirm('Sei sicuro di voler uscire?')) {
-    authStore.logout()
-    router.push('/login')
-  }
 }
 
 // Kebab menu functions

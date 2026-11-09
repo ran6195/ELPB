@@ -245,6 +245,24 @@ class ExplicitEventsTest extends TestCase
         $this->assertSame('invalid', $invalid->outcome);
     }
 
+    public function test_consultazione_della_guida_e_download_del_renderer(): void
+    {
+        $user = $this->createUser();
+
+        $this->assertSame(204, $this->request('GET', '/api/guides/publishing', null, [], $user)->getStatusCode());
+        $this->assertSame(204, $this->request('POST', '/api/renderer/downloads', ['file' => 'renderer-lp-elpb-nolegal.zip', 'version' => '2.1.1'], [], $user)->getStatusCode());
+        $this->assertSame(400, $this->request('POST', '/api/renderer/downloads', ['file' => '../.env'], [], $user)->getStatusCode());
+        $this->assertSame(401, $this->request('GET', '/api/guides/publishing')->getStatusCode());
+
+        [$guide] = $this->byAction('GET /api/guides/publishing');
+        $this->assertSame(['view', 'ok', $user->id], [$guide->category, $guide->outcome, $guide->user_id]);
+
+        [$download, $invalid] = $this->byAction('POST /api/renderer/downloads');
+        $this->assertSame(['action', 'ok', $user->id], [$download->category, $download->outcome, $download->user_id]);
+        $this->assertSame(['file' => 'renderer-lp-elpb-nolegal.zip', 'version' => '2.1.1'], $download->properties['input']);
+        $this->assertSame('invalid', $invalid->outcome);
+    }
+
     public function test_gli_script_si_registrano_come_system_sul_canale_console(): void
     {
         $this->runScript('--dry-run');

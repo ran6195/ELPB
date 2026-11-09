@@ -7,12 +7,6 @@
           <h1 class="text-2xl font-semibold text-gray-900 mb-1">Pubblicare una pagina su un nuovo sito</h1>
           <p class="text-gray-500 text-sm">Dominio, cartella sul sito, file del renderer e configurazione</p>
         </div>
-        <router-link
-          to="/"
-          class="shrink-0 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 transition-colors"
-        >
-          ← Dashboard
-        </router-link>
       </div>
     </div>
 
@@ -58,6 +52,7 @@
         <a
           :href="pkg.file ? downloadUrl(pkg.file) : undefined"
           :download="pkg.file || undefined"
+          @click="logDownload"
           :class="pkg.file ? 'bg-primary-600 hover:bg-primary-700' : 'bg-gray-300 pointer-events-none'"
           class="inline-flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors max-w-full"
         >
@@ -252,6 +247,7 @@
 <script setup>
 import { computed, h, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/authStore'
+import apiClient from '../api/axios'
 
 const authStore = useAuthStore()
 const canManageDomains = computed(() => authStore.isAdmin || authStore.isCompany)
@@ -270,7 +266,15 @@ const downloadUrl = (file) => `${base}downloads/${file}`
 const info = ref(null)
 const infoError = ref(false)
 
+// Registro attività: apertura della guida e download (i file sono statici, non passano dal backend)
+const logActivity = (request) => request.catch(error => console.error('Attività non registrata:', error))
+
+function logDownload() {
+  logActivity(apiClient.post('/renderer/downloads', { file: pkg.value.file, version: info.value?.version ?? null }))
+}
+
 onMounted(async () => {
+  logActivity(apiClient.get('/guides/publishing'))
   try {
     const response = await fetch(downloadUrl('renderer.json'), { cache: 'no-store' })
     if (!response.ok) throw new Error(response.statusText)

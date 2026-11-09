@@ -90,6 +90,15 @@ Anche scheda del lead e calendario usano i lead già caricati. Per la traccia:
   `GET /api/leads/calendar?mese=AAAA-MM&pannello=admin|company` (`pageStore.logCalendarView`),
   che risponde 204: il mese si legge dall'URL della voce e il dettaglio del registro lo mostra.
 
+### Guida alla pubblicazione e download del renderer
+
+La guida (`/guida-pubblicazione`) e gli zip del renderer sono file statici del frontend:
+per la traccia `PublishGuide.vue` chiama all'apertura `GET /api/guides/publishing`
+(voce `view`) e al clic sul download `POST /api/renderer/downloads { file, version }`
+(voce `action`, il dettaglio mostra pacchetto e versione). Entrambe rispondono 204
+(`GuideController`); un nome di pacchetto non previsto → 400. Se la chiamata fallisce
+il download procede comunque.
+
 **Staff:** un admin che agisce su un'azienda diversa dalla propria → `properties.staff_view`.
 
 ### Salvataggio dell'editor (autosalvataggio)

@@ -8,12 +8,6 @@
             <h1 class="text-2xl font-semibold text-gray-900 mb-1">Pannello Amministrazione</h1>
             <p class="text-gray-500 text-sm">Gestione utenti e società</p>
           </div>
-          <router-link
-            to="/"
-            class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg font-medium border border-gray-300 transition-colors"
-          >
-            ← Torna alle Pagine
-          </router-link>
         </div>
       </div>
     </div>

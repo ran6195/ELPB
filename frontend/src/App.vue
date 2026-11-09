@@ -1,5 +1,7 @@
 <template>
   <div id="app">
+    <!-- Barra comune alle schermate di gestione (meta.navbar nel router) -->
+    <AppNavbar v-if="route.meta.navbar && authStore.isAuthenticated" />
     <router-view />
 
     <!-- Bottone aggiornamento disponibile (globale, floating in basso a destra) -->
@@ -22,7 +24,12 @@
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router'
+import AppNavbar from './components/AppNavbar.vue'
+import { useAuthStore } from './stores/authStore'
 import { useVersionCheck } from './composables/useVersionCheck'
+const route = useRoute()
+const authStore = useAuthStore()
 const { updateAvailable, reload } = useVersionCheck()
 </script>
 

@@ -121,6 +121,9 @@ class AuditCatalog
         'POST /api/domains/{id}' => 'Modifica dominio',
         'DELETE /api/domains/{id}' => 'Eliminazione dominio',
 
+        'GET /api/guides/publishing' => 'Guida alla pubblicazione',
+        'POST /api/renderer/downloads' => 'Download del renderer',
+
         'GET /api/leads' => 'Elenco lead',
         'POST /api/leads/exports' => 'Esportazione lead',
         'GET /api/leads/calendar' => 'Calendario dei lead',

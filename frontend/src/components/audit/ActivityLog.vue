@@ -190,6 +190,11 @@
               Mese consultato: {{ calendarMonth(row) }}
             </p>
 
+            <!-- Download del renderer dalla guida -->
+            <p v-if="row.action === 'POST /api/renderer/downloads' && row.properties?.input?.file" class="text-gray-700">
+              Pacchetto scaricato: {{ row.properties.input.file }}<template v-if="row.properties.input.version"> (versione {{ row.properties.input.version }})</template>
+            </p>
+
             <!-- Lead esportati -->
             <div v-if="row.action === 'lead.exported'" class="text-gray-700 space-y-1">
               <p>

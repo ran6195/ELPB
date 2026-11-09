@@ -8,12 +8,6 @@
             <h1 class="text-3xl font-bold text-gray-900">Archivio Pagine</h1>
             <p class="mt-1 text-sm text-gray-500">Pagine eliminate che possono essere ripristinate</p>
           </div>
-          <router-link
-            to="/"
-            class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-          >
-            Torna alle Pagine
-          </router-link>
         </div>
       </div>
     </div>

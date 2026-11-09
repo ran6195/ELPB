@@ -100,6 +100,11 @@ $app->put('/api/domains/{id}', '\App\Controllers\DomainController:update')->add(
 $app->post('/api/domains/{id}', '\App\Controllers\DomainController:update')->add(AuthMiddleware::class); // POST alternativo per compatibilità Apache
 $app->delete('/api/domains/{id}', '\App\Controllers\DomainController:delete')->add(AuthMiddleware::class);
 
+// Guida alla pubblicazione e download del renderer: file statici del frontend,
+// queste rotte servono solo al registro attività
+$app->get('/api/guides/publishing', '\App\Controllers\GuideController:view')->add(AuthMiddleware::class);
+$app->post('/api/renderer/downloads', '\App\Controllers\GuideController:logRendererDownload')->add(AuthMiddleware::class);
+
 // Leads routes (protette - solo per admin)
 $app->get('/api/leads', '\App\Controllers\LeadController:index')->add(AuthMiddleware::class);
 // calendar prima di {id}: le rotte fisse vanno registrate prima di quelle con parametri

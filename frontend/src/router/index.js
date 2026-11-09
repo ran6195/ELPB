@@ -28,38 +28,38 @@ const routes = [
     path: '/',
     name: 'PageList',
     component: PageList,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, navbar: true }
   },
   {
     path: '/archived',
     name: 'ArchivedPages',
     component: ArchivedPages,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, navbar: true }
   },
   {
     path: '/media',
     name: 'MediaLibrary',
     component: MediaLibrary,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, navbar: true }
   },
   {
     // Istruzioni per pubblicare su un nuovo sito e pacchetti del renderer
     path: '/guida-pubblicazione',
     name: 'PublishGuide',
     component: PublishGuide,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, navbar: true }
   },
   {
     path: '/admin',
     name: 'AdminPanel',
     component: AdminPanel,
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true, navbar: true }
   },
   {
     path: '/company',
     name: 'CompanyPanel',
     component: CompanyPanel,
-    meta: { requiresAuth: true, requiresCompany: true }
+    meta: { requiresAuth: true, requiresCompany: true, navbar: true }
   },
   {
     path: '/editor/:id?',
