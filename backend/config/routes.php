@@ -38,6 +38,9 @@ $app->get('/api/admin/audit-logs/export', '\App\Controllers\AuditLogController:e
 $app->get('/api/admin/audit-logs/new', '\App\Controllers\AuditLogController:newer')->add(AuthMiddleware::class);
 $app->get('/api/admin/audit-logs', '\App\Controllers\AuditLogController:index')->add(AuthMiddleware::class);
 
+// Storico della pubblicazione pagina per pagina (solo admin)
+$app->get('/api/admin/publications', '\App\Controllers\PublicationController:index')->add(AuthMiddleware::class);
+
 // Company routes (solo company manager)
 $app->post('/api/company/users', '\App\Controllers\AuthController:createUserInCompany')->add(AuthMiddleware::class);
 $app->delete('/api/company/users/{id}', '\App\Controllers\AuthController:deleteUserFromCompany')->add(AuthMiddleware::class);

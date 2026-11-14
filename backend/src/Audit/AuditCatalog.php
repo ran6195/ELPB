@@ -140,6 +140,7 @@ class AuditCatalog
         'GET /api/admin/audit-logs' => 'Registro attività',
         'GET /api/admin/audit-logs/export' => 'Esportazione registro attività',
         'GET /api/admin/audit-logs/new' => 'Diretta registro attività',
+        'GET /api/admin/publications' => 'Storico della pubblicazione',
     ];
 
     /** Tipi di record: codice => [nome, femminile] (per "Pagina creata" / "Dominio creato") */

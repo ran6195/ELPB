@@ -154,6 +154,38 @@ class PublicationHistoryTest extends TestCase
         $this->assertSame([], PublicationHistory::reconcile(true));
     }
 
+    public function test_elenco_admin_con_pagine_archiviate_ed_eliminate(): void
+    {
+        $admin = $this->createUser(['role' => 'admin']);
+        [$manager, $pageId] = $this->companyPage(['is_published' => 0]);
+        Page::find($pageId)->update(['is_published' => true]);
+        $archived = $this->createPage(['is_published' => 0]);
+        Page::find($archived)->update(['is_published' => true]);
+        Page::find($archived)->delete();
+        Capsule::table('page_publications')->insert([
+            'page_id' => 999999, 'started_at' => '2026-11-01 09:00:00', 'ended_at' => '2026-11-05 18:00:00',
+            'start_source' => 'live', 'end_reason' => 'deleted',
+        ]);
+
+        $this->assertSame(403, $this->request('GET', '/api/admin/publications', null, [], $manager)->getStatusCode());
+
+        $response = $this->request('GET', '/api/admin/publications', null, [], $admin);
+        $this->assertSame(200, $response->getStatusCode());
+        $body = $this->json($response);
+        $byId = array_column(array_map(fn($row) => ['id' => $row['page']['id'], 'row' => $row], $body['data']), 'row', 'id');
+
+        $this->assertSame('online', $byId[$pageId]['page']['status']);
+        $this->assertCount(1, $byId[$pageId]['periods']);
+        $this->assertNull($byId[$pageId]['periods'][0]['ended_at']);
+        $this->assertSame('Azienda Test', $body['companies'][$manager->company_id]);
+
+        $this->assertSame('archived', $byId[$archived]['page']['status']);
+        $this->assertSame(PublicationHistory::END_ARCHIVED, $byId[$archived]['periods'][0]['end_reason']);
+
+        $this->assertSame('deleted', $byId[999999]['page']['status']);
+        $this->assertNull($byId[999999]['page']['title']);
+    }
+
     private function periods(int $pageId): array
     {
         return Capsule::table('page_publications')->where('page_id', $pageId)->orderBy('id')->get()->all();

@@ -33,6 +33,16 @@ Un errore dello storico non blocca il salvataggio della pagina: viene scritto ne
 riallineamento lo recupera. Gli aggiornamenti di massa (`Page::where()->update()`) non passano dal
 modello: oggi non ce ne sono sulle colonne che contano.
 
+## Scheda Pubblicazioni (pannello admin)
+
+`GET /api/admin/publications` (solo admin, `PublicationController`) restituisce tutte le pagine con
+uno storico, comprese le archiviate e le eliminate definitivamente, con i periodi e i nomi delle
+aziende. La scheda "Pubblicazioni" (`components/publications/PublicationHistory.vue`) mostra pagina
+per pagina i periodi (azienda, dal, al o "in corso", giorni, inizio ricostruito, motivo della fine),
+con filtri per mese, azienda, stato e ricerca, e l'export CSV (una riga per periodo). Con un mese
+scelto restano solo i periodi che lo toccano e i giorni sono quelli nel mese: un giorno conta se la
+pagina è stata online anche solo in parte, i periodi sovrapposti della stessa pagina non si sommano.
+
 ## Pagine pubblicate prima dello storico
 
 `scripts/backfill-publication-history.php` (prova senza argomenti, poi `--execute`; rieseguibile)

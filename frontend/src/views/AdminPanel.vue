@@ -72,6 +72,17 @@
             Renderer
           </button>
           <button
+            @click="activeTab = 'publications'"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors',
+              activeTab === 'publications'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+            ]"
+          >
+            Pubblicazioni
+          </button>
+          <button
             @click="activeTab = 'activity'"
             :class="[
               'px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors',
@@ -432,6 +443,9 @@
 
       <!-- TAB: RENDERER -->
       <RendererOverview v-if="activeTab === 'renderers'" />
+
+      <!-- TAB: PUBBLICAZIONI -->
+      <PublicationHistory v-if="activeTab === 'publications'" />
 
       <!-- TAB: REGISTRO ATTIVITÀ -->
       <ActivityLog v-if="activeTab === 'activity'" :companies="companies" />
@@ -977,6 +991,7 @@ import { usePageStore } from '../stores/pageStore'
 import LeadsCalendar from '../components/LeadsCalendar.vue'
 import DomainManager from '../components/domains/DomainManager.vue'
 import RendererOverview from '../components/domains/RendererOverview.vue'
+import PublicationHistory from '../components/publications/PublicationHistory.vue'
 import ActivityLog from '../components/audit/ActivityLog.vue'
 const StatsDashboard = defineAsyncComponent(() => import('../components/stats/StatsDashboard.vue'))
 import { leadOrigin, leadSiteText, siteOptions, matchesSite } from '../utils/leadOrigin'
