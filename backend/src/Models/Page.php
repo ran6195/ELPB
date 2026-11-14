@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Audit\Auditable;
 use App\Audit\PublicationEvents;
+use App\Services\PublicationHistory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -90,19 +91,34 @@ class Page extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** Pubblicazione e ritiro registrati come eventi propri, dopo il commit */
+    /**
+     * Pubblicazione e ritiro registrati come eventi propri, dopo il commit.
+     * Storico della pubblicazione (fatturazione) aggiornato nella stessa transazione.
+     */
     protected static function booted(): void
     {
         static::created(function (Page $page) {
             if ($page->is_published) {
                 $page->getConnection()->afterCommit(fn() => PublicationEvents::pagePublicationChanged($page, true));
             }
+            PublicationHistory::sync($page, PublicationHistory::END_UNPUBLISHED);
         });
         static::updated(function (Page $page) {
             if ($page->wasChanged('is_published')) {
                 $published = (bool) $page->is_published;
                 $page->getConnection()->afterCommit(fn() => PublicationEvents::pagePublicationChanged($page, $published));
             }
+            if ($page->wasChanged(['is_published', 'company_id'])) {
+                PublicationHistory::sync($page, PublicationHistory::END_UNPUBLISHED);
+            }
+        });
+        // Archiviazione o eliminazione definitiva: la pagina non viene più mostrata
+        static::deleted(function (Page $page) {
+            $reason = $page->isForceDeleting() ? PublicationHistory::END_DELETED : PublicationHistory::END_ARCHIVED;
+            PublicationHistory::sync($page, $reason, false);
+        });
+        static::restored(function (Page $page) {
+            PublicationHistory::sync($page, PublicationHistory::END_UNPUBLISHED);
         });
     }
 
