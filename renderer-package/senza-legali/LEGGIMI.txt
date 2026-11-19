@@ -31,6 +31,8 @@ AGGIORNARE UN SITO CON UNA VERSIONE PRECEDENTE
   Per la thank-you sotto la cartella del renderer aggiungere al .env
   THANKYOU_URL=cartella (vedi il .env del pacchetto). Se Tag Manager ha
   attivatori con l'indirizzo esatto /{slug}/thank-you, aggiornarli.
+  Con DEFAULT_SLUG nel .env aggiungere al .htaccess la riga
+  DirectoryIndex page.php, altrimenti la cartella senza slug risponde 403.
 
 Questo pacchetto NON genera pagine legali: i link Privacy, Condizioni,
 Cookies del Footer Legale puntano alle pagine già presenti sul sito.
@@ -108,6 +110,8 @@ PROBLEMI COMUNI
                               (mettere DEBUG=true per vedere il dettaglio)
   Pagina bianca / errore 500  PHP inferiore a 8.0
   404 su ogni URL             RewriteBase errato o mod_rewrite non attivo
+  403 aprendo la cartella     manca DirectoryIndex page.php nel .htaccess
+                              (serve per DEFAULT_SLUG)
   Link del footer in 404      "Genera automaticamente" ancora attivo nel
                               blocco Footer Legale
   Sito WordPress/Joomla       tenere il renderer in una sottocartella con il

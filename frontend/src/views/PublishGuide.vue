@@ -248,6 +248,11 @@
           <strong>Non sovrascrivere <code class="font-mono">.env</code> e <code class="font-mono">.htaccess</code></strong>: contengono le impostazioni del sito.
         </p>
         <p class="text-sm text-gray-700 mt-2">
+          Se usi <code class="font-mono">DEFAULT_SLUG</code>, controlla che l'<code class="font-mono">.htaccess</code> contenga la riga
+          <code class="font-mono">DirectoryIndex page.php</code> (presente nei pacchetti dalla versione 2.1.2):
+          senza, aprendo la cartella senza slug il sito risponde 403.
+        </p>
+        <p class="text-sm text-gray-700 mt-2">
           I siti con un renderer vecchio sono indicati come "da aggiornare" nella scheda <em>Renderer</em> del pannello admin.
         </p>
       </section>
@@ -354,6 +359,7 @@ const problems = [
   { symptom: '"Si è verificato un errore"', fix: 'cURL assente o connessioni in uscita bloccate dall\'hosting. Metti DEBUG=true per vedere il dettaglio.' },
   { symptom: 'Pagina bianca o errore 500', fix: 'Versione di PHP inferiore alla 8.0.' },
   { symptom: '404 su ogni indirizzo', fix: 'RewriteBase sbagliato o mod_rewrite non attivo. Prova page.php?slug={slug}: se funziona il problema è l\'.htaccess.' },
+  { symptom: '403 aprendo la cartella senza slug', fix: 'Manca DirectoryIndex page.php nell\'.htaccess: serve per mostrare la pagina di DEFAULT_SLUG.' },
   { symptom: 'Link del footer in 404', fix: '"Genera automaticamente" ancora attivo nel Footer Legale: disattivalo e inserisci i link alle pagine del sito.' },
   { symptom: 'Il modulo non parte', fix: 'Dominio del sito non aggiunto alla chiave reCAPTCHA.' },
   { symptom: 'Il sito non è in PHP', fix: 'Il renderer non si può installare: serve uno sviluppo ad hoc.' },

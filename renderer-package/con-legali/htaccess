@@ -1,5 +1,9 @@
 # Landing Page Standalone Renderer - Apache Configuration
 
+# Aprendo la cartella senza slug si apre page.php (pagina di DEFAULT_SLUG nel .env).
+# Senza questa riga la cartella risponde 403
+DirectoryIndex page.php
+
 # Abilita URL Rewriting
 <IfModule mod_rewrite.c>
     RewriteEngine On

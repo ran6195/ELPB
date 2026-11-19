@@ -31,6 +31,8 @@ AGGIORNARE UN SITO CON UNA VERSIONE PRECEDENTE
   Per la thank-you sotto la cartella del renderer aggiungere al .env
   THANKYOU_URL=cartella (vedi il .env del pacchetto). Se Tag Manager ha
   attivatori con l'indirizzo esatto /{slug}/thank-you, aggiornarli.
+  Con DEFAULT_SLUG nel .env aggiungere al .htaccess la riga
+  DirectoryIndex page.php, altrimenti la cartella senza slug risponde 403.
 
 CONTENUTO DEL PACCHETTO
   lp/                     cartella del renderer (il nome si può cambiare)
@@ -106,6 +108,8 @@ PROBLEMI COMUNI
                               (mettere DEBUG=true per vedere il dettaglio)
   Pagina bianca / errore 500  PHP inferiore a 8.0
   404 su ogni URL             RewriteBase errato o mod_rewrite non attivo
+  403 aprendo la cartella     manca DirectoryIndex page.php nel .htaccess
+                              (serve per DEFAULT_SLUG)
   Link legali in 404          LEGAL_BASE_URL non impostata o menu-legali/
                               non accanto alla cartella del renderer
   Sito WordPress/Joomla       tenere il renderer in una sottocartella con il
