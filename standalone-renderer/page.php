@@ -69,6 +69,37 @@ function sanitizeSlug($slug) {
 }
 
 /**
+ * Indirizzo mostrato nella barra del browser sulla thank-you (solo cosmetico,
+ * con history.replaceState). THANKYOU_URL nel .env:
+ * - root (predefinito): /{slug}/thank-you, alla radice del dominio
+ * - cartella: /{cartella del renderer}/{slug}/thank-you, calcolata dallo script
+ *   eseguito (vale anche con page.php?slug=... e con DEFAULT_SLUG)
+ */
+function thankYouPath($slug) {
+    $mode = strtolower(trim($_ENV['THANKYOU_URL'] ?? 'root'));
+    $dir = '';
+    if ($mode === 'cartella') {
+        $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        $dir = rtrim($dir, '/.');
+    }
+    return $dir . '/' . $slug . '/thank-you';
+}
+
+/**
+ * Slug della thank-you se la richiesta è {slug}/thank-you (pagina ricaricata),
+ * altrimenti null. Lo slug arriva dalla regola generale del .htaccess
+ * (page.php?slug={slug}/thank-you) o da PATH_INFO.
+ */
+function thankYouSlugFromRequest() {
+    $raw = $_GET['slug'] ?? ($_SERVER['PATH_INFO'] ?? '');
+    if (!is_string($raw) || !preg_match('#^/?([^/]+)/thank-you/?$#i', $raw, $m)) {
+        return null;
+    }
+    $slug = sanitizeSlug($m[1]);
+    return $slug !== '' ? $slug : null;
+}
+
+/**
  * Fa una richiesta HTTP GET
  */
 function httpGet($url) {
@@ -601,15 +632,17 @@ function renderThankYouPage($page, $homeUrl = '') {
         <div class="block-container"><?php echo $renderer->render($footerBlock); ?></div>
     <?php endif; ?>
 
-    <!-- URL cosmetico: mostra /{slug}/thank-you nella barra del browser -->
+    <!-- URL cosmetico della thank-you nella barra del browser (THANKYOU_URL nel .env) -->
+    <?php if ($pageSlug !== ''): ?>
     <script>
         (function() {
-            var slug = '<?php echo htmlspecialchars($pageSlug, ENT_QUOTES); ?>';
-            if (slug && window.history && window.history.replaceState) {
-                window.history.replaceState(null, '', '/' + slug + '/thank-you');
+            var path = <?php echo json_encode(thankYouPath($pageSlug), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG); ?>;
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', path);
             }
         })();
     </script>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
@@ -644,9 +677,11 @@ function renderThankYouPage($page, $homeUrl = '') {
 try {
     loadEnv();
 
-    // Check per thank-you page mode (via query string ?_mode=thankyou)
-    if (isset($_GET['_mode']) && $_GET['_mode'] === 'thankyou') {
-        $slug = isset($_GET['slug']) ? sanitizeSlug($_GET['slug']) : '';
+    // Thank-you: ?_mode=thankyou dopo l'invio del form, oppure {slug}/thank-you
+    // quando la pagina viene ricaricata (anche con un .htaccess senza regola dedicata)
+    $thankYouSlug = thankYouSlugFromRequest();
+    if ((isset($_GET['_mode']) && $_GET['_mode'] === 'thankyou') || $thankYouSlug !== null) {
+        $slug = $thankYouSlug ?? (isset($_GET['slug']) ? sanitizeSlug($_GET['slug']) : '');
         $page = !empty($slug) ? fetchPage($slug) : null;
         $homeUrl = $_ENV['HOME_URL'] ?? '';
         renderThankYouPage($page, $homeUrl);

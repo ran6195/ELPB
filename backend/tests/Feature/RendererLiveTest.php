@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\TrackingService;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Tests\TestCase;
 
@@ -64,15 +65,16 @@ class RendererLiveTest extends TestCase
             'page_id' => $page, 'host' => $host, 'renderer' => 'standalone', 'version' => $version,
             'ip' => $ip, 'hits' => $hits, 'first_seen_at' => $first, 'last_seen_at' => $last,
         ]);
+        $current = TrackingService::CURRENT_RENDERER_VERSIONS['standalone'];
         // Prima dell'aggiornamento (senza sito) e dopo, dallo stesso server
         $row($pageId, '', null, '93.186.242.100', 40, '2026-09-01 08:00:00', '2026-10-27 09:00:00');
-        $row($pageId, 'cliente.it', '2.1.1', '93.186.242.100', 5, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
+        $row($pageId, 'cliente.it', $current, '93.186.242.100', 5, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
         // Server diverso: è un'altra installazione, resta da aggiornare
         $row($pageId, '', null, '80.88.87.10', 3, '2026-09-01 08:00:00', '2026-10-28 11:00:00');
         // Due siti aggiornati sullo stesso IP: non si sa quale fosse, la riga vecchia resta
         $row($other, '', null, '93.186.242.100', 9, '2026-09-01 08:00:00', '2026-10-27 09:00:00');
-        $row($other, 'uno.it', '2.1.1', '93.186.242.100', 1, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
-        $row($other, 'due.it', '2.1.1', '93.186.242.100', 1, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
+        $row($other, 'uno.it', $current, '93.186.242.100', 1, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
+        $row($other, 'due.it', $current, '93.186.242.100', 1, '2026-10-27 10:00:00', '2026-10-28 12:00:00');
 
         $rows = collect($this->json($this->request('GET', '/api/renderers', null, [], $admin))['data'])
             ->where('page.id', $pageId)->keyBy('ip');

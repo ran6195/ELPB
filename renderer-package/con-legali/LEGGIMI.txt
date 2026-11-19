@@ -1,6 +1,16 @@
-RENDERER LANDING PAGE 2.1.1 - INSTALLAZIONE SU UN SITO QUALUNQUE
+RENDERER LANDING PAGE 2.1.2 - INSTALLAZIONE SU UN SITO QUALUNQUE
 Backend: https://elpb.edysma.com   |   Pagine legali: locali
 ==========================================================
+
+NOVITÀ DELLA VERSIONE 2.1.2
+  - Nuova impostazione THANKYOU_URL nel .env: con THANKYOU_URL=cartella
+    l'indirizzo della pagina di ringraziamento resta sotto la cartella del
+    renderer (/lp/{slug}/thank-you) invece di /{slug}/thank-you. Senza la
+    voce, o con root, non cambia nulla. Utile se Tag Manager riconosce la
+    thank-you dal percorso.
+  - La thank-you si vede anche se la pagina viene ricaricata
+    (/lp/{slug}/thank-you), senza modifiche al .htaccess. Il .htaccess dei
+    pacchetti nuovi ha comunque una regola dedicata.
 
 NOVITÀ DELLA VERSIONE 2.1.1
   - Fix del form: dopo l'invio il modulo viene svuotato e il pulsante resta
@@ -18,6 +28,9 @@ AGGIORNARE UN SITO CON UNA VERSIONE PRECEDENTE
   Sostituire via FTP i file PHP nella cartella del renderer: page.php,
   BlockRenderer.php, config.php, thank-you.php, legal-pages.php.
   NON sovrascrivere .env e .htaccess (contengono le impostazioni del sito).
+  Per la thank-you sotto la cartella del renderer aggiungere al .env
+  THANKYOU_URL=cartella (vedi il .env del pacchetto). Se Tag Manager ha
+  attivatori con l'indirizzo esatto /{slug}/thank-you, aggiornarli.
 
 CONTENUTO DEL PACCHETTO
   lp/                     cartella del renderer (il nome si può cambiare)
@@ -69,6 +82,8 @@ INSTALLAZIONE
 
 INDIRIZZI RISULTANTI
   Landing page:   https://www.miosito.it/lp/{slug}
+  Thank-you:      https://www.miosito.it/{slug}/thank-you
+                  (con THANKYOU_URL=cartella: .../lp/{slug}/thank-you)
   Privacy:        https://www.miosito.it/lp/legal/{slug}/privacy
   Condizioni:     https://www.miosito.it/lp/legal/{slug}/condizioni
   Cookies:        https://www.miosito.it/lp/legal/{slug}/cookies
@@ -82,7 +97,7 @@ VERIFICHE DOPO L'INSTALLAZIONE
   [ ] l'invio del form porta alla thank-you e il lead compare nel pannello
   [ ] i link Privacy / Condizioni / Cookies del footer funzionano
   [ ] nel pannello ELPB, Admin > Renderer, il sito compare con
-      "Standalone 2.1.1" dopo aver aperto la landing page
+      "Standalone 2.1.2" dopo aver aperto la landing page
   [ ] DEBUG=false in produzione
 
 PROBLEMI COMUNI

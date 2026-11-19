@@ -203,6 +203,12 @@
           <li><code class="font-mono">API_BASE_URL</code> è già giusto: non modificarlo.</li>
           <li><code class="font-mono">HOME_URL</code> (facoltativo): link "Torna alla home" della pagina di ringraziamento.</li>
           <li><code class="font-mono">DEFAULT_SLUG</code> (facoltativo): pagina mostrata aprendo la cartella senza slug.</li>
+          <li>
+            <code class="font-mono">THANKYOU_URL</code> (facoltativo, dalla versione 2.1.2): indirizzo della pagina di ringraziamento.
+            Con <code class="font-mono">root</code> (predefinito) è <code class="font-mono">/{slug}/thank-you</code>, alla radice del dominio;
+            con <code class="font-mono">cartella</code> resta sotto la cartella del renderer, <code class="font-mono">/lp/{slug}/thank-you</code>,
+            utile se Tag Manager riconosce la thank-you dal percorso.
+          </li>
           <li><code class="font-mono">DEBUG=true</code> solo per capire un errore durante l'installazione, poi di nuovo <code class="font-mono">false</code>.</li>
         </ul>
 
@@ -330,6 +336,7 @@ API_BASE_URL=https://elpb.edysma.com/backend/public/api
 # Facoltativi
 # DEFAULT_SLUG=nome-pagina
 # HOME_URL=https://www.sito-cliente.it
+# THANKYOU_URL=root
 
 DEBUG=false`
 

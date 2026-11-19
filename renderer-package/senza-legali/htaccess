@@ -19,6 +19,9 @@
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
+    # Thank-you ricaricata: /{slug}/thank-you (THANKYOU_URL=cartella nel .env).
+    # Facoltativa dalla 2.1.2: page.php riconosce l'indirizzo anche senza
+    RewriteRule ^([^/]+)/thank-you/?$ page.php?slug=$1&_mode=thankyou [L,QSA]
 
     # Catch-all: tutto il resto va a page.php come slug
     RewriteRule ^(.+)$ page.php?slug=$1 [L,QSA]

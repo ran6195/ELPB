@@ -18,5 +18,11 @@ LEGAL_BASE_URL=https://www.SITO-CLIENTE.it/lp
 # Link "Torna alla home" nella thank-you page (facoltativo)
 # HOME_URL=https://www.SITO-CLIENTE.it
 
+# Indirizzo mostrato nella barra del browser sulla thank-you (facoltativo):
+#   root     -> /{slug}/thank-you, alla radice del dominio (predefinito)
+#   cartella -> /lp/{slug}/thank-you, sotto la cartella del renderer
+#               (utile se Tag Manager riconosce la thank-you dal percorso)
+# THANKYOU_URL=root
+
 # true solo durante i test: mostra gli errori dettagliati
 DEBUG=false
