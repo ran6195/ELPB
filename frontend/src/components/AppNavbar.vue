@@ -2,8 +2,8 @@
   <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
     <div class="w-full px-4 sm:px-6 h-14 flex items-center gap-4">
       <!-- Marchio -->
-      <router-link to="/" class="shrink-0 flex items-center gap-2 font-semibold text-gray-900">
-        <span class="w-7 h-7 rounded-lg bg-primary-600 text-white text-xs font-bold flex items-center justify-center">LP</span>
+      <router-link to="/" class="shrink-0 flex items-center gap-2 font-semibold text-gray-900" aria-label="Landing Page Builder, torna alle pagine">
+        <img :src="logoUrl" alt="" class="w-7 h-7" />
         <span class="hidden md:inline">Landing Page Builder</span>
       </router-link>
 
@@ -80,6 +80,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import pkg from '../../package.json'
+import logoUrl from '../assets/icons/favicon.svg'
 
 const authStore = useAuthStore()
 const route = useRoute()
