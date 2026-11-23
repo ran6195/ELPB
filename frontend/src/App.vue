@@ -1,5 +1,7 @@
 <template>
-  <div id="app">
+  <!-- .ed-ui: colori e carattere del Sistema grafico Edysma (tailwind.config.cjs).
+       Non sulle landing (anteprima, thank-you, /p/:slug), che restano come nei renderer. -->
+  <div id="app" :class="{ 'ed-ui': edUi }">
     <!-- Barra comune alle schermate di gestione (meta.navbar nel router) -->
     <AppNavbar v-if="route.meta.navbar && authStore.isAuthenticated" />
     <router-view />
@@ -24,6 +26,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppNavbar from './components/AppNavbar.vue'
 import { useAuthStore } from './stores/authStore'
@@ -31,6 +34,7 @@ import { useVersionCheck } from './composables/useVersionCheck'
 const route = useRoute()
 const authStore = useAuthStore()
 const { updateAvailable, reload } = useVersionCheck()
+const edUi = computed(() => route.matched.length > 0 && !route.meta.landing)
 </script>
 
 <style scoped>

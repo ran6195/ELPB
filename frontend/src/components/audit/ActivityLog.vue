@@ -135,11 +135,11 @@
             <!-- Campi modificati -->
             <div v-if="changedFields(row).length" class="overflow-x-auto">
               <table class="min-w-full text-xs border border-gray-200 rounded">
-                <thead class="bg-gray-50 text-gray-500">
+                <thead class="bg-gray-100 text-gray-500">
                   <tr>
-                    <th class="px-3 py-1.5 text-left font-medium">Campo</th>
-                    <th v-if="row.properties.old" class="px-3 py-1.5 text-left font-medium">Prima</th>
-                    <th v-if="row.properties.new" class="px-3 py-1.5 text-left font-medium">Dopo</th>
+                    <th class="px-3 py-1.5 text-left font-semibold">Campo</th>
+                    <th v-if="row.properties.old" class="px-3 py-1.5 text-left font-semibold">Prima</th>
+                    <th v-if="row.properties.new" class="px-3 py-1.5 text-left font-semibold">Dopo</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">

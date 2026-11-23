@@ -35,3 +35,37 @@ body {
 .prose .ql-align-center  { text-align: center; }
 .prose .ql-align-right   { text-align: right; }
 .prose .ql-align-justify { text-align: justify; }
+
+/* ==========================================================================
+   Campi dei moduli · Sistema grafico Edysma (punto 4)
+   Solo nell'interfaccia dell'app (.ed-ui), mai dentro la landing (.lp-scope:
+   canvas dell'editor, blocco Form compreso). Valgono solo per i campi con il
+   bordo grigio standard: i bordi colorati di proposito (validazione) restano.
+   Esclusi caselle, radio, colore, cursori, file.
+   ========================================================================== */
+.ed-ui :is(input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"], [type="submit"], [type="button"], [type="reset"], [type="image"]), select, textarea):is(.border-gray-300, .border-gray-200):not(.lp-scope *) {
+  border-color: rgb(var(--c-gray-400));            /* faint #7b8592: bordo ben visibile */
+}
+.ed-ui :is(input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"], [type="submit"], [type="button"], [type="reset"], [type="image"]), select, textarea):is(.border-gray-300, .border-gray-200):not(:disabled):hover:not(.lp-scope *) {
+  border-color: rgb(var(--c-gray-500));            /* muted al passaggio */
+}
+.ed-ui :is(input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"], [type="submit"], [type="button"], [type="reset"], [type="image"]), select, textarea):is(.border-gray-300, .border-gray-200):focus:not(.lp-scope *) {
+  border-color: rgb(var(--c-blue-600));            /* brand */
+  --tw-ring-color: rgb(var(--c-blue-100));         /* alone brand-soft */
+  outline: 2px solid transparent;
+}
+/* Altezza 38 px (il sistema: campi 38, oggi py-2.5 = 42) */
+.ed-ui :is(input, select).py-2\.5:is(.border-gray-300, .border-gray-200):not(.lp-scope *) {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+/* Tendine nello stesso stile dei campi, con la freccia del sistema */
+.ed-ui select:not([multiple], [size]):is(.border-gray-300, .border-gray-200):not(.lp-scope *) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235a6675' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.1rem;
+  padding-right: 2rem;
+}

@@ -100,13 +100,13 @@
       </div>
       <div class="overflow-x-auto mt-4">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-100">
             <tr>
-              <th class="px-6 py-3 text-left font-medium text-gray-500">{{ GROUPS[group] }}</th>
-              <th class="px-6 py-3 text-right font-medium text-gray-500">Lead</th>
-              <th class="px-6 py-3 text-right font-medium text-gray-500">Lead tracciati</th>
-              <th class="px-6 py-3 text-right font-medium text-gray-500">Visitatori</th>
-              <th class="px-6 py-3 text-right font-medium text-gray-500">Conversione</th>
+              <th class="px-6 py-3 text-left font-semibold text-gray-500">{{ GROUPS[group] }}</th>
+              <th class="px-6 py-3 text-right font-semibold text-gray-500">Lead</th>
+              <th class="px-6 py-3 text-right font-semibold text-gray-500">Lead tracciati</th>
+              <th class="px-6 py-3 text-right font-semibold text-gray-500">Visitatori</th>
+              <th class="px-6 py-3 text-right font-semibold text-gray-500">Conversione</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">

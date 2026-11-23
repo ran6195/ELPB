@@ -171,11 +171,11 @@
         <!-- Wrapper per simulare device -->
         <div
           v-if="viewMode === 'desktop'"
-          class="w-full transition-all duration-300"
+          class="lp-scope w-full transition-all duration-300"
           :class="`container-width-${page.styles?.containerWidth || 'max-w-7xl'}`"
           :style="{
             backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
-            fontFamily: page.styles?.fontFamily || 'inherit',
+            fontFamily: page.styles?.fontFamily || undefined,
             minHeight: '100%'
           }"
         >
@@ -254,12 +254,12 @@
 
             <!-- Screen area con scroll interno -->
             <div
-              class="bg-white rounded-2xl overflow-y-auto viewport-tablet"
+              class="lp-scope bg-white rounded-2xl overflow-y-auto viewport-tablet"
               :class="`container-width-${page.styles?.containerWidth || 'max-w-7xl'}`"
               style="height: 1024px"
               :style="{
                 backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
-                fontFamily: page.styles?.fontFamily || 'inherit'
+                fontFamily: page.styles?.fontFamily || undefined
               }"
             >
               <div
@@ -341,12 +341,12 @@
 
             <!-- Screen area con scroll interno -->
             <div
-              class="bg-white rounded-[2.5rem] overflow-y-auto relative viewport-mobile"
+              class="lp-scope bg-white rounded-[2.5rem] overflow-y-auto relative viewport-mobile"
               :class="`container-width-${page.styles?.containerWidth || 'max-w-7xl'}`"
               style="height: 844px"
               :style="{
                 backgroundColor: page.styles?.backgroundColor || '#FFFFFF',
-                fontFamily: page.styles?.fontFamily || 'inherit'
+                fontFamily: page.styles?.fontFamily || undefined
               }"
             >
               <div

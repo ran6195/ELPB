@@ -62,15 +62,15 @@
       </div>
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dominio</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etichetta</th>
-              <th v-if="companies.length" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Società</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagine</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Renderer</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+              <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Dominio</th>
+              <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Etichetta</th>
+              <th v-if="companies.length" class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Società</th>
+              <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Pagine</th>
+              <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Lead</th>
+              <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Renderer</th>
+              <th class="px-4 py-3 text-right text-[12.5px] font-semibold text-gray-500">Azioni</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">

@@ -60,14 +60,14 @@
       <div v-else-if="!groups.length" class="text-center py-8 text-gray-500">Nessuna pagina corrisponde ai filtri.</div>
       <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-100">
             <tr>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pagina</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Azienda</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Online dal</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Al</th>
-              <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Giorni{{ month ? ' nel mese' : '' }}</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Note</th>
+              <th class="px-3 py-2 text-left text-[12.5px] font-semibold text-gray-500 whitespace-nowrap">Pagina</th>
+              <th class="px-3 py-2 text-left text-[12.5px] font-semibold text-gray-500 whitespace-nowrap">Azienda</th>
+              <th class="px-3 py-2 text-left text-[12.5px] font-semibold text-gray-500 whitespace-nowrap">Online dal</th>
+              <th class="px-3 py-2 text-left text-[12.5px] font-semibold text-gray-500 whitespace-nowrap">Al</th>
+              <th class="px-3 py-2 text-right text-[12.5px] font-semibold text-gray-500 whitespace-nowrap">Giorni{{ month ? ' nel mese' : '' }}</th>
+              <th class="px-3 py-2 text-left text-[12.5px] font-semibold text-gray-500 whitespace-nowrap">Note</th>
             </tr>
           </thead>
           <tbody v-for="group in groups" :key="group.page.id" class="bg-white divide-y divide-gray-100 border-t border-gray-200">

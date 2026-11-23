@@ -145,13 +145,13 @@
           </div>
           <div v-else class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-100">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruolo</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Società</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Nome</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Email</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Ruolo</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Società</th>
+                  <th class="px-6 py-3 text-right text-[12.5px] font-semibold text-gray-500">Azioni</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -241,12 +241,12 @@
           </div>
           <div v-else class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-100">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utenti</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Nome</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Email</th>
+                  <th class="px-6 py-3 text-left text-[12.5px] font-semibold text-gray-500">Utenti</th>
+                  <th class="px-6 py-3 text-right text-[12.5px] font-semibold text-gray-500">Azioni</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -588,7 +588,7 @@
             </div>
 
             <table class="w-full divide-y divide-gray-200 table-auto">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-100">
                 <tr>
                   <th class="px-4 py-3 w-10">
                     <input
@@ -599,15 +599,15 @@
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagina</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sito</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Pagina</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Data</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Nome</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Email</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Telefono</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Pagina</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Sito</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">ID Pagina</th>
+                  <th class="px-4 py-3 text-left text-[12.5px] font-semibold text-gray-500">Stato</th>
+                  <th class="px-4 py-3 text-right text-[12.5px] font-semibold text-gray-500">Azioni</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">

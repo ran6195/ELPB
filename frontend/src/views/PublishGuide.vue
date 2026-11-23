@@ -183,7 +183,7 @@
         </p>
         <div class="overflow-x-auto">
           <table class="w-full text-sm border border-gray-200 rounded-lg">
-            <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+            <thead class="bg-gray-100 text-[12.5px] font-semibold text-gray-500">
               <tr>
                 <th class="text-left px-3 py-2">Cartella</th>
                 <th class="text-left px-3 py-2">RewriteBase</th>

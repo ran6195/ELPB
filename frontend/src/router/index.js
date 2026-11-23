@@ -71,17 +71,19 @@ const routes = [
     path: '/preview/:id',
     name: 'PagePreview',
     component: PagePreview,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, landing: true }
   },
   {
     path: '/thank-you',
     name: 'ThankYou',
-    component: ThankYouPage
+    component: ThankYouPage,
+    meta: { landing: true }
   },
   {
     path: '/p/:slug',
     name: 'PublicPage',
-    component: PublicPage
+    component: PublicPage,
+    meta: { landing: true }
   }
 ]
 
