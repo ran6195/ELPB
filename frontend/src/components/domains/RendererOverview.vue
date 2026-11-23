@@ -62,12 +62,10 @@
             <tr>
               <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pagina</th>
               <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Proprietario</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Domini associati</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Sito che la mostra</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Renderer</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Server</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Domini</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Sito</th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Renderer e server</th>
               <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Richieste</th>
-              <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Ultimo accesso</th>
             </tr>
           </thead>
           <tbody v-for="group in filteredGroups" :key="group.page.id" class="bg-white divide-y divide-gray-100 border-t border-gray-200">
@@ -78,35 +76,36 @@
               class="transition-colors duration-700"
             >
               <template v-if="i === 0">
-                <td :rowspan="group.rows.length" class="px-3 py-2 text-sm align-top min-w-[14rem] max-w-[18rem]">
+                <td :rowspan="group.rows.length" class="px-3 py-2 text-sm align-top min-w-[11rem] max-w-[15rem]">
                   <router-link :to="`/editor/${group.page.id}`" class="block truncate font-medium text-primary-600 hover:underline" :title="group.page.title">{{ group.page.title }}</router-link>
                   <span class="flex gap-1 text-xs text-gray-400 whitespace-nowrap">
                     <span class="font-mono truncate" :title="group.page.slug">#{{ group.page.id }} · {{ group.page.slug }}</span>
                     <span class="text-gray-500">· {{ group.hits }} {{ group.hits === 1 ? 'richiesta' : 'richieste' }}</span>
                   </span>
                 </td>
-                <td :rowspan="group.rows.length" class="px-3 py-2 text-sm align-top whitespace-nowrap">
-                  <span class="block text-gray-700">{{ group.page.owner || '—' }}</span>
-                  <span class="block text-xs text-gray-500">{{ group.page.company || 'Senza azienda' }}</span>
+                <td :rowspan="group.rows.length" class="px-3 py-2 text-sm align-top max-w-[11rem]">
+                  <span class="block truncate text-gray-700" :title="group.page.owner">{{ group.page.owner || '—' }}</span>
+                  <span class="block truncate text-xs text-gray-500" :title="group.page.company">{{ group.page.company || 'Senza azienda' }}</span>
                 </td>
-                <td :rowspan="group.rows.length" class="px-3 py-2 text-sm align-top">
-                  <span v-for="d in group.domains" :key="d" class="block text-gray-700">{{ d }}</span>
+                <td :rowspan="group.rows.length" class="px-3 py-2 text-sm align-top max-w-[12rem]">
+                  <span v-for="d in group.domains" :key="d" class="block truncate text-gray-700" :title="d">{{ d }}</span>
                   <span v-if="!group.domains.length" class="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">nessuno</span>
                 </td>
               </template>
-              <td class="px-3 py-2 text-sm align-top">
+              <td class="px-3 py-2 text-sm align-top min-w-[12rem] max-w-[16rem]">
                 <template v-if="row.host">
-                  <span class="text-gray-900">{{ row.display_host }}</span>
+                  <span class="text-gray-900 [overflow-wrap:anywhere]">{{ row.display_host }}</span>
                   <span
                     v-if="group.domains.length && !row.associated"
-                    class="ml-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800"
+                    class="ml-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 whitespace-nowrap"
                     title="Il sito non è tra i domini associati alla pagina"
                   >non associato</span>
                 </template>
                 <template v-else>
                   <span class="text-gray-500 italic">non comunicato</span>
-                  <span v-if="row.lead_hosts.length" class="block text-xs text-gray-500 whitespace-nowrap">
-                    Contatti da: <span class="text-gray-700">{{ row.lead_hosts.join(', ') }}</span>
+                  <span v-if="row.lead_hosts.length" class="block text-xs text-gray-500">
+                    Contatti da:
+                    <span v-for="(h, k) in row.lead_hosts" :key="h" class="inline-block text-gray-700 whitespace-nowrap">{{ h }}{{ k < row.lead_hosts.length - 1 ? ',' : '' }}&nbsp;</span>
                   </span>
                 </template>
               </td>
@@ -116,15 +115,15 @@
                   v-if="row.outdated"
                   class="ml-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800"
                 >da aggiornare</span>
+                <span class="block text-xs text-gray-500 font-mono">{{ row.ip || '—' }}</span>
               </td>
-              <td class="px-3 py-2 text-sm text-gray-500 font-mono whitespace-nowrap align-top">{{ row.ip || '—' }}</td>
               <td class="px-3 py-2 text-sm text-gray-500 align-top">
-                {{ row.hits }}
-                <span v-if="mergedHits(row)" class="block text-xs text-gray-400 whitespace-nowrap" title="Richieste fatte prima dell'aggiornamento del renderer (stessa pagina e stesso IP del server)">
+                <span class="text-gray-700">{{ row.hits }}</span>
+                <span v-if="mergedHits(row)" class="block text-xs text-gray-400 min-w-[4rem]" title="Richieste fatte prima dell'aggiornamento del renderer (stessa pagina e stesso IP del server)">
                   di cui {{ mergedHits(row) }} prima
                 </span>
+                <span class="block text-xs whitespace-nowrap" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at, now) }}</span>
               </td>
-              <td class="px-3 py-2 text-sm text-gray-500 whitespace-nowrap align-top" :title="row.last_seen_at">{{ timeAgo(row.last_seen_at, now) }}</td>
             </tr>
           </tbody>
         </table>
