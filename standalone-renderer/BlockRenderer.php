@@ -1645,6 +1645,7 @@ HTML;
         // Button wrapper based on layout
         $buttonWrapperClass = $buttonLayout === 'centered' ? 'flex justify-center' : '';
         $buttonClass = $buttonLayout === 'centered' ? 'font-medium transition-colors' : 'w-full font-medium transition-colors';
+        $provenienzaJs = $this->provenienzaJs();
 
         $html .= <<<HTML
 
@@ -1678,6 +1679,8 @@ HTML;
             page_id: parseInt(formData.get('page_id')) || null,
             privacy_accepted: formData.get('privacy_accepted') === 'on'
         };
+
+{$provenienzaJs}
 
         // Add reCAPTCHA token if present
         if ('{$recaptchaSiteKey}' && window.grecaptcha) {
@@ -1777,6 +1780,27 @@ HTML;
     /**
      * Render Form Avanzato block (campi dinamici con griglia 2 colonne)
      */
+    /**
+     * Provenienza della visita per il CRM Edysma: UTM e click ID letti
+     * dall'indirizzo della pagina al momento dell'invio, più l'indirizzo
+     * senza query (page_url). Niente cookie né salvataggi nel browser. Vanno
+     * nei metadata del lead (il backend li esclude dalle email); i campi del
+     * form con lo stesso nome, aggiunti dopo, vincono.
+     */
+    protected function provenienzaJs()
+    {
+        return <<<'JS'
+        const provenienza = new URLSearchParams(window.location.search);
+        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'].forEach(function(chiave) {
+            const valore = provenienza.get(chiave);
+            if (valore) {
+                data[chiave] = valore.slice(0, 255);
+            }
+        });
+        data.page_url = window.location.origin + window.location.pathname;
+JS;
+    }
+
     protected function renderFormAvanzato($content, $styles, $block)
     {
         $title = htmlspecialchars($content['title'] ?? '');
@@ -1957,6 +1981,7 @@ HTML;
 
         $buttonWrapperClass = $buttonLayout === 'centered' ? 'flex justify-center' : '';
         $buttonClass = $buttonLayout === 'centered' ? 'font-medium transition-colors' : 'w-full font-medium transition-colors';
+        $provenienzaJs = $this->provenienzaJs();
 
         $html .= <<<HTML
 
@@ -1989,6 +2014,8 @@ HTML;
             page_id: parseInt(formData.get('page_id')) || null,
             privacy_accepted: formData.get('privacy_accepted') === 'on'
         };
+
+{$provenienzaJs}
 
         if ('{$recaptchaSiteKey}' && window.grecaptcha) {
             const recaptchaResponse = grecaptcha.getResponse();

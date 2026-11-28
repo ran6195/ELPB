@@ -21,7 +21,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 class TrackingService
 {
     /** Ultima versione distribuita di ogni renderer: le precedenti risultano da aggiornare */
-    public const CURRENT_RENDERER_VERSIONS = ['standalone' => '2.1.2', 'joomla' => '2.1.0'];
+    public const CURRENT_RENDERER_VERSIONS = ['standalone' => '2.1.3', 'joomla' => '2.1.0'];
 
     /** Aggregati giornalieri conservati per 16 mesi, come GA4 */
     private const RETENTION_MONTHS = 16;

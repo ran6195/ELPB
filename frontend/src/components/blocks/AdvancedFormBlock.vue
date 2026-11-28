@@ -173,6 +173,7 @@
 <script setup>
 import { ref, reactive, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { titleShadowStyle } from '../../utils/titleStyle'
+import { datiProvenienza } from '../../utils/provenienza'
 import { usePageStore } from '../../stores/pageStore'
 import { useRouter } from 'vue-router'
 
@@ -391,6 +392,7 @@ const submitForm = async () => {
       page_id: pageStore.currentPage?.id,
       privacy_accepted: privacyAccepted.value,
       recaptcha_token: recaptchaToken.value,
+      ...datiProvenienza(), // UTM e click ID dall'indirizzo (i campi del form vincono)
       ...formData,      // campi raw → metadata per i campi non standard
       ...standardData   // colonne dedicate (name, phone, message, email)
     })

@@ -13,6 +13,30 @@ class EmailService
     private array $config;
     private EmailLogger $logger;
 
+    /** Campi tecnici del form, mai tra gli "altri campi" della notifica. */
+    private const CHIAVI_DI_SISTEMA = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
+
+    /**
+     * Provenienza della visita mandata dai renderer per il CRM Edysma (UTM,
+     * click ID, indirizzo della pagina): resta nei metadata del lead, ma
+     * nella notifica sarebbe solo rumore.
+     */
+    public const CHIAVI_PROVENIENZA = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'page_url'];
+
+    /**
+     * I campi dei metadata da mostrare nella notifica come "altri campi": non
+     * i tecnici, non la provenienza, non quelli interni che iniziano con "_"
+     * (note e appuntamento del pannello).
+     */
+    public static function campiExtra(array $metadata): array
+    {
+        $esclusi = array_merge(self::CHIAVI_DI_SISTEMA, self::CHIAVI_PROVENIENZA);
+
+        return array_filter($metadata, function ($key) use ($esclusi) {
+            return !in_array($key, $esclusi, true) && strpos((string) $key, '_') !== 0;
+        }, ARRAY_FILTER_USE_KEY);
+    }
+
     public function __construct()
     {
         $this->logger = new EmailLogger();
@@ -397,11 +421,7 @@ HTML;
         $leadSiteHtml = $leadSite ? '<p><strong>Sito:</strong> ' . htmlspecialchars($leadSite) . '</p>' : '';
 
         $extraFieldsHtml = '';
-        $systemKeys = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
-        $metadata = $lead->metadata ?? [];
-        $extraFields = array_filter($metadata, function ($key) use ($systemKeys) {
-            return !in_array($key, $systemKeys) && strpos($key, '_') !== 0;
-        }, ARRAY_FILTER_USE_KEY);
+        $extraFields = self::campiExtra($lead->metadata ?? []);
 
         if (!empty($extraFields)) {
             $extraFieldsHtml = '<div class="info-box" style="margin-top:0">';
@@ -544,11 +564,7 @@ HTML;
         $leadSitePlain = $leadSite ? "Sito: {$leadSite}\n" : '';
 
         $extraFieldsPlain = '';
-        $systemKeys = ['privacy_accepted', 'page_slug', 'thank_you_url', 'recaptcha_token'];
-        $metadata = $lead->metadata ?? [];
-        $extraFields = array_filter($metadata, function ($key) use ($systemKeys) {
-            return !in_array($key, $systemKeys) && strpos($key, '_') !== 0;
-        }, ARRAY_FILTER_USE_KEY);
+        $extraFields = self::campiExtra($lead->metadata ?? []);
 
         if (!empty($extraFields)) {
             $extraFieldsPlain = "\nALTRI CAMPI:\n";
